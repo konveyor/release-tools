@@ -10,5 +10,5 @@ runs:
   - name: Set up Go
     uses: actions/setup-go@v3
   - name: Run verify
-    run: go run ${GITHUB_ACTION_PATH}/verify-pr.go
+    run: cd ${GITHUB_ACTION_PATH} && go mod download && go run verify-pr.go
     shell: bash

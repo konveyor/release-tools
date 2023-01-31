@@ -1,4 +1,4 @@
-name: PR Checks
+name: PR verification
 
 on:
   pull_request_target:

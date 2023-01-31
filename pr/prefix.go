@@ -11,12 +11,13 @@ import (
 type PRType string
 
 const (
-	NonePR     PRType = ""
+	UnknownPR  PRType = ""
 	FeaturePR  PRType = "feature"
 	BugFixPR   PRType = "bugfix"
 	DocsPR     PRType = "docs"
 	InfraPR    PRType = "infra"
 	BreakingPR PRType = "breaking"
+	NoNotePR   PRType = "nonote"
 
 	// TODO(djzager): Should we allow emoji?
 	PrefixFeature  string = ":sparkles:"
@@ -24,6 +25,7 @@ const (
 	PrefixDocs     string = ":book:"
 	PrefixInfra    string = ":seedling:"
 	PrefixBreaking string = ":warning:"
+	PrefixNoNote   string = ":ghost:"
 )
 
 // Extracted from kubernetes/test-infra/prow/plugins/wip/wip-label.go
@@ -47,9 +49,10 @@ You need to have one of these as the prefix of your PR title:
 - Bug fix: (%#q)
 - Docs: (%#q)
 - Infra/Tests/Other: (%#q)
+- No release note: (%#q)
 
 More details can be found at [konveyor/release-tools/VERSIONING.md](https://github.com/konveyor/release-tools/VERSIONING.md).`,
-		e.title, PrefixBreaking, PrefixFeature, PrefixBugFix, PrefixDocs, PrefixInfra)
+		e.title, PrefixBreaking, PrefixFeature, PrefixBugFix, PrefixDocs, PrefixInfra, PrefixNoNote)
 }
 
 // TypeFromTitle returns the type of PR and the title without prefix.
@@ -65,7 +68,7 @@ func TypeFromTitle(title string) (PRType, string, error) {
 	title = strings.TrimSpace(title)
 
 	if len(title) == 0 {
-		return NonePR, title, PRTypeError{title: title}
+		return UnknownPR, title, PRTypeError{title: title}
 	}
 
 	var prType PRType
@@ -85,8 +88,11 @@ func TypeFromTitle(title string) (PRType, string, error) {
 	case strings.HasPrefix(title, PrefixBreaking):
 		title = strings.TrimPrefix(title, PrefixBreaking)
 		prType = BreakingPR
+	case strings.HasPrefix(title, PrefixNoNote):
+		title = strings.TrimPrefix(title, PrefixNoNote)
+		prType = NoNotePR
 	default:
-		return NonePR, title, PRTypeError{title: title}
+		return UnknownPR, title, PRTypeError{title: title}
 	}
 
 	// Trusting those that came before...

@@ -13,7 +13,7 @@ func TestTypeFromTitle(t *testing.T) {
 	}{
 		{
 			title:         "WIP: [docs] Update documentation",
-			expectedType:  NonePR,
+			expectedType:  UnknownPR,
 			expectedTitle: "Update documentation",
 			expectedError: PRTypeError{title: "Update documentation"},
 		},
@@ -36,6 +36,12 @@ func TestTypeFromTitle(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			title:         ":ghost: Don't put me in release notes",
+			expectedType:  NoNotePR,
+			expectedTitle: "Don't put me in release notes",
+			expectedError: nil,
+		},
+		{
 			title:         "WIP: :seedling: Infrastructure change",
 			expectedType:  InfraPR,
 			expectedTitle: "Infrastructure change",
@@ -43,25 +49,25 @@ func TestTypeFromTitle(t *testing.T) {
 		},
 		{
 			title:         "WIP: No prefix in title",
-			expectedType:  NonePR,
+			expectedType:  UnknownPR,
 			expectedTitle: "No prefix in title",
 			expectedError: PRTypeError{title: "No prefix in title"},
 		},
 		{
 			title:         "No prefix in title",
-			expectedType:  NonePR,
+			expectedType:  UnknownPR,
 			expectedTitle: "No prefix in title",
 			expectedError: PRTypeError{title: "No prefix in title"},
 		},
 		{
 			title:         "WIP:",
-			expectedType:  NonePR,
+			expectedType:  UnknownPR,
 			expectedTitle: "",
 			expectedError: PRTypeError{title: ""},
 		},
 		{
 			title:         "",
-			expectedType:  NonePR,
+			expectedType:  UnknownPR,
 			expectedTitle: "",
 			expectedError: PRTypeError{title: ""},
 		},

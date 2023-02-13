@@ -1,0 +1,73 @@
+name: 'Build and Push Multi-Arch Image'
+description: "Builds and pushes a multiple architecture image manifest to a registry"
+inputs:
+  architectures:
+    description: "Comma separated list of architectures to build"
+    required: true
+  containerfile:
+    description: "Path to the Dockerfile or Containerfile to build"
+    required: true
+  image_name:
+    description: "Name of the image"
+    required: true
+  image_namespace:
+    description: "Image registry namespace"
+    required: true
+  image_registry:
+    description: "Image registry host"
+    required: true
+  quay_publish_robot:
+    description: "Quay publish robot"
+    required: true
+  quay_publish_token:
+    description: "Quay publish token"
+    required: true
+  ref:
+    description: "git ref to build"
+    required: true
+runs:
+    using: "composite"
+    steps:
+    - name: Checkout Push to Registry action
+      uses: actions/checkout@main
+
+    - name: configure QEMU action...
+      uses: docker/setup-qemu-action@master
+      with:
+        platforms: all
+
+    - name: Extract branch name for main
+      shell: bash
+      run: echo "branch=$(echo ${GITHUB_REF#refs/heads/}) latest" >> $GITHUB_ENV
+      if: ${{ inputs.ref == 'refs/heads/main' }}
+
+    - name: Extract tag name
+      shell: bash
+      run: echo "branch=$(echo ${GITHUB_REF#refs/tags/}) latest" >> $GITHUB_ENV
+      if: contains(inputs.ref, 'tags')
+
+    - name: Extract branch name for all other branches
+      shell: bash
+      run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+      if: contains(inputs.ref, 'refs/heads/main') == false && contains(inputs.ref, 'tags') == false
+
+    - name: Build Image
+      id: build
+      uses: redhat-actions/buildah-build@main
+      with:
+        image: ${{ inputs.image_name }}
+        tags: ${{ env.branch }}
+        archs: ${{ inputs.architectures }}
+        containerfiles: |
+          ${{ inputs.containerfile }}
+
+    - name: Push To Quay
+      uses: redhat-actions/push-to-registry@main
+      id: push
+      with:
+        image: ${{ steps.build.outputs.image }}
+        tags: ${{ env.branch }}
+        registry: ${{ inputs.image_registry }}/${{ inputs.image_namespace }}
+        username: ${{ inputs.quay_publish_robot }}
+        password: ${{ inputs.quay_publish_token }}
+

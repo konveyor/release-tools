@@ -43,7 +43,7 @@ runs:
 
     - name: Extract tag name
       shell: bash
-      run: echo "branch=$(echo ${GITHUB_REF#refs/tags/}) latest" >> $GITHUB_ENV
+      run: echo "branch=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_ENV
       if: contains(inputs.ref, 'tags')
 
     - name: Extract branch name for all other branches

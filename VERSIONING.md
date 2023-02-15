@@ -1,15 +1,16 @@
-Versioning and Branching in Konveyor Projects
-=============================================
+Versioning and Branching in Konveyor
+====================================
 
-This document outlines how we handle versioning of our projects in the Konveyor
-organization (Konveyor projects).
+This document outlines how we handle versioning in the Konveyor
+organization.
 
-Individual projects may have more specific rules or guidelines.
+Individual projects inside the Konveyor organization may have more specific
+rules and/or guidelines.
 
 # Overview
 
-Konveyor projects follow [Semantic Versioning](https://semver.org/). This means
-that the version number of a project is expressed in the format X.Y.Z, where:
+Konveyor follows [Semantic Versioning](https://semver.org/). This means that
+a version is expressed in the format X.Y.Z, where:
 
 * X is the major version, representing significant changes and new features
 * Y is the minor version, representing new features and improvements
@@ -56,7 +57,7 @@ indicate that they are stable, tested, and usable in production settings.
 [GitHub release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)
 and the associated git tag.
 
-# PR Process
+# Pull Request (PR) Process
 
 Every PR should be annotated with an icon indicating whether it's
 a:
@@ -69,4 +70,8 @@ a:
 - No release note: :ghost: (`:ghost:`)
 
 Since GitHub supports emoji aliases (ie. `:ghost:`), there is no need to include
-the emoji directly in the PR title -- please use the alias.
+the emoji directly in the PR title -- **please use the alias**. It used to be
+the case that projects using emojis for PR typing had to include the emoji
+directly because GitHub didn't render the alias. Given that `:warning:` is
+easy enough to read as text, easy to parse in release tooling, and rendered in
+GitHub well, we prefer to standardize on the alias.

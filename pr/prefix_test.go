@@ -77,6 +77,15 @@ func TestTypeFromTitle(t *testing.T) {
 			expectedTitle: "Add new feature",
 			expectedError: nil,
 		},
+		{
+			title:         "👻 I should have used the alias",
+			expectedType:  UnknownPR,
+			expectedTitle: "👻 I should have used the alias",
+			expectedError: PRTypeUsedEmojiError{
+				PRTypeError: PRTypeError{title: "👻 I should have used the alias"},
+				emojiUsed: rune('👻'),
+			},
+		},
 	}
 
 	for _, tc := range testCases {

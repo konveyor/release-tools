@@ -3,7 +3,6 @@
 package pr
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -26,34 +25,19 @@ const (
 	PrefixInfra    string = ":seedling:"
 	PrefixBreaking string = ":warning:"
 	PrefixNoNote   string = ":ghost:"
+
+	emojiFeature  = string('✨')
+	emojiBugFix   = string('🐛')
+	emojiDocs     = string('📖')
+	emojiInfra    = string('🌱')
+	emojiBreaking = string('⚠')
+	emojiNoNote   = string('👻')
 )
 
 // Extracted from kubernetes/test-infra/prow/plugins/wip/wip-label.go
 var wipRegex = regexp.MustCompile(`(?i)^\W?WIP\W`)
 
 var tagRegex = regexp.MustCompile(`^\[[\w-\.]*\]`)
-
-type PRTypeError struct {
-	title string
-}
-
-func (e PRTypeError) Error() string {
-	return fmt.Sprintf(
-		`No matching PR type indicator found in title.
-
-I saw a title of %#q, which doesn't seem to have any of the acceptable prefixes.
-
-You need to have one of these as the prefix of your PR title:
-- Breaking change: (%#q)
-- Non-breaking feature: (%#q)
-- Bug fix: (%#q)
-- Docs: (%#q)
-- Infra/Tests/Other: (%#q)
-- No release note: (%#q)
-
-More details can be found at [konveyor/release-tools/VERSIONING.md](https://github.com/konveyor/release-tools/VERSIONING.md).`,
-		e.title, PrefixBreaking, PrefixFeature, PrefixBugFix, PrefixDocs, PrefixInfra, PrefixNoNote)
-}
 
 // TypeFromTitle returns the type of PR and the title without prefix.
 func TypeFromTitle(title string) (PRType, string, error) {
@@ -92,6 +76,17 @@ func TypeFromTitle(title string) (PRType, string, error) {
 		title = strings.TrimPrefix(title, PrefixNoNote)
 		prType = NoNotePR
 	default:
+		if strings.HasPrefix(title, emojiFeature) ||
+			strings.HasPrefix(title, emojiBugFix) ||
+			strings.HasPrefix(title, emojiDocs) ||
+			strings.HasPrefix(title, emojiInfra) ||
+			strings.HasPrefix(title, emojiBreaking) ||
+			strings.HasPrefix(title, emojiNoNote) {
+			return UnknownPR, title, PRTypeUsedEmojiError{
+				PRTypeError: PRTypeError{title: title},
+				emojiUsed: []rune(title)[0],
+			}
+		}
 		return UnknownPR, title, PRTypeError{title: title}
 	}
 

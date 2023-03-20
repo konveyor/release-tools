@@ -9,8 +9,8 @@ import (
 	// "log"
 
 	"github.com/google/go-github/v49/github"
-	"github.com/konveyor/release-tools/action"
-	"github.com/konveyor/release-tools/pr"
+	"github.com/konveyor/release-tools/pkg/action"
+	"github.com/konveyor/release-tools/pkg/pr"
 )
 
 func main() {

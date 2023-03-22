@@ -1,0 +1,98 @@
+name: Create release
+
+on:
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is semver
+        run: |
+          set -x
+          if [[ ! "$GITHUB_REF_TYPE" = "tag" ]]; then
+            echo "This is not a tag"
+            echo "Exiting"
+            exit 1
+          fi
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "This is not a semver compliant tag"
+            echo "Exiting"
+            exit 1
+          fi
+
+      - name: See if this is a pre-release
+        run: |
+          set -x
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          fi
+        id: prerelease_tag
+
+      - name: Find previous release
+        run: |
+          set -x
+          CURRENT_XY=$(echo ${GITHUB_REF_NAME} | awk -F. '{print substr($1,2)"."$2}')
+          CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent --exclude=${GITHUB_REF_NAME})
+          CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
+ 
+          # Check to see if the nearest tag is a full release, only if we have
+          # changed the XY. So, if the version we are releasing is v0.4.1 and
+          # the closest tag is v0.4.0 (obviously), then we don't need to
+          # traverse release-0.4 to determine that v0.4.0 is the correct
+          # CLOSEST_TAG.
+          if [[ "$CURRENT_XY" != "$CLOSEST_XY" && "$CLOSEST_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent "origin/release-${CLOSEST_XY}")
+          fi
+
+          echo "tag=${CLOSEST_TAG}" >> $GITHUB_OUTPUT
+        id: prev_tag
+
+      - name: Make changelog
+        run: |
+          set -x
+          PREV_TAG=${{ steps.prev_tag.outputs.tag }}
+          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${GITHUB_REF_NAME} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+          RELEASE_DOC="release.md"
+          echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
+
+          echo "Changes since [${PREV_TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/${PREV_TAG})" >> ${RELEASE_DOC}
+          echo "" >> ${RELEASE_DOC}
+
+          BREAKING_CHANGES="$(filterfunc warning)"
+          if [ -n "${BREAKING_CHANGES}" ]; then
+            echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
+            echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
+            echo "" >> ${RELEASE_DOC}
+          fi
+
+          FEATURE_CHANGES="$(filterfunc sparkles)"
+          if [ -n "${FEATURE_CHANGES}" ]; then
+            echo "## :sparkles: Features" >> ${RELEASE_DOC}
+            echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
+            echo "" >> ${RELEASE_DOC}
+          fi
+
+          BUG_FIXES="$(filterfunc bug)"
+          if [ -n "${BUG_FIXES}" ]; then
+            echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
+            echo "${BUG_FIXES}" >> ${RELEASE_DOC}
+            echo "" >> ${RELEASE_DOC}
+          fi
+
+          # TODO(djzager): More? could make this workflow accept as an argument whether or not
+          # to include other types (ie. seedling, docs)
+        id: changelog
+
+      - uses: ncipollo/release-action@v1
+        with:
+          bodyFile: ${{ env.release_doc }}
+          draft: false
+          prerelease: ${{ steps.prerelease_tag.outputs.is_prerelease }}

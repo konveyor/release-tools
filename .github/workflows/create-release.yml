@@ -2,47 +2,71 @@ name: Create release
 
 on:
   workflow_call:
+    version:
+      description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
+      required: true
+    repository:
+      description: 'The repository where the release should be created'
+      required: false
+      default: ${{ github.repository }}
+    ref:
+      description: 'The branch or SHA for the release (defaults to main)'
+      required: false
+      default: ${{ github.ref }}
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Verify tag is semver
         run: |
           set -x
-          if [[ ! "$GITHUB_REF_TYPE" = "tag" ]]; then
-            echo "This is not a tag"
-            echo "Exiting"
-            exit 1
-          fi
-          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+          if [[ ! "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "This is not a semver compliant tag"
             echo "Exiting"
             exit 1
           fi
 
-      - name: See if this is a pre-release
-        run: |
-          set -x
-          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
           else
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
           fi
-        id: prerelease_tag
+
+          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.0$ ]]; then
+            echo "is_dotzero=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_dotzero=false" >> $GITHUB_OUTPUT
+          fi
+
+          XY_VERSION=$(echo ${{ github.event.inputs.version }} | awk -F. '{print substr($1,2)"."$2}')
+          echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
+        id: check_tag
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          path: ${{ github.event.inputs.repository }}
 
       - name: Find previous release
+        working-directory: ./${{ github.event.inputs.repository }}
         run: |
           set -x
-          CURRENT_XY=$(echo ${GITHUB_REF_NAME} | awk -F. '{print substr($1,2)"."$2}')
-          CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent --exclude=${GITHUB_REF_NAME})
-          CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
- 
+          CURRENT_XY=${{ steps.check_tag.outputs.xy_version }}
+
+          # When we are dealing with a version that is NOT pre-release,
+          # we should be generating the changelong against the closest NOT pre-release.
+          if [[ "${{ steps.check_tag.outputs.is_prerelease }}" = "true" ]]; then
+            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent)
+            CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
+          else
+            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*\.[0-9]*\.[0-9]*" --exclude "*-[\!0-9]*" --abbrev=0 --first-parent)
+            CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
+          fi
+
           # Check to see if the nearest tag is a full release, only if we have
           # changed the XY. So, if the version we are releasing is v0.4.1 and
           # the closest tag is v0.4.0 (obviously), then we don't need to
@@ -56,11 +80,12 @@ jobs:
         id: prev_tag
 
       - name: Make changelog
+        working-directory: ./${{ github.event.inputs.repository }}
         run: |
           set -x
           PREV_TAG=${{ steps.prev_tag.outputs.tag }}
-          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${GITHUB_REF_NAME} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
-          RELEASE_DOC="release.md"
+          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${{ github.event.inputs.version }} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+          RELEASE_DOC="${PWD}/release.md"
           echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
 
           echo "Changes since [${PREV_TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/${PREV_TAG})" >> ${RELEASE_DOC}
@@ -93,6 +118,15 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
+          tag_name: ${{ github.events.input.version }}
           bodyFile: ${{ env.release_doc }}
           draft: false
-          prerelease: ${{ steps.prerelease_tag.outputs.is_prerelease }}
+          prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
+
+      - name: Create release branch
+        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' }}
+        working-directory: ./${{ github.event.inputs.repository }}
+        run: |
+          set -x
+          git checkout -b release-${{ steps.check_tag.outputs.xy_version }}
+          git push origin release-${{ github.event.inputs.version }}

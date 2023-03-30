@@ -69,10 +69,10 @@ jobs:
           # When we are dealing with a version that is NOT pre-release,
           # we should be generating the changelong against the closest NOT pre-release.
           if [[ "${{ steps.check_tag.outputs.is_prerelease }}" = "true" ]]; then
-            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent)
+            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent || echo "")
             CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
           else
-            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*\.[0-9]*\.[0-9]*" --exclude "*-[\!0-9]*" --abbrev=0 --first-parent)
+            CLOSEST_TAG=$(git describe --tags --match "v[0-9]*\.[0-9]*\.[0-9]*" --exclude "*-[\!0-9]*" --abbrev=0 --first-parent || echo "")
             CLOSEST_XY=$(echo ${CLOSEST_TAG} | awk -F. '{print substr($1,2)"."$2}')
           fi
 
@@ -81,7 +81,8 @@ jobs:
           # the closest tag is v0.4.0 (obviously), then we don't need to
           # traverse release-0.4 to determine that v0.4.0 is the correct
           # CLOSEST_TAG.
-          if [[ "$CURRENT_XY" != "$CLOSEST_XY" && "$CLOSEST_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Don't forget to check that the branch exists first.
+          if [[ "$CURRENT_XY" != "$CLOSEST_XY" && "$CLOSEST_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && git ls-remote --exit-code --heads origin release-${CLOSEST_XY} ]]; then
             CLOSEST_TAG=$(git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --abbrev=0 --first-parent "origin/release-${CLOSEST_XY}")
           fi
 

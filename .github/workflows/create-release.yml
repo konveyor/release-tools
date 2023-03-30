@@ -95,7 +95,7 @@ jobs:
         run: |
           set -x
           PREV_TAG=${{ steps.prev_tag.outputs.tag }}
-          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${{ inputs.version }} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..HEAD | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
           RELEASE_DOC="${PWD}/release.md"
           echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
 
@@ -130,7 +130,7 @@ jobs:
       - uses: ncipollo/release-action@v1
         if: ${{ steps.prev_tag.outputs.tag != inputs.version }} # We should skip this if the last tag is the current version
         with:
-          tag_name: ${{ inputs.version }}
+          tag: ${{ inputs.version }}
           bodyFile: ${{ env.release_doc }}
           draft: false
           prerelease: ${{ steps.check_tag.outputs.is_prerelease }}

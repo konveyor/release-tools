@@ -2,17 +2,25 @@ name: Create release
 
 on:
   workflow_call:
-    version:
-      description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
-      required: true
-    repository:
-      description: 'The repository where the release should be created'
-      required: false
-      default: ${{ github.repository }}
-    ref:
-      description: 'The branch or SHA for the release (defaults to main)'
-      required: false
-      default: ${{ github.ref }}
+    inputs:
+      version:
+        description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
+        required: true
+        type: string
+      repository:
+        description: 'The repository where the release should be created'
+        required: false
+        default: ${{ github.repository }}
+        type: string
+      ref:
+        description: 'The branch or SHA for the release (defaults to main)'
+        required: false
+        default: ${{ github.ref }}
+        type: string
+    secrets:
+      token:
+        description: 'The token to use when interacting with GitHub'
+        required: true
 
 jobs:
   release:
@@ -50,6 +58,7 @@ jobs:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           path: ${{ github.event.inputs.repository }}
+          token: ${{ secrets.token }}
 
       - name: Find previous release
         working-directory: ./${{ github.event.inputs.repository }}
@@ -81,6 +90,7 @@ jobs:
 
       - name: Make changelog
         working-directory: ./${{ github.event.inputs.repository }}
+        if: ${{ steps.prev_tag.outputs.tag != github.event.inputs.version }} # We should skip this if the last tig is the current version
         run: |
           set -x
           PREV_TAG=${{ steps.prev_tag.outputs.tag }}
@@ -117,16 +127,23 @@ jobs:
         id: changelog
 
       - uses: ncipollo/release-action@v1
+        if: ${{ steps.prev_tag.outputs.tag != github.event.inputs.version }} # We should skip this if the last tig is the current version
         with:
           tag_name: ${{ github.events.input.version }}
           bodyFile: ${{ env.release_doc }}
           draft: false
           prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
+          token: ${{ secrets.token }}
 
       - name: Create release branch
-        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' }}
+        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' && steps.prev_tag.outputs.tag != github.event.inputs.version }}
         working-directory: ./${{ github.event.inputs.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
         run: |
+          git config user.name "Konveyor Release Tools"
+          git config user.email "konveyorio@gmail.com"
+
           set -x
           git checkout -b release-${{ steps.check_tag.outputs.xy_version }}
           git push origin release-${{ github.event.inputs.version }}

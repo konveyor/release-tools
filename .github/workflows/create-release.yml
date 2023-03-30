@@ -29,25 +29,25 @@ jobs:
       - name: Verify tag is semver
         run: |
           set -x
-          if [[ ! "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo "This is not a semver compliant tag"
             echo "Exiting"
             exit 1
           fi
 
-          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "is_prerelease=false" >> $GITHUB_OUTPUT
           else
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
           fi
 
-          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.0$ ]]; then
+          if [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.0$ ]]; then
             echo "is_dotzero=true" >> $GITHUB_OUTPUT
           else
             echo "is_dotzero=false" >> $GITHUB_OUTPUT
           fi
 
-          XY_VERSION=$(echo ${{ github.event.inputs.version }} | awk -F. '{print substr($1,2)"."$2}')
+          XY_VERSION=$(echo ${{ inputs.version }} | awk -F. '{print substr($1,2)"."$2}')
           echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
         id: check_tag
 
@@ -55,13 +55,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          repository: ${{ github.event.inputs.repository }}
-          ref: ${{ github.event.inputs.ref }}
-          path: ${{ github.event.inputs.repository }}
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+          path: ${{ inputs.repository }}
           token: ${{ secrets.token }}
 
       - name: Find previous release
-        working-directory: ./${{ github.event.inputs.repository }}
+        working-directory: ./${{ inputs.repository }}
         run: |
           set -x
           CURRENT_XY=${{ steps.check_tag.outputs.xy_version }}
@@ -89,12 +89,12 @@ jobs:
         id: prev_tag
 
       - name: Make changelog
-        working-directory: ./${{ github.event.inputs.repository }}
-        if: ${{ steps.prev_tag.outputs.tag != github.event.inputs.version }} # We should skip this if the last tig is the current version
+        working-directory: ./${{ inputs.repository }}
+        if: ${{ steps.prev_tag.outputs.tag != inputs.version }} # We should skip this if the last tag is the current version
         run: |
           set -x
           PREV_TAG=${{ steps.prev_tag.outputs.tag }}
-          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${{ github.event.inputs.version }} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+          filterfunc() { git log --pretty=format:%s ${PREV_TAG}..${{ inputs.version }} | grep "\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
           RELEASE_DOC="${PWD}/release.md"
           echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
 
@@ -127,17 +127,17 @@ jobs:
         id: changelog
 
       - uses: ncipollo/release-action@v1
-        if: ${{ steps.prev_tag.outputs.tag != github.event.inputs.version }} # We should skip this if the last tig is the current version
+        if: ${{ steps.prev_tag.outputs.tag != inputs.version }} # We should skip this if the last tag is the current version
         with:
-          tag_name: ${{ github.events.input.version }}
+          tag_name: ${{ .input.version }}
           bodyFile: ${{ env.release_doc }}
           draft: false
           prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
           token: ${{ secrets.token }}
 
       - name: Create release branch
-        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' && steps.prev_tag.outputs.tag != github.event.inputs.version }}
-        working-directory: ./${{ github.event.inputs.repository }}
+        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' && steps.prev_tag.outputs.tag != inputs.version }}
+        working-directory: ./${{ inputs.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.token }}
         run: |
@@ -146,4 +146,4 @@ jobs:
 
           set -x
           git checkout -b release-${{ steps.check_tag.outputs.xy_version }}
-          git push origin release-${{ github.event.inputs.version }}
+          git push origin release-${{ steps.check_tag.outputs.xy_version }}

@@ -129,7 +129,7 @@ jobs:
       - uses: ncipollo/release-action@v1
         if: ${{ steps.prev_tag.outputs.tag != inputs.version }} # We should skip this if the last tag is the current version
         with:
-          tag_name: ${{ .input.version }}
+          tag_name: ${{ inputs.version }}
           bodyFile: ${{ env.release_doc }}
           draft: false
           prerelease: ${{ steps.check_tag.outputs.is_prerelease }}

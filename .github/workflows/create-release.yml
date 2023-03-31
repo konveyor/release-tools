@@ -132,6 +132,7 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
+          repo: ${{ inputs.repository }}
           tag: ${{ inputs.version }}
           commit: ${{ steps.changelog.outputs.sha }}
           bodyFile: ${{ env.release_doc }}

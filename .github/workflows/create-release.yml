@@ -102,7 +102,7 @@ jobs:
           RELEASE_DOC="${PWD}/release.md"
           echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
 
-          echo "Changes since [${PREV_TAG}](https://github.com/${GITHUB_REPOSITORY}/releases/${PREV_TAG})" >> ${RELEASE_DOC}
+          echo "Changes since [${PREV_TAG}](https://github.com/${{ inputs.repository }}/releases/${PREV_TAG})" >> ${RELEASE_DOC}
           echo "" >> ${RELEASE_DOC}
 
           BREAKING_CHANGES="$(filterfunc warning)"
@@ -130,7 +130,7 @@ jobs:
           # to include other types (ie. seedling, docs)
         id: changelog
 
-      - uses: ncipollo/release-action@v1
+      - uses: ncipollo/release-action@main
         with:
           repo: ${{ inputs.repository }}
           tag: ${{ inputs.version }}

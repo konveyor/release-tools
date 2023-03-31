@@ -94,6 +94,10 @@ jobs:
         run: |
           set -x
 
+          # Details we need in order to create the release
+          REPOSITORY=${{ inputs.repository }}
+          echo "owner=${REPOSITORY%/*}" >> $GITHUB_OUTPUT
+          echo "repo=${REPOSITORY#*/}" >> $GITHUB_OUTPUT
           SHA=$(git rev-parse HEAD)
           echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
@@ -132,7 +136,8 @@ jobs:
 
       - uses: ncipollo/release-action@main
         with:
-          repo: ${{ inputs.repository }}
+          owner: ${{ steps.changelog.outputs.owner }}
+          repo: ${{ steps.changelog.outputs.repo }}
           tag: ${{ inputs.version }}
           commit: ${{ steps.changelog.outputs.sha }}
           bodyFile: ${{ env.release_doc }}

@@ -60,6 +60,7 @@ runs:
       with:
         image: ${{ inputs.image_name }}
         tags: ${{ env.branch }}
+        extra-args: ${{ inputs.extra-args }}
         archs: ${{ inputs.architectures }}
         containerfiles: |
           ${{ inputs.containerfile }}
@@ -70,7 +71,6 @@ runs:
       with:
         image: ${{ steps.build.outputs.image }}
         tags: ${{ env.branch }}
-        extra-args: ${{ inputs.extra-args }}
         registry: ${{ inputs.image_registry }}/${{ inputs.image_namespace }}
         username: ${{ inputs.quay_publish_robot }}
         password: ${{ inputs.quay_publish_token }}

@@ -7,6 +7,9 @@ inputs:
   containerfile:
     description: "Path to the Dockerfile or Containerfile to build"
     required: true
+  extra-args:
+    description: "Extra args to be passed to buildah bud. Separate arguments by newline. Do not use quotes."
+    required: false
   image_name:
     description: "Name of the image"
     required: true
@@ -67,6 +70,7 @@ runs:
       with:
         image: ${{ steps.build.outputs.image }}
         tags: ${{ env.branch }}
+        extra-args: ${{ inputs.extra-args }}
         registry: ${{ inputs.image_registry }}/${{ inputs.image_namespace }}
         username: ${{ inputs.quay_publish_robot }}
         password: ${{ inputs.quay_publish_token }}

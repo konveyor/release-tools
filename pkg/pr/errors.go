@@ -30,7 +30,7 @@ You need to have one of these as the prefix of your PR title:
 - Infra/Tests/Other: (%#q)
 - No release note: (%#q)
 
-More details can be found at [konveyor/release-tools/VERSIONING.md](https://github.com/konveyor/release-tools/VERSIONING.md).`,
+More details can be found at [konveyor/release-tools/VERSIONING.md](https://github.com/konveyor/release-tools/blob/main/VERSIONING.md).`,
 		e.title, PrefixBreaking, PrefixFeature, PrefixBugFix, PrefixDocs, PrefixInfra, PrefixNoNote)
 }
 

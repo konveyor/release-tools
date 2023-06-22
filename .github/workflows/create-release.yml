@@ -145,16 +145,3 @@ jobs:
           prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
           skipIfReleaseExists: true
           token: ${{ secrets.token }}
-
-      - name: Create release branch
-        if: ${{ steps.check_tag.outputs.is_dotzero == 'true' && steps.prev_tag.outputs.tag != inputs.version }}
-        working-directory: ./${{ inputs.repository }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.token }}
-        run: |
-          git config user.name "Konveyor Release Tools"
-          git config user.email "konveyorio@gmail.com"
-
-          set -x
-          git checkout -b release-${{ steps.check_tag.outputs.xy_version }}
-          git push origin release-${{ steps.check_tag.outputs.xy_version }}

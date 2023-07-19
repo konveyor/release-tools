@@ -1,0 +1,83 @@
+# This workflow prepares a repository for release, it does following:
+# - updates specified base images used in the Dockerfile to use the right tags
+# - updates specified go dependencies in go.mod file to point to right branches
+# - commits the results back to the originating branch
+name: Prepare repository for release
+on:
+  workflow_call:
+    inputs:
+      branch_ref:
+        description: Ref of the branch that triggers this workflow.
+        type: string
+        required: true
+      images_to_update:
+        description: List of images in the Dockerfile to update formatted as a JSON array string e.g. '["quay.io/konveyor/analyzer-lsp"]'.
+        type: string
+        required: false
+        default: '[]'
+      go_deps_to_update:
+        description: List of go dependencies to update in go.mod file formatterd as a JSON array string e.g. '["github.com/konveyor/analyzer-lsp"]'.
+        type: string
+        required: false
+        default: '[]'
+      dockerfile:
+        description: Relative path to Dockefile.
+        type: string
+        required: false
+        default: ./Dockerfile
+jobs:
+  prep-for-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Extract version and branch name
+      id: extract-info
+      run: |
+        if [[ "${BRANCH_REF}" =~ ^refs/heads/release-[0-9]+.[0-9]+$ ]]; then
+          BRANCH=$(echo "$BRANCH_REF" | sed "s,refs/heads/,,")
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+        else
+          echo "branch=NOOP" >> $GITHUB_OUTPUT
+        fi 
+      env:
+        BRANCH_REF: ${{ inputs.branch_ref }}
+
+    - name: Checkout repository
+      if: steps.extract-info.outputs.branch != 'NOOP'
+      uses: actions/checkout@v2
+
+    - name: Update tags of base images in Dockerfile
+      if: steps.extract-info.outputs.branch != 'NOOP'
+      run: |
+        for REPLACE_IMAGE in $(echo "$REPLACE_IMAGES" | jq -r '.[]'); do
+          sed -i "s,${REPLACE_IMAGE}.*$,${REPLACE_IMAGE}:${TAG}," ${DOCKERFILE}
+        done
+      env:
+        REPLACE_IMAGES: ${{ inputs.images_to_update }}
+        DOCKERFILE: ${{ inputs.dockerfile }}
+        TAG: ${{ steps.extract-info.outputs.branch }}
+
+    - name: Update dependency versions in go mod file
+      if: steps.extract-info.outputs.branch != 'NOOP'
+      run: |
+        for REPLACE_DEP in $(echo "$REPLACE_DEPS" | jq -r '.[]'); do
+          go get ${REPLACE_DEP}@${BRANCH}
+        done
+        go mod tidy
+      env:
+        REPLACE_DEPS: ${{ inputs.go_deps_to_update }}
+        BRANCH: ${{ steps.extract-info.outputs.branch }}
+
+    - name: Commit and push changes
+      if: steps.extract-info.outputs.branch != 'NOOP'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@noreply.konveyor.io"
+        git add .
+        git commit -m "prepare for release ${VERSION}"
+        git push
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_USER: ${{ secrets.GH_USER }}
+        VERSION: ${{ steps.extract-info.outputs.branch }}
+        
+

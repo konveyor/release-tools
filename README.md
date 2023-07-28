@@ -4,6 +4,8 @@ Release Tools
 This project contains tooling for creating and managing releases for the Konveyor organization.
 
 ## Available Workflows
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_shield)
+
 
 ### Prepare repository for release
 
@@ -36,3 +38,7 @@ for more information on how to get started.
 # Code of Conduct
 
 Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_large)

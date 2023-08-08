@@ -1,0 +1,128 @@
+name: Create Release
+description: Create a release in a project
+inputs:
+  github_token:
+    description: 'GitHub token'
+    required: true
+  version:
+    description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
+    required: true
+    type: string
+  repository:
+    description: 'The repository where the release should be created'
+    required: false
+    default: ${{ github.repository }}
+    type: string
+  ref:
+    description: 'The branch or SHA for the release (defaults to main)'
+    required: false
+    default: ${{ github.ref }}
+    type: string
+runs:
+  using: "composite"
+  steps:
+  - name: Verify tag is semver
+    run: |
+      set -x
+      if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+        echo "This is not a semver compliant tag"
+        echo "Exiting"
+        exit 1
+      fi
+
+      if [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "is_prerelease=false" >> $GITHUB_OUTPUT
+      else
+        echo "is_prerelease=true" >> $GITHUB_OUTPUT
+      fi
+
+      if [[ "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.0$ ]]; then
+        echo "is_dotzero=true" >> $GITHUB_OUTPUT
+      else
+        echo "is_dotzero=false" >> $GITHUB_OUTPUT
+      fi
+
+      XY_VERSION=$(echo ${{ inputs.version }} | awk -F. '{print substr($1,2)"."$2}')
+      echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
+    id: check_tag
+
+  - name: Checkout code
+    uses: actions/checkout@v3
+    with:
+      fetch-depth: 0
+      repository: ${{ inputs.repository }}
+      ref: ${{ inputs.ref }}
+      path: ${{ inputs.repository }}
+      token: ${{ secrets.token }}
+
+  - name: Make changelog
+    working-directory: ./${{ inputs.repository }}
+    env:
+      GITHUB_TOKEN: ${{ inputs.github_token }}
+    run: |
+      set -x
+
+      # Details we need in order to create the release
+      REPOSITORY=${{ inputs.repository }}
+      echo "owner=${REPOSITORY%/*}" >> $GITHUB_OUTPUT
+      echo "repo=${REPOSITORY#*/}" >> $GITHUB_OUTPUT
+      SHA=$(git rev-parse HEAD)
+      echo "sha=${SHA}" >> $GITHUB_OUTPUT
+
+      # Always compare to latest published full release for repository
+      PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name')
+      filterfunc() { git log --pretty=format:%s ${PREV_TAG}..HEAD | grep "^\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+      # Handle scenario where no previous tag exists
+      if [ -z "${PREV_TAG}" ]; then
+        filterfunc() { git log --pretty=format:%s | grep "^\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
+      fi
+
+      RELEASE_DOC="${PWD}/release.md"
+      echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
+
+      BREAKING_CHANGES="$(filterfunc warning)"
+      if [ -n "${BREAKING_CHANGES}" ]; then
+        echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
+        echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
+        echo "" >> ${RELEASE_DOC}
+      fi
+
+      FEATURE_CHANGES="$(filterfunc sparkles)"
+      if [ -n "${FEATURE_CHANGES}" ]; then
+        echo "## :sparkles: Features" >> ${RELEASE_DOC}
+        echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
+        echo "" >> ${RELEASE_DOC}
+      fi
+
+      BUG_FIXES="$(filterfunc bug)"
+      if [ -n "${BUG_FIXES}" ]; then
+        echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
+        echo "${BUG_FIXES}" >> ${RELEASE_DOC}
+        echo "" >> ${RELEASE_DOC}
+      fi
+
+      # Add contributors as GitHub would have added them
+      gh api \
+        --method POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        /repos/${{ inputs.repository }}/releases/generate-notes \
+        -f tag_name="${{ inputs.version }}" \
+        -f target_commitish="${{ inputs.ref }}" \
+        -f previous_tag_name="${PREV_TAG}" | jq -r '.body' | grep -Pzo '.*Contributors(.*\n)*' >> ${RELEASE_DOC}
+
+      # TODO(djzager): More? could make this workflow accept as an argument whether or not
+      # to include other types (ie. seedling, docs)
+    id: changelog
+
+  - uses: ncipollo/release-action@main
+    with:
+      owner: ${{ steps.changelog.outputs.owner }}
+      repo: ${{ steps.changelog.outputs.repo }}
+      tag: ${{ inputs.version }}
+      commit: ${{ steps.changelog.outputs.sha }}
+      bodyFile: ${{ env.release_doc }}
+      draft: false
+      prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
+      skipIfReleaseExists: true
+      token: ${{ secrets.token }}

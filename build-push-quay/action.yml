@@ -25,6 +25,9 @@ inputs:
   quay_publish_token:
     description: "Quay publish token"
     required: true
+  pre_build_cmd:
+    description: "Command to run before building images"
+    required: false
   ref:
     description: "git ref to build"
     required: true
@@ -53,6 +56,11 @@ runs:
       shell: bash
       run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
       if: contains(inputs.ref, 'refs/heads/main') == false && contains(inputs.ref, 'tags') == false
+
+    - name: Run pre build command
+      shell: bash
+      run: "${{ inputs.pre_build_cmd }}"
+      if: "${{ inputs.pre_build_cmd != '' }}"
 
     - name: Build Image
       id: build

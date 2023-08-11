@@ -22,6 +22,7 @@ runs:
   using: "composite"
   steps:
   - name: Verify tag is semver
+    shell: bash
     run: |
       set -x
       if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
@@ -53,12 +54,13 @@ runs:
       repository: ${{ inputs.repository }}
       ref: ${{ inputs.ref }}
       path: ${{ inputs.repository }}
-      token: ${{ secrets.token }}
+      token: ${{ inputs.github_token }}
 
   - name: Make changelog
     working-directory: ./${{ inputs.repository }}
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}
+    shell: bash
     run: |
       set -x
 
@@ -125,4 +127,4 @@ runs:
       draft: false
       prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
       skipIfReleaseExists: true
-      token: ${{ secrets.token }}
+      token: ${{ inputs.github_token }}

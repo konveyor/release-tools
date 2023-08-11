@@ -73,7 +73,7 @@ runs:
       echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
       # Always compare to latest published full release for repository
-      PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
+      PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
       filterfunc() { git log --pretty=format:%s ${PREV_TAG}..HEAD | grep "^\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
       # Handle scenario where no previous tag exists
       if [ -z "${PREV_TAG}" ]; then
@@ -109,7 +109,7 @@ runs:
         --method POST \
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
-        /repos/${{ inputs.repository }}/releases/generate-notes \
+        repos/${{ inputs.repository }}/releases/generate-notes \
         -f tag_name="${{ inputs.version }}" \
         -f target_commitish="${{ inputs.ref }}" \
         -f previous_tag_name="${PREV_TAG}" | jq -r '.body' | grep -Pzo '.*Contributors(.*\n)*' >> ${RELEASE_DOC}

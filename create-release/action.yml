@@ -63,6 +63,7 @@ runs:
     shell: bash
     run: |
       set -x
+      set +o pipefail
 
       # Details we need in order to create the release
       REPOSITORY=${{ inputs.repository }}

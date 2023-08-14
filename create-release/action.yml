@@ -25,6 +25,9 @@ outputs:
   bug-fixes:
     description: "Bug fixes introduced in this release"
     value: ${{ steps.changelog.outputs.bug-fixes }}
+  new-contributors:
+    description: "New contributors to this release"
+    value: ${{ steps.changelog.outputs.new-contributors }}
 runs:
   using: "composite"
   steps:
@@ -98,7 +101,9 @@ runs:
         echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
         echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
-        echo "breaking-changes=${BREAKING_CHANGES}" >> $GITHUB_OUTPUT
+        echo "breaking-changes<<nEOFn" >> $GITHUB_OUTPUT
+        echo "${BREAKING_CHANGES}" >> $GITHUB_OUTPUT
+        echo "nEOFn" >> $GITHUB_OUTPUT
       fi
 
       FEATURE_CHANGES="$(filterfunc sparkles)"
@@ -106,7 +111,9 @@ runs:
         echo "## :sparkles: Features" >> ${RELEASE_DOC}
         echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
-        echo "features=${FEATURE_CHANGES}" >> $GITHUB_OUTPUT
+        echo "features<<nEOFn" >> $GITHUB_OUTPUT
+        echo "${FEATURE_CHANGES}" >> $GITHUB_OUTPUT
+        echo "nEOFn" >> $GITHUB_OUTPUT
       fi
 
       BUG_FIXES="$(filterfunc bug)"
@@ -114,7 +121,9 @@ runs:
         echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
         echo "${BUG_FIXES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
-        echo "bug-fixes=${BUG_FIXES}" >> $GITHUB_OUTPUT
+        echo "bug-fixes<<nEOFn" >> $GITHUB_OUTPUT
+        echo "${BUG_FIXES}" >> $GITHUB_OUTPUT
+        echo "nEOFn" >> $GITHUB_OUTPUT
       fi
 
       # TODO(djzager): More? could make this workflow accept as an argument whether or not
@@ -124,8 +133,9 @@ runs:
       NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
       if [ -n "${NEW_CONTRIB}" ]; then
         echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
-        # TODO(djzager): Figure out how to make this work
-        # echo "new-contributors=$(echo "${NEW_CONTRIB}" | head -n -3)" >> $GITHUB_OUTPUT
+        echo "new-contributors<<nEOFn" << $GITHUB_OUTPUT
+        echo "${NEW_CONTRIB}" | head -n -3 >> $GITHUB_OUTPUT
+        echo "nEOFn" >> $GITHUB_OUTPUT
       else
         echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
       fi

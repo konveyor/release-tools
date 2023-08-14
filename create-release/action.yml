@@ -81,7 +81,7 @@ runs:
         -f tag_name="${{ inputs.version }}" \$
         -f target_commitish="${{ inputs.ref }}" \
         -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
-      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:"; }
+      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/\s*:$1:\s*//"; }
 
       RELEASE_DOC="${PWD}/release.md"
       echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV

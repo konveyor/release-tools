@@ -21,16 +21,16 @@ inputs:
 outputs:
   breaking-changes:
     description: "Breaking changes introduced in this release"
-    value: ${{ steps.make-changelog.outputs.breaking-changes }}
+    value: ${{ steps.changelog.outputs.breaking-changes }}
   features:
     description: "Features introduced in this release"
-    value: ${{ steps.make-changelog.outputs.features }}
+    value: ${{ steps.changelog.outputs.features }}
   bug-fixes:
     description: "Bug fixes introduced in this release"
-    value: ${{ steps.make-changelog.outputs.bug-fixes }}
+    value: ${{ steps.changelog.outputs.bug-fixes }}
   new-contributors:
     description: "New contributors in this release"
-    value: ${{ steps.make-changelog.outputs.new-contributors }}
+    value: ${{ steps.changelog.outputs.new-contributors }}
 runs:
   using: "composite"
   steps:
@@ -69,8 +69,7 @@ runs:
       path: ${{ inputs.repository }}
       token: ${{ inputs.github_token }}
 
-  - id: make-changelog
-    name: Make changelog
+  - name: Make changelog
     working-directory: ./${{ inputs.repository }}
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}

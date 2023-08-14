@@ -72,13 +72,16 @@ runs:
       SHA=$(git rev-parse HEAD)
       echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
-      # Always compare to latest published full release for repository
-      PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
-      filterfunc() { git log --pretty=format:%s ${PREV_TAG}..HEAD | grep "^\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
-      # Handle scenario where no previous tag exists
-      if [ -z "${PREV_TAG}" ]; then
-        filterfunc() { git log --pretty=format:%s | grep "^\s*:$1:" | sed "s/^\s*:$1:\s*/ * /"; }
-      fi
+      # Let GitHub format the commits
+      NOTES=$(gh api \
+        --method POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        repos/${{ inputs.repository }}/releases/generate-notes \
+        -f tag_name="${{ inputs.version }}" \$
+        -f target_commitish="${{ inputs.ref }}" \
+        -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
+      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:"; }
 
       RELEASE_DOC="${PWD}/release.md"
       echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
@@ -104,18 +107,16 @@ runs:
         echo "" >> ${RELEASE_DOC}
       fi
 
-      # Add contributors as GitHub would have added them
-      gh api \
-        --method POST \
-        -H "Accept: application/vnd.github+json" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        repos/${{ inputs.repository }}/releases/generate-notes \
-        -f tag_name="${{ inputs.version }}" \
-        -f target_commitish="${{ inputs.ref }}" \
-        -f previous_tag_name="${PREV_TAG}" | jq -r '.body' | grep -Pzo '.*Contributors(.*\n)*' >> ${RELEASE_DOC}
-
       # TODO(djzager): More? could make this workflow accept as an argument whether or not
       # to include other types (ie. seedling, docs)
+
+      # Add contributors as GitHub would have added them
+      NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
+      if [ -n "${NEW_CONTRIB}" ]; then
+        echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
+      else
+        echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
+      fi
     id: changelog
 
   - uses: ncipollo/release-action@main

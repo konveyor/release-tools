@@ -18,6 +18,19 @@ inputs:
     required: false
     default: ${{ github.ref }}
     type: string
+outputs:
+  breaking-changes:
+    description: "Breaking changes introduced in this release"
+    value: ${{ steps.make-changelog.outputs.breaking-changes }}
+  features:
+    description: "Features introduced in this release"
+    value: ${{ steps.make-changelog.outputs.features }}
+  bug-fixes:
+    description: "Bug fixes introduced in this release"
+    value: ${{ steps.make-changelog.outputs.bug-fixes }}
+  new-contributors:
+    description: "New contributors in this release"
+    value: ${{ steps.make-changelog.outputs.new-contributors }}
 runs:
   using: "composite"
   steps:
@@ -56,7 +69,8 @@ runs:
       path: ${{ inputs.repository }}
       token: ${{ inputs.github_token }}
 
-  - name: Make changelog
+  - id: make-changelog
+    name: Make changelog
     working-directory: ./${{ inputs.repository }}
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}
@@ -91,6 +105,7 @@ runs:
         echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
         echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
+        echo "breaking-changes=${BREAKING_CHANGES}" >> $GITHUB_OUTPUT
       fi
 
       FEATURE_CHANGES="$(filterfunc sparkles)"
@@ -98,6 +113,7 @@ runs:
         echo "## :sparkles: Features" >> ${RELEASE_DOC}
         echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
+        echo "features=${FEATURE_CHANGES}" >> $GITHUB_OUTPUT
       fi
 
       BUG_FIXES="$(filterfunc bug)"
@@ -105,6 +121,7 @@ runs:
         echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
         echo "${BUG_FIXES}" >> ${RELEASE_DOC}
         echo "" >> ${RELEASE_DOC}
+        echo "bug-fixes=${BUG_FIXES}" >> $GITHUB_OUTPUT
       fi
 
       # TODO(djzager): More? could make this workflow accept as an argument whether or not
@@ -114,6 +131,7 @@ runs:
       NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
       if [ -n "${NEW_CONTRIB}" ]; then
         echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
+        echo "new-contributors=$(echo \"${NOTES}\" | head -n -3)" >> $GITHUB_OUTPUT
       else
         echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
       fi

@@ -91,7 +91,7 @@ runs:
         -f tag_name="${{ inputs.version }}" \
         -f target_commitish="${{ inputs.ref }}" \
         -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
-      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/\s*:$1:\s*//"; }
+      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /"; }
 
       RELEASE_DOC="${PWD}/release.md"
       echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
@@ -127,7 +127,7 @@ runs:
       NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
       if [ -n "${NEW_CONTRIB}" ]; then
         echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
-        echo "new-contributors=$(echo \"${NOTES}\" | head -n -3)" >> $GITHUB_OUTPUT
+        echo "new-contributors=$(echo "${NEW_CONTRIB}" | head -n -3)" >> $GITHUB_OUTPUT
       else
         echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
       fi

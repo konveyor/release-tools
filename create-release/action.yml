@@ -25,9 +25,6 @@ outputs:
   bug-fixes:
     description: "Bug fixes introduced in this release"
     value: ${{ steps.changelog.outputs.bug-fixes }}
-  new-contributors:
-    description: "New contributors in this release"
-    value: ${{ steps.changelog.outputs.new-contributors }}
 runs:
   using: "composite"
   steps:
@@ -127,7 +124,8 @@ runs:
       NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
       if [ -n "${NEW_CONTRIB}" ]; then
         echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
-        echo "new-contributors=$(echo "${NEW_CONTRIB}" | head -n -3)" >> $GITHUB_OUTPUT
+        # TODO(djzager): Figure out how to make this work
+        # echo "new-contributors=$(echo "${NEW_CONTRIB}" | head -n -3)" >> $GITHUB_OUTPUT
       else
         echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
       fi

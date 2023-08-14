@@ -7,17 +7,14 @@ inputs:
   version:
     description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
     required: true
-    type: string
   repository:
     description: 'The repository where the release should be created'
     required: false
     default: ${{ github.repository }}
-    type: string
   ref:
     description: 'The branch or SHA for the release (defaults to main)'
     required: false
     default: ${{ github.ref }}
-    type: string
 outputs:
   breaking-changes:
     description: "Breaking changes introduced in this release"
@@ -91,7 +88,7 @@ runs:
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         repos/${{ inputs.repository }}/releases/generate-notes \
-        -f tag_name="${{ inputs.version }}" \$
+        -f tag_name="${{ inputs.version }}" \
         -f target_commitish="${{ inputs.ref }}" \
         -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
       filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/\s*:$1:\s*//"; }

@@ -133,7 +133,7 @@ runs:
       NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
       if [ -n "${NEW_CONTRIB}" ]; then
         echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
-        echo "new-contributors<<nEOFn" << $GITHUB_OUTPUT
+        echo "new-contributors<<nEOFn" >> $GITHUB_OUTPUT
         echo "${NEW_CONTRIB}" | head -n -3 >> $GITHUB_OUTPUT
         echo "nEOFn" >> $GITHUB_OUTPUT
       else

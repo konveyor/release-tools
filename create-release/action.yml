@@ -5,8 +5,12 @@ inputs:
     description: 'GitHub token'
     required: true
   version:
-    description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.1)'
+    description: 'Semantic version of the release (eg. v1.2.3 or v1.2.3-alpha.2)'
     required: true
+  prev_version:
+    description: 'Semantic version of the previous release (eg. v1.2.2 or v1.2.3-alpha.1)'
+    required: false
+    default: ''
   repository:
     description: 'The repository where the release should be created'
     required: false
@@ -83,7 +87,11 @@ runs:
       echo "sha=${SHA}" >> $GITHUB_OUTPUT
 
       # Let GitHub format the commits
-      PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
+      if [ -n "${{ inputs.prev_version }}" ] && git rev-list ${{ inputs.prev_version }} 2> /dev/null; then
+        PREV_TAG="${{ inputs.prev_version }}"
+      else
+        PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
+      fi
       NOTES=$(gh api \
         --method POST \
         -H "Accept: application/vnd.github+json" \

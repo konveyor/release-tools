@@ -79,7 +79,7 @@ runs:
       with:
         image: ${{ inputs.image_name }}
         tags: ${{ env.branch }}
-        extra-args: "--rm ${{ inputs.extra-args }}"
+        extra-args: "--no-cache --rm ${{ inputs.extra-args }}"
         archs: ${{ inputs.architectures }}
         containerfiles: |
           ${{ inputs.containerfile }}

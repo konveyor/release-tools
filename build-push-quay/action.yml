@@ -34,6 +34,17 @@ inputs:
 runs:
     using: "composite"
     steps:
+    - name: Maximize disk space
+      shell: bash
+      run: |
+        echo "Space before clearing:"
+        df . -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        echo "Space after clearing:"
+        df . -h
     - name: Checkout Push to Registry action
       uses: actions/checkout@main
 
@@ -68,7 +79,7 @@ runs:
       with:
         image: ${{ inputs.image_name }}
         tags: ${{ env.branch }}
-        extra-args: ${{ inputs.extra-args }}
+        extra-args: "--rm ${{ inputs.extra-args }}"
         archs: ${{ inputs.architectures }}
         containerfiles: |
           ${{ inputs.containerfile }}

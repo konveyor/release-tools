@@ -1,0 +1,25 @@
+name: Manage Labels
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-labels:
+    name: Synchronize Labels
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repos:
+          - org: konveyor
+            repo: release-tools
+      fail-fast: true
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Sync Labels
+      uses: ./cmd/labels
+      with:
+        github_token: ${{ secrets.GH_TOKEN }}
+        organization: ${{ matrix.repos.org }}
+        repository: ${{ matrix.repos.repo }}
+

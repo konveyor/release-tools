@@ -88,15 +88,6 @@ func (label *Label) Print() {
 	fmt.Println("------------------------")
 }
 
-// PrintLabels prints all the labels in the Configuration to stdout
-// right now it only checks if there is more than one previous tag.
-func (c *Configuration) PrintLabels() {
-	fmt.Println("Labels in Configuration:")
-	for _, label := range c.Default.Labels {
-		label.Print()
-	}
-}
-
 func GetClient() *github.Client {
 	baseURL, err := url.Parse("https://api.github.com")
 	if err != nil {
@@ -152,24 +143,45 @@ func main() {
 		action.ErrorCommand("Failed to unmarshal config")
 		log.Fatal(err)
 	}
-	c.PrintLabels()
+	action.NoticeCommand("Labels in Configuration:")
+	for _, label := range c.Default.Labels {
+		label.Print()
+	}
+	fmt.Println("#######################################")
+	fmt.Println()
 
 	// Instantiate the client and get the current labels on the repo
 	client := GetClient()
-	currentLabels, _, err := client.Issues.ListLabels(context.Background(), org, repo, nil)
+	opt := &github.ListOptions{
+		PerPage: 100,
+	}
+	var currentLabels []*github.Label
+	for {
+		labels, resp, err := client.Issues.ListLabels(context.Background(), org, repo, opt)
+		if err != nil {
+			action.ErrorCommand("Failed to get repo labels")
+			log.Fatal(err)
+		}
+		currentLabels = append(currentLabels, labels...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
 	currentLabelsMap := make(map[string]*github.Label)
-	fmt.Println("Labels in the repository:")
+	action.NoticeCommand("Labels in the repository:")
 	for _, label := range currentLabels {
-		fmt.Printf("Name: %s\n", label.GetName())
-		fmt.Printf("Color: %s\n", label.GetColor())
-		fmt.Printf("Description: %s\n", label.GetDescription())
-		fmt.Println("------------------------")
+		fmt.Printf("Name: %40s\tColor: %10s\tDescription: %30s\n", label.GetName(), label.GetColor(), label.GetDescription())
 		currentLabelsMap[label.GetName()] = label
 	}
+	fmt.Println("#######################################")
+	fmt.Println()
 
 	// Compare labels and:
 	// 1 - create ones that do not exist
 	// 2 - modify ones that do but have the wrong color || description
+	action.NoticeCommand("Synchronizing labels")
 	for _, label := range c.Default.Labels {
 		existingLabel, exists := currentLabelsMap[label.Name]
 		if !exists {
@@ -185,7 +197,7 @@ func main() {
 				log.Fatal(err)
 			}
 			action.NoticeCommand("Label " + label.Name + " created")
-			continue
+			os.Exit(0)
 		}
 
 		if strings.ToLower(existingLabel.GetColor()) != strings.ToLower(label.Color) ||

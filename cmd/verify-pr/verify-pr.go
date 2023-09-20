@@ -6,9 +6,7 @@ import (
 	"log"
 	"os"
 
-	// "log"
-
-	"github.com/google/go-github/v49/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/konveyor/release-tools/pkg/action"
 	"github.com/konveyor/release-tools/pkg/pr"
 )

@@ -67,29 +67,33 @@ type RepoConfig struct {
 	Labels []Label `json:"labels"`
 }
 
+func (label *Label) Print() {
+	fmt.Printf("Name: %s\n", label.Name)
+	fmt.Printf("Color: %s\n", label.Color)
+	fmt.Printf("Description: %s\n", label.Description)
+	// fmt.Printf("Target: %s\n", label.Target)
+	// fmt.Printf("ProwPlugin: %s\n", label.ProwPlugin)
+	// fmt.Printf("IsExternalPlugin: %v\n", label.IsExternalPlugin)
+	// fmt.Printf("AddedBy: %s\n", label.AddedBy)
+	// if len(label.Previously) > 0 {
+	// 	fmt.Println("Previously:")
+	// 	for _, prevLabel := range label.Previously {
+	// 		fmt.Printf("  Name: %s\n", prevLabel.Name)
+	// 		// Add other fields as needed
+	// 	}
+	// }
+	// if label.DeleteAfter != nil {
+	// 	fmt.Printf("DeleteAfter: %s\n", label.DeleteAfter.Format(time.RFC3339))
+	// }
+	fmt.Println("------------------------")
+}
+
 // PrintLabels prints all the labels in the Configuration to stdout
 // right now it only checks if there is more than one previous tag.
 func (c *Configuration) PrintLabels() {
 	fmt.Println("Labels in Configuration:")
 	for _, label := range c.Default.Labels {
-		fmt.Printf("Name: %s\n", label.Name)
-		fmt.Printf("Color: %s\n", label.Color)
-		fmt.Printf("Description: %s\n", label.Description)
-		// fmt.Printf("Target: %s\n", label.Target)
-		// fmt.Printf("ProwPlugin: %s\n", label.ProwPlugin)
-		// fmt.Printf("IsExternalPlugin: %v\n", label.IsExternalPlugin)
-		// fmt.Printf("AddedBy: %s\n", label.AddedBy)
-		// if len(label.Previously) > 0 {
-		// 	fmt.Println("Previously:")
-		// 	for _, prevLabel := range label.Previously {
-		// 		fmt.Printf("  Name: %s\n", prevLabel.Name)
-		// 		// Add other fields as needed
-		// 	}
-		// }
-		// if label.DeleteAfter != nil {
-		// 	fmt.Printf("DeleteAfter: %s\n", label.DeleteAfter.Format(time.RFC3339))
-		// }
-		fmt.Println("------------------------")
+		label.Print()
 	}
 }
 
@@ -170,6 +174,7 @@ func main() {
 		existingLabel, exists := currentLabelsMap[label.Name]
 		if !exists {
 			action.NoticeCommand("Creating missing label")
+			label.Print()
 			_, _, err := client.Issues.CreateLabel(context.Background(), org, repo, &github.Label{
 				Name:        github.String(label.Name),
 				Color:       github.String(label.Color),
@@ -179,6 +184,7 @@ func main() {
 				action.ErrorCommand("Error creating label")
 				log.Fatal(err)
 			}
+			action.NoticeCommand("Label " + label.Name + " created")
 			continue
 		}
 

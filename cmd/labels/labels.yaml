@@ -11,12 +11,9 @@ default:
     - color: ededed
       description: Indicates an issue or PR lacks a `triage/foo` label and requires one.
       name: needs-triage
-     - color: 8fc951
+    - color: 8fc951
       description: Indicates an issue or PR is ready to be actively worked on.
       name: triage/accepted
-      target: both
-      prowPlugin: label
-      addedBy: org members
     - color: d455d0
       description: Indicates an issue is a duplicate of other open issue.
       name: triage/duplicate

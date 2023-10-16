@@ -21,7 +21,7 @@ runs:
   - name: See environment
     run: env
     shell: bash
-  - name: Run verify
+  - name: Run action
     env:
       GITHUB_TOKEN: ${{ inputs.github_token }}
     run: |

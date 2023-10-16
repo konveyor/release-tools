@@ -8,14 +8,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
 	"github.com/google/go-github/v55/github"
 	"github.com/konveyor/release-tools/pkg/action"
-	"golang.org/x/oauth2"
 	"sigs.k8s.io/yaml"
 )
 
@@ -88,33 +85,6 @@ func (label *Label) Print() {
 	fmt.Println("------------------------")
 }
 
-func GetClient() *github.Client {
-	baseURL, err := url.Parse("https://api.github.com")
-	if err != nil {
-		action.ErrorCommand("Bad endpoint")
-		os.Exit(1)
-	}
-	if !strings.HasSuffix(baseURL.Path, "/") {
-		baseURL.Path += "/"
-	}
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		action.ErrorCommand("GITHUB_TOKEN environment variable not specified")
-		os.Exit(1)
-	}
-
-	httpClient := &http.Client{
-		Transport: &oauth2.Transport{
-			Base:   http.DefaultTransport,
-			Source: oauth2.ReuseTokenSource(nil, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})),
-		},
-	}
-	client := github.NewClient(httpClient)
-	client.BaseURL = baseURL
-
-	return client
-}
-
 func main() {
 	orgPtr := flag.String("org", "", "The organization for the repo")
 	repoPtr := flag.String("repo", "", "The repository")
@@ -151,7 +121,7 @@ func main() {
 	fmt.Println()
 
 	// Instantiate the client and get the current labels on the repo
-	client := GetClient()
+	client := action.GetClient()
 	opt := &github.ListOptions{
 		PerPage: 100,
 	}

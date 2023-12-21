@@ -1,0 +1,57 @@
+name: Cherry Pick
+
+on:
+  workflow_call:
+
+jobs:
+  branches:
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.cherry_pick_branches.outputs.result }}
+    steps:
+      - name: Check for cherry-pick labels
+
+        id: cherry_pick_branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issue } = await github.rest.issues.get({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const labels = issue.labels.map(label => label.name);
+            console.log(`Labels: ${labels}`);
+
+            const branches = labels.filter(label => label.startsWith('cherry-pick/'))
+              .map(label => label.substr(12));
+            console.log(`Branches: ${branches}`);
+
+            return branches
+
+  cherry-pick:
+    runs-on: ubuntu-latest
+    needs: branches
+    if: ${{ needs.branches.outputs.branches != '[]' && needs.branches.outputs.branches != '' }}
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.branches.outputs.branches) }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+
+      - name: Cherry-pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_NAME="cherry-pick-pr${{ github.event.number }}-${{ matrix.branch }}"
+          git config --global user.email "noreply@github.com"
+          git config --global user.name "Cherry Picker"
+          git checkout -b ${BRANCH_NAME}
+          git cherry-pick ${{ github.sha }}
+          git push origin ${BRANCH_NAME}
+          gh pr create --base ${{ matrix.branch }} --fill

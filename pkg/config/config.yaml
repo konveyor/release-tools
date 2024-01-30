@@ -1,0 +1,135 @@
+# This configuration is specifically for managing the repos listed below and their:
+#  - labels
+#  - milestones
+#  - ...
+
+# Repos
+# List of repositories we are managing. We may, in the future, worry about
+# repositories in konveyor-ecosystem.
+#
+# repos:
+#   - org: the organization of the repo
+#     repo: the repo
+repos:
+  - org: konveyor
+    repo: enhancements
+  - org: konveyor
+    repo: release-tools
+  - org: konveyor
+    repo: operator
+  - org: konveyor
+    repo: java-analyzer-bundle
+  - org: konveyor
+    repo: analyzer-lsp
+  - org: konveyor
+    repo: windup-shim
+  - org: konveyor
+    repo: tackle2-addon-analyzer
+  - org: konveyor
+    repo: tackle2-hub
+  - org: konveyor
+    repo: tackle2-seed
+  - org: konveyor
+    repo: tackle2-ui
+  - org: konveyor
+    repo: tackle2-addon
+  - org: konveyor
+    repo: static-report
+  - org: konveyor
+    repo: kantra
+
+# Labels
+# List of labels, their color and description, that should exist in the specified repositories.
+#
+# labels:
+# - color: the color of the label
+#   description: what does it mean?
+#   name: the name of the label
+labels:
+  # Triage
+  - color: ededed
+    description: Indicates an issue or PR lacks a `triage/foo` label and requires one.
+    name: needs-triage
+  - color: 8fc951
+    description: Indicates an issue or PR is ready to be actively worked on.
+    name: triage/accepted
+  - color: d455d0
+    description: Indicates an issue is a duplicate of other open issue.
+    name: triage/duplicate
+  - color: d455d0
+    description: Indicates an issue needs more information in order to work on it.
+    name: triage/needs-information
+  - color: d455d0
+    description: Indicates an issue can not be reproduced as described.
+    name: triage/not-reproducible
+  - color: d455d0
+    description: Indicates an issue that is a support question.
+    name: triage/support
+  # Kind
+  - color: e11d21
+    description: Categorizes issue or PR as related to a bug.
+    name: kind/bug
+  - color: c7def8
+    description: Categorizes issue or PR as related to documentation.
+    name: kind/documentation
+  - color: c7def8
+    description: Categorizes issue or PR as related to a new feature.
+    name: kind/feature
+  # Priority
+  - color: fef2c0
+    description: Lowest priority. Possibly useful, but not yet enough support to actually get it done. # These are mostly place-holders for potentially good ideas, so that they don't get completely forgotten, and can be referenced /deduped every time they come up.
+    name: priority/awaiting-more-evidence
+  - color: fbca04
+    description: Higher priority than priority/awaiting-more-evidence. # There appears to be general agreement that this would be good to have, but we may not have anyone available to work on it right now or in the immediate future. Community contributions would be most welcome in the mean time (although it might take a while to get them reviewed if reviewers are fully occupied with higher priority issues, for example immediately before a release).
+    name: priority/backlog
+  - color: eb6420
+    description: Important over the long term, but may not be staffed and/or may need multiple releases to complete.
+    name: priority/important-longterm
+  - color: eb6420
+    description: Must be staffed and worked on either currently, or very soon, ideally in time for the next release.
+    name: priority/important-soon
+  - color: e11d21
+    description: Must be staffed and worked in time for the next release.
+    name: priority/release-blocker
+  - color: e11d21
+    description: Highest priority. Must be actively worked on as someone's top priority right now. # Stuff is burning. If it's not being actively worked on, someone is expected to drop what they're doing immediately to work on it. Team leaders are responsible for making sure that all the issues, labeled with this priority, in their area are being actively worked on. Examples include user-visible bugs in core features, broken builds or tests and critical security issues.
+    name: priority/critical-urgent
+  # Etcetera
+  - color: 15dd18
+    description: Indicates that a PR is ready to be merged.
+    name: lgtm
+  # CherryPick
+  - color: fef2c0
+    description: This PR should be cherry-picked to release-0.3 branch.
+    name: cherry-pick/release-0.3
+
+
+# Milestones
+# List of milestones, and their state, that should exist in the specified repositories.
+#
+# milestones:
+#   - title: the title for the milestone
+#     description: the description
+#     state: open/closed
+#     due: 
+#
+milestones:
+  - title: 0.3-beta.2
+    description: The second beta for v0.3.0 release cycle
+    state: closed
+    due: 2023-11-02
+  - title: v0.3.0
+    description: The v0.3.0 release of Konveyor
+    state: closed
+    due: 2024-01-24
+    replaces: 0.3-beta.2
+  - title: v0.3.1
+    description: The v0.3.1 release of Konveyor
+    state: open
+  - title: v0.4.0
+    description: The v0.4.0 release of Konveyor
+    state: open
+    due: 2024-04-30
+  - title: Next
+    description: Bucket for work we want to accomplish in the next release
+    state: open

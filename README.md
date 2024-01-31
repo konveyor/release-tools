@@ -1,11 +1,21 @@
 Release Tools
 =============
 
-This project contains tooling for creating and managing releases for the Konveyor organization.
+This project contains, or should contain, all of the configuration and
+automation to maintain, build, and release Konveyor.
+
+Check out the [config.yaml](./pkg/config/config.yaml) to see:
+
+1. The repositories we are managing
+1. The Labels we are configuring in repositories
+1. The milestones we are configuring in repositories
+
+This allows us to have a single source of truth to make sure that, as we create
+enhancments, issues, and pull requests, they can be tracked properly.
+
+You can find our reusable GitHub Workflows in [./.github/workflows](./.github/workflows).
 
 ## Available Workflows
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_shield)
-
 
 ### Prepare repository for release
 
@@ -39,6 +49,5 @@ for more information on how to get started.
 
 Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community/blob/main/CODE_OF_CONDUCT.md).
 
-
 ## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_large)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_shield)

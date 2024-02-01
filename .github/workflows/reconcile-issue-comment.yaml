@@ -1,0 +1,116 @@
+name: Reusable Reconcile Issue Comment
+
+on:
+  workflow_call:
+
+jobs:
+  event_type:
+    name: Check event type
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'issue_comment' &&
+      (
+        github.event.action == 'created' ||
+        github.event.action == 'edited'
+      )
+    steps:
+      - name: ok
+        run: /bin/true
+
+  addLabels:
+    needs: event_type
+    name: Add Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: ok
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commentRegex = /(<!--.*?-->)|(<!--[\S\s]+?-->)|(<!--[\S\s]*?$)/g;
+            const labelRegex = /^(\/(area|kind|priority|sig|triage|wg))\s*(.*?)\s*$/gm;
+            const removeLabelRegex = /^\/remove-(area|committee|kind|language|priority|sig|triage|wg)\s*(.*?)\s*$/gm;
+            const labelsToAdd = [];
+            const labelsToRemove = [];
+            let match;
+
+            const { data: comment } = await github.rest.issues.getComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+            });
+
+            const bodyWithoutComments = comment.body.replaceAll(commentRegex, '');
+            while ((match = labelRegex.exec(bodyWithoutComments)) !== null) {
+              const keyword = match[2];
+              const text = match[3];
+
+              const labelToAdd = `${keyword}/${text}`;
+              const labelExists = await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelToAdd,
+              }).catch(() => false);
+              if (labelExists) {
+                labelsToAdd.push(labelToAdd);
+              } else {
+                console.log(`label ${labelToAdd} does not exist on this repo`);
+              }
+            }
+            console.log(labelsToAdd);
+
+            while ((match = removeLabelRegex.exec(bodyWithoutComments)) !== null) {
+              const keyword = match[1];
+              const text = match[2];
+
+              const labelToRemove = `${keyword}/${text}`;
+              labelsToRemove.push(labelToRemove);
+            }
+            console.log(labelsToRemove);
+            if (labelsToAdd.length == 0 && labelsToRemove.length == 0) {
+              console.log("Nothing to do!");
+              return;
+            }
+
+            // If we make it this far, we should verify the commenter is at
+            // least a collaborator.
+            // TODO(djzager): Is this enough?
+            const commenterLogin = comment.user.login;
+            try {
+              await github.rest.repos.checkCollaborator({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: commenterLogin,
+              });
+              console.log(`Commenter ${commenterLogin} is a collaborator.`);
+            } catch (error) {
+              console.log(`Commenter ${commenterLogin} is not a collaborator.`);
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: "Only collaborators can add/remove labels",
+                });
+                return;
+            }
+
+            // Add the labels
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: labelsToAdd
+              });
+            }
+
+            // Remove the labels
+            if (labelsToRemove.length > 0) {
+              for (const labelToRemove of labelsToRemove) {
+                await github.rest.issues.removeLabel({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: labelToRemove
+                });
+              }
+            }

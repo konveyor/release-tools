@@ -1,0 +1,156 @@
+name: Reusable Reconcile Issue
+
+on:
+  workflow_call:
+
+jobs:
+  event_type:
+    name: Check event type
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' || github.event_name == 'pull_request'
+    steps:
+      - name: ok
+        run: /bin/true
+
+  labels:
+    needs: event_type
+    name: Check labels
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    steps:
+      - name: triage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // begin helper function for adding comments
+            async function ensureComment(body, shouldExist) {
+              // Try  to find the comment
+              for await (const { data: comments } of github.paginate.iterator(
+                github.rest.issues.listComments,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                }
+              )) {
+                const comment = comments.find(
+                  (comment) =>
+                    comment.user &&
+                    comment.user.login == "github-actions[bot]" &&
+                    comment.body &&
+                    comment.body.includes(body)
+                );
+
+                // If we find the comment...we are done
+                if (comment) {
+                  if (!shouldExist) {
+                    await github.rest.issues.deleteComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      comment_id: comment.id,
+                    });
+                  }
+                  return;
+                }
+              }
+
+              // Create the comment if it doesn't exist
+              if (shouldExist) {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: body,
+                });
+              }
+            }
+            // end helper function for adding comments
+
+            const { data: issue } = await github.rest.issues.get({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const labels = issue.labels.map(label => label.name);
+            console.log(`Labels: ${labels}`);
+
+            // triage label
+            if (labels.some(label => label.match('^triage/accepted$'))) {
+              if (labels.includes('needs-triage')) {
+                await github.rest.issues.removeLabel({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'needs-triage'
+                });
+              }
+            } else {
+              let comment = "This issue is currently awaiting triage.\n";
+              comment += "If contributors determine this is a relevant issue, they will accept it by applying the `triage/accepted` label and provide further guidance.\n";
+              comment += "The `triage/accepted` label can be added by org members.";
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['needs-triage']
+              });
+              await ensureComment(comment, true);
+            }
+
+            // kind label
+            if (labels.some(label => label.match('^kind/'))) {
+              if (labels.includes('needs-kind')) {
+                await github.rest.issues.removeLabel({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'needs-kind'
+                });
+              }
+            } else {
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['needs-kind']
+              });
+            }
+
+            // priority label
+            if (labels.some(label => label.match('^priority/'))) {
+              if (labels.includes('needs-priority')) {
+                await github.rest.issues.removeLabel({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'needs-priority'
+                });
+              }
+            } else {
+              await github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['needs-priority']
+              });
+            }
+
+            // good first issue
+            let firstIssueComment = "This issue has been marked 'good first issue'\n";
+            firstIssueComment += "Please, make sure it aligns with the criteria found [here](https://contribute.cncf.io/maintainers/templates/issue-labels/#good-first-issue)\n";
+            if (labels.some(label => label.match('^good first issue$'))) {
+              await ensureComment(firstIssueComment, true);
+            } else {
+              await ensureComment(firstIssueComment, false);
+            }
+
+  project:
+    needs: event_type
+    name: Add new issues to planning project
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/konveyor/projects/67

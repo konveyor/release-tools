@@ -27,9 +27,8 @@ jobs:
 
       - name: Handle labels
         uses: actions/github-script@v7
-        env:
-          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
           script: |
             // begin helper function for adding comments
             async function ensureComment(body, shouldExist) {

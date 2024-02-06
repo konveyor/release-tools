@@ -91,6 +91,7 @@ jobs:
               });
               console.log(`Commenter ${commenterLogin} is a collaborator.`);
             } catch (error) {
+              console.log(error);
               console.log(`Commenter ${commenterLogin} is not a collaborator.`);
                 await github.rest.issues.createComment({
                   issue_number: context.issue.number,

@@ -22,9 +22,17 @@ jobs:
     name: Add Labels
     runs-on: ubuntu-latest
     steps:
-      - name: ok
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+
+      - name: Handle commands
         uses: actions/github-script@v7
         with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
           script: |
             const commentRegex = /(<!--.*?-->)|(<!--[\S\s]+?-->)|(<!--[\S\s]*?$)/g;
             const labelRegex = /^(\/(area|kind|priority|sig|triage|wg))\s*(.*?)\s*$/gm;

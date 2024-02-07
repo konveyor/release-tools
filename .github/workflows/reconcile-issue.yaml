@@ -44,7 +44,7 @@ jobs:
                 const comment = comments.find(
                   (comment) =>
                     comment.user &&
-                    comment.user.login == "github-actions[bot]" &&
+                    comment.user.login == "konveyor-ci-bot[bot]" &&
                     comment.body &&
                     comment.body.includes(body)
                 );

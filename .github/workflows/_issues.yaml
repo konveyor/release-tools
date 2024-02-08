@@ -1,4 +1,4 @@
-name: Reconcile GitHub Issue
+name: Reconcile GitHub Issue (Comment)
 
 on:
   issues:
@@ -9,17 +9,24 @@ on:
       - reopened
       - labeled
       - unlabeled
+  issue_comment:
+    types:
+      - created
+      - edited
 
-# This prevents potential race conditions by only allowing this action to handle
-# one update at a time for a given issue.
 concurrency:
-  group: reconcile-issue-${{ github.event.issue.number }}
+  group: reconcile-issue-${{ github.event.issue.number }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   reconcile-issue:
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+    if: github.event_name == 'issues' || github.event_name == 'pull_request'
+    secrets: inherit
     uses: ./.github/workflows/reconcile-issue.yaml
+    uses: konveyor/release-tools/.github/workflows/reconcile-issue.yaml@main
+
+  reconcile-issue-comment:
+    if: github.event_name == 'issue_comment'
+    secrets: inherit
+    uses: ./.github/workflows/reconcile-issue-comment.yaml
+    uses: konveyor/release-tools/.github/workflows/reconcile-issue-comment.yaml@main

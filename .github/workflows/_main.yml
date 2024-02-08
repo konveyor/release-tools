@@ -7,6 +7,16 @@ on:
       - '**.md'
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
+      - run: |
+          GOPATH="$(go env GOPATH)"
+          export PATH="${PATH}:${GOPATH}/bin"
+          actionlint
   tests:
     runs-on: ubuntu-latest
     steps:

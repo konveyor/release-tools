@@ -19,7 +19,7 @@ You can find our reusable GitHub Workflows in [./.github/workflows](./.github/wo
 
 ### Prepare repository for release
 
-See [workflow file here](./github/workflows/prep-release.yaml)
+See [workflow file here](./.github/workflows/prep-release.yaml)
 
 This workflow should be called when a new release branch is created. When invoked, it does the following:
 

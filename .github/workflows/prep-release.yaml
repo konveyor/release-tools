@@ -2,7 +2,7 @@
 # - updates specified base images used in the Dockerfile to use the right tags
 # - updates specified go dependencies in go.mod file to point to right branches
 # - commits the results back to the originating branch
-name: Prepare repository for release
+name: Reusable Prepare repository for release
 on:
   workflow_call:
     inputs:
@@ -33,10 +33,10 @@ jobs:
       id: extract-info
       run: |
         if [[ "${BRANCH_REF}" =~ ^refs/heads/release-[0-9]+.[0-9]+$ ]]; then
-          BRANCH=$(echo "$BRANCH_REF" | sed "s,refs/heads/,,")
-          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          BRANCH="${BRANCH_REF##refs/heads/}"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
         else
-          echo "branch=NOOP" >> $GITHUB_OUTPUT
+          echo "branch=NOOP" >> "$GITHUB_OUTPUT"
         fi 
       env:
         BRANCH_REF: ${{ inputs.branch_ref }}
@@ -48,8 +48,8 @@ jobs:
     - name: Update tags of base images in Dockerfile
       if: steps.extract-info.outputs.branch != 'NOOP'
       run: |
-        for REPLACE_IMAGE in $(echo "$REPLACE_IMAGES" | jq -r '.[]'); do
-          sed -i "s,${REPLACE_IMAGE}.*$,${REPLACE_IMAGE}:${TAG}," ${DOCKERFILE}
+        for IMAGE in $(echo "$REPLACE_IMAGES" | jq -r '.[]'); do
+          sed -i "s,${IMAGE}.*$,${IMAGE}:${TAG}," "${DOCKERFILE}"
         done
       env:
         REPLACE_IMAGES: ${{ inputs.images_to_update }}
@@ -59,8 +59,8 @@ jobs:
     - name: Update dependency versions in go mod file
       if: steps.extract-info.outputs.branch != 'NOOP'
       run: |
-        for REPLACE_DEP in $(echo "$REPLACE_DEPS" | jq -r '.[]'); do
-          go get ${REPLACE_DEP}@${BRANCH}
+        for DEP in $(echo "$REPLACE_DEPS" | jq -r '.[]'); do
+          go get "${DEP}@${BRANCH}"
         done
         go mod tidy
       env:

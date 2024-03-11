@@ -12,6 +12,8 @@
 #     repo: the repo
 repos:
   - org: konveyor
+    repo: konveyor.github.io
+  - org: konveyor
     repo: enhancements
   - org: konveyor
     repo: release-tools

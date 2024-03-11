@@ -13,4 +13,5 @@ jobs:
       pull-requests: write
       contents: write
     if: github.event.pull_request.merged == true
+    secrets: inherit
     uses: ./.github/workflows/cherry-pick.yml

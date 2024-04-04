@@ -34,6 +34,11 @@ on:
         default: "."
         required: false
         type: string
+      swap-size-gb:
+        description: 'Swap space to create, in Gigabytes.'
+        default: ""
+        required: false
+        type: string
     secrets:
       registry_username:
         description: "Quay publish robot"
@@ -52,6 +57,28 @@ jobs:
       matrix:
         architecture: ${{ fromJSON(inputs.architectures) }}
     steps:
+      - name: Get more swap space
+        shell: bash
+        if: "${{ inputs.swap-size-gb != '' }}"
+        run: |
+          echo "Before swap"
+          free -h
+          swapon --show
+
+          # Make swap
+          SWAP_FILE="$(swapon --show=NAME | tail -n 1)"
+          export SWAP_FILE
+          sudo swapoff "${SWAP_FILE}"
+          sudo rm "${SWAP_FILE}"
+          sudo fallocate -l "${{ inputs.swap-size-gb }}"G "${SWAP_FILE}"
+          sudo chmod 600 "${SWAP_FILE}"
+          sudo mkswap "${SWAP_FILE}"
+          sudo swapon "${SWAP_FILE}"
+
+          echo "After swap"
+          free -h
+          swapon --show
+
       - name: Maximize disk space
         shell: bash
         run: |

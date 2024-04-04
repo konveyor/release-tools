@@ -26,7 +26,12 @@ on:
         required: false
       extra-args:
         description: "Extra args to be passed to buildah bud. Separate arguments by newline. Do not use quotes."
-        default: ''
+        default: "" 
+        required: false
+        type: string
+      context:
+        description: "Path to directory to use as the build context."
+        default: "."
         required: false
         type: string
     secrets:
@@ -96,6 +101,7 @@ jobs:
           archs: ${{ matrix.architecture }}
           labels: ${{ steps.meta.outputs.labels }}
           containerfiles: ${{ inputs.containerfile }}
+          context: ${{ inputs.context }}
 
       - name: Push To Quay
         uses: redhat-actions/push-to-registry@main

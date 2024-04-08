@@ -133,11 +133,19 @@ milestones:
     replaces: 0.3-beta.2
   - title: v0.3.1
     description: The v0.3.1 release of Konveyor
+    state: closed
+  - title: v0.3.2
+    description: The v0.3.2 release of Konveyor
     state: open
+    replaces: 0.3.1
   - title: v0.4.0
     description: The v0.4.0 release of Konveyor
     state: open
-    due: 2024-04-30
+    due: 2024-05-16
+  - title: v0.5.0
+    description: The v0.5.0 release of Konveyor
+    state: open
+    due: 2024-07-30
   - title: Next
     description: Bucket for work we want to accomplish in the next release
     state: open

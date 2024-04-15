@@ -4,13 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/bombsimon/logrusr/v3"
 	"github.com/google/go-github/v55/github"
 	"github.com/konveyor/release-tools/pkg/action"
 	"github.com/konveyor/release-tools/pkg/config"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -24,16 +26,32 @@ type Update struct {
 	Issues  []int
 }
 
+var (
+	configPath = flag.String("config", "", "Path to config.yaml")
+	confirm    = flag.Bool("confirm", false, "Make mutating changes to labels via GitHub API")
+	logLevel   = flag.Int("log-level", 5, "Level to log")
+)
+
 func main() {
-	configPtr := flag.String("config", "", "Path to config.yaml")
-	confirmPtr := flag.Bool("confirm", false, "Make mutating changes to labels via GitHub API")
 	flag.Parse()
-	configPath := *configPtr
-	confirm := *confirmPtr
+
+	logrusLog := logrus.New()
+	logrusLog.SetOutput(os.Stdout)
+	logrusLog.SetFormatter(&logrus.TextFormatter{})
+	logrusLog.SetLevel(logrus.Level(5))
+	log := logrusr.New(logrusLog)
+
+	if logLevel != nil && *logLevel != 5 {
+		logrusLog.SetLevel(logrus.Level(*logLevel))
+	}
+
+	configPath := *configPath
+	confirm := *confirm
 
 	c, err := config.LoadConfig(configPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err, "failed to load config")
+		os.Exit(1)
 	}
 	wantedMilestones := c.Milestones
 
@@ -49,12 +67,14 @@ func main() {
 
 	updates := []Update{}
 	for _, r := range c.Repos {
+		log.V(2).Info("Getting milestone for repository", "org", r.Org, "repo", r.Repo)
 		var currentMilestones []*github.Milestone
 		for {
 			milestones, resp, err := client.Issues.ListMilestones(context.Background(), r.Org, r.Repo, milestoneListOptions)
 			if err != nil {
 				action.ErrorCommand("Failed to get repo milestones")
-				log.Fatal(err)
+				log.Error(err, "failed to get repo milestones")
+				os.Exit(1)
 			}
 			currentMilestones = append(currentMilestones, milestones...)
 			if resp.NextPage == 0 {
@@ -65,18 +85,38 @@ func main() {
 
 		currentMilestonesMap := make(map[string]*github.Milestone)
 		for _, m := range currentMilestones {
+			log.V(2).Info("adding milestone to map", "milestone", struct {
+				Title        string           `json:"title"`
+				Description  string           `json:"description"`
+				Number       int              `json:"number"`
+				State        string           `json:"state"`
+				Due          github.Timestamp `json:"due"`
+				OpenIssues   int              `json:"openIssues"`
+				ClosedIssues int              `json:"closedIssues"`
+			}{
+				Title:        m.GetTitle(),
+				Description:  m.GetDescription(),
+				Number:       m.GetNumber(),
+				State:        m.GetState(),
+				Due:          m.GetDueOn(),
+				OpenIssues:   m.GetOpenIssues(),
+				ClosedIssues: m.GetClosedIssues(),
+			})
 			currentMilestonesMap[m.GetTitle()] = m
 		}
 
 		for _, m := range wantedMilestones {
 			wantMilestone := m
+			log.V(2).Info("wanted milestone", "milestone", wantMilestone)
 
 			repoIssues := []int{}
 			if wantMilestone.Replaces != "" {
 				oldMilestone, oldMilestoneExists := currentMilestonesMap[wantMilestone.Replaces]
-				if oldMilestoneExists {
+				if oldMilestoneExists && oldMilestone.GetOpenIssues() > 0 {
+					log.V(2).Info("old milestone exists", "want milestone title", wantMilestone.Title, "replaces", wantMilestone.Replaces, "open issues", oldMilestone.GetOpenIssues())
 					issueListByRepoOpts := &github.IssueListByRepoOptions{
-						Milestone:   fmt.Sprintf("%x", oldMilestone.GetNumber()),
+						Milestone:   strconv.Itoa(oldMilestone.GetNumber()),
+						State:       "open",
 						ListOptions: listOptions,
 					}
 
@@ -85,7 +125,8 @@ func main() {
 						issues, resp, err := client.Issues.ListByRepo(context.Background(), r.Org, r.Repo, issueListByRepoOpts)
 						if err != nil {
 							action.ErrorCommand("Failed to get repo issues")
-							log.Fatal(err)
+							log.Error(err, "failed to get repo issues")
+							os.Exit(1)
 						}
 
 						for _, i := range issues {
@@ -145,7 +186,8 @@ func main() {
 	}
 	y, _ := yaml.Marshal(updates)
 
-	log.Print(string(y))
+	action.WarningCommand("Changes will be made!")
+	fmt.Println(string(y))
 
 	if !confirm {
 		action.NoticeCommand("Running without confirm, no mutations will be made")
@@ -157,7 +199,8 @@ func main() {
 		if update.Wanted.Due != "" {
 			parsedTime, err := time.Parse(time.DateOnly, update.Wanted.Due)
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err, "failed to parse time")
+				os.Exit(1)
 			}
 			// add some time to make sure it registers as correct day
 			dueOn = &github.Timestamp{Time: parsedTime.Add(12 * time.Hour)}
@@ -174,9 +217,10 @@ func main() {
 			})
 			if err != nil {
 				action.ErrorCommand("Error creating milestone")
-				log.Fatal(err)
+				log.Error(err, "error creating milestone")
+				os.Exit(1)
 			}
-			log.Printf("[%v/%v] Milestone %v created", update.Org, update.Repo, update.Wanted)
+			log.Info("[%v/%v] Milestone %v created", update.Org, update.Repo, update.Wanted)
 		case "changed":
 			milestone, _, err = client.Issues.EditMilestone(context.Background(), update.Org, update.Repo, update.Current.Number, &github.Milestone{
 				Title:       github.String(update.Wanted.Title),
@@ -186,9 +230,10 @@ func main() {
 			})
 			if err != nil {
 				action.ErrorCommand("Error modifying milestone")
-				log.Fatal(err)
+				log.Error(err, "error modifying milestone")
+				os.Exit(1)
 			}
-			log.Printf("[%v/%v] Milestone %v updated", update.Org, update.Repo, update.Wanted)
+			log.Info("Milestone updated", "org", update.Org, "repo", update.Repo, "milestone", update.Wanted)
 		default:
 			panic("Should not happen")
 		}
@@ -200,9 +245,10 @@ func main() {
 			})
 			if err != nil {
 				action.ErrorCommand("Failed to move issue to milestone")
-				log.Fatal(err)
+				log.Error(err, "error moving issue to milestone")
+				os.Exit(1)
 			}
-			log.Printf("[%v/%v] Issue %v added to milestone %v", update.Org, update.Repo, i, update.Wanted.Title)
+			log.Info("Issue added to milestone", "org", update.Org, "repo", update.Repo, "issue", i, "milestone", update.Wanted.Title)
 		}
 	}
 

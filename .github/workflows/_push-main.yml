@@ -1,0 +1,82 @@
+name: Push to Main
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'release-*'
+    tags:
+      - 'v*'
+
+concurrency:
+  group: march-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      config: ${{ steps.filter.outputs.config }}
+      milestone: ${{ steps.filter.outputs.milestone }}
+      labels: ${{ steps.filter.outputs.labels }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            config:
+              - "pkg/config/config.yaml"
+            milestone:
+              - "cmd/milestones/**"
+            labels:
+              - "cmd/labels/**"
+
+  milestones:
+    needs: build
+    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    runs-on: ubuntu-latest
+    permissions: read-all
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v3
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8 -confirm
+
+  labels:
+    needs: build
+    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    runs-on: ubuntu-latest
+    permissions: read-all
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v3
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/labels/main.go -config pkg/config/config.yaml
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/labels/main.go -config pkg/config/config.yaml -confirm
+

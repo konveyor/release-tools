@@ -43,7 +43,7 @@ jobs:
 
     - name: Checkout repository
       if: steps.extract-info.outputs.branch != 'NOOP'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Update tags of base images in Dockerfile
       if: steps.extract-info.outputs.branch != 'NOOP'

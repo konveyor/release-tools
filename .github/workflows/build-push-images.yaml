@@ -92,7 +92,7 @@ jobs:
           df . -h
 
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
 
       - name: Configure QEMU
         uses: docker/setup-qemu-action@master

@@ -39,6 +39,8 @@ repos:
     repo: static-report
   - org: konveyor
     repo: kantra
+  - org: konveyor
+    repo: rulesets
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.
@@ -150,7 +152,7 @@ milestones:
     replaces: v0.3.2
   - title: v0.4.0
     description: The v0.4.0 release of Konveyor
-    state: open
+    state: closed
     due: 2024-05-16
   - title: v0.5.0
     description: The v0.5.0 release of Konveyor

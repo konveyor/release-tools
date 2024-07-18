@@ -159,7 +159,7 @@ milestones:
   - title: v0.5.0
     description: The v0.5.0 release of Konveyor
     state: open
-    due: 2024-07-30
+    due: 2024-07-23
   - title: v0.5.1
     description: The v0.5.0 release of Konveyor
     state: open

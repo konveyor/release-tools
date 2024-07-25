@@ -113,12 +113,15 @@ labels:
     description: Indicates that a PR is ready to be merged.
     name: lgtm
   # CherryPick
-  - color: fef2c0
+  - color: fef2a0
     description: This PR should be cherry-picked to release-0.3 branch.
     name: cherry-pick/release-0.3
-  - color: fef2c0
+  - color: fef2b0
     description: This PR should be cherry-picked to release-0.4 branch.
     name: cherry-pick/release-0.4
+  - color: fef2c0
+    description: This PR should be cherry-picked to release-0.4 branch.
+    name: cherry-pick/release-0.5
 
 
 # Milestones

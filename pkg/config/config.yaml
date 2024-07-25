@@ -43,6 +43,8 @@ repos:
     repo: tackle2-addon-analyzer
   - org: konveyor
     repo: tackle2-addon-discovery
+  - org: konveyor
+    repo: fernflower
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

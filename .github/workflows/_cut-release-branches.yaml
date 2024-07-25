@@ -6,10 +6,6 @@ on:
       branch_name:
         description: 'Name of the new branch'
         required: true
-      from:
-        description: 'Name of the new branch'
-        required: false
-        default: 'main'
 
 jobs:
   get-repos:
@@ -35,7 +31,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ matrix.repo }}
-          ref: ${{ inputs.from }}
           fetch-depth: 0
 
       - name: Get Token
@@ -47,7 +42,7 @@ jobs:
 
       - name: Create new branch
         env:
-          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: |
           git config --global user.email "noreply@github.com"
           git config --global user.name "Branch Creator"

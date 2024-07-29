@@ -45,6 +45,10 @@ repos:
     repo: tackle2-addon-discovery
   - org: konveyor
     repo: fernflower
+  - org: konveyor
+    repo: go-konveyor-tests
+  - org: konveyor
+    repo: tackle-keycloak-theme
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

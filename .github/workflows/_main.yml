@@ -7,7 +7,19 @@ on:
       - '**.md'
 
 jobs:
-  build:
+  get-repos:
+    runs-on: ubuntu-latest
+    outputs:
+      repos: ${{ steps.read_config.outputs.repos }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get repositories
+        id: read_config
+        run: |
+          REPOS=$(yq e -o=json '.repos | .[] | "\(.org)/\(.repo)"' pkg/config/config.yaml | jq -c -s '.')
+          echo "repos=${REPOS}" >> "$GITHUB_OUTPUT"
+
+  filter:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -47,8 +59,8 @@ jobs:
       - run: go test ./...
 
   check-milestones:
-    needs: build
-    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    needs: filter
+    if: ${{ needs.filter.outputs.config == 'true' || needs.filter.outputs.milestone == 'true' }}
     runs-on: ubuntu-latest
     permissions: read-all
     env:
@@ -68,8 +80,8 @@ jobs:
       - run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8
 
   check-labels:
-    needs: build
-    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    needs: filter
+    if: ${{ needs.filter.outputs.config == 'true' || needs.filter.outputs.milestone == 'true' }}
     runs-on: ubuntu-latest
     permissions: read-all
     env:
@@ -87,3 +99,67 @@ jobs:
       #     GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
       #   run: go run cmd/labels/main.go -config pkg/config/config.yaml
       - run: go run cmd/labels/main.go -config pkg/config/config.yaml
+
+  check-secrets:
+    needs: get-repos
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.get-repos.outputs.repos) }}
+        key:
+          - KONVEYOR_BOT_KEY
+    steps:
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+          
+      - name: Check for secret
+        env:
+          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: |
+          gh api -H "Accept: application/vnd.github+json" /repos/${{ matrix.repo }}/actions/organization-secrets | jq -e '.secrets[] | select(.name=="${{ matrix.key }}")'
+
+  check-variables:
+    needs: get-repos
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.get-repos.outputs.repos) }}
+        key:
+          - KONVEYOR_BOT_ID
+    steps:
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+          
+      - name: Check for variable
+        env:
+          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: |
+          gh api -H "Accept: application/vnd.github+json" /repos/${{ matrix.repo }}/actions/organization-variables | jq -e '.secrets[] | select(.name=="${{ matrix.key }}")'
+
+  check-write-access:
+    needs: get-repos
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.get-repos.outputs.repos) }}
+    steps:
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ vars.KONVEYOR_BOT_ID }}
+          application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
+          
+      - name: Check for write access
+        env:
+          GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: |
+          gh api -H "Accept: application/vnd.github+json" /orgs/konveyor/teams/ci-release-engineering/repos | jq -e '.[] | select( (.full_name == "${{ matrix.repo }}") and (.role_name == "write") )'

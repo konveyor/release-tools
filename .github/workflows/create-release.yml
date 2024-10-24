@@ -17,6 +17,11 @@ on:
         required: false
         default: ${{ github.ref }}
         type: string
+      skip_release:
+        description: 'Skip creating the release and only generate the changelog'
+        required: false
+        default: false
+        type: boolean
     secrets:
       token:
         description: 'The token to use when interacting with GitHub'
@@ -89,8 +94,6 @@ jobs:
           BREAKING_CHANGES="$(filterfunc warning)"
           if [ -n "${BREAKING_CHANGES}" ]; then
             echo -e "## :warning: Breaking Changes\n${BREAKING_CHANGES}\n\n" >> "${RELEASE_DOC}"
-            # echo "${BREAKING_CHANGES}" >> "${RELEASE_DOC}"
-            # echo "" >> "${RELEASE_DOC}"
           fi
 
           FEATURE_CHANGES="$(filterfunc sparkles)"
@@ -112,12 +115,11 @@ jobs:
             -f tag_name="${{ inputs.version }}" \
             -f target_commitish="${{ inputs.ref }}" \
             -f previous_tag_name="${PREV_TAG}" | jq -r '.body' | grep -Pzo '.*Contributors(.*\n)*' >> "${RELEASE_DOC}"
-
-          # TODO(djzager): More? could make this workflow accept as an argument whether or not
-          # to include other types (ie. seedling, docs)
         id: changelog
 
-      - uses: ncipollo/release-action@main
+      - name: Create Release
+        if: ${{ inputs.skip_release == false }}
+        uses: ncipollo/release-action@main
         with:
           owner: ${{ steps.changelog.outputs.owner }}
           repo: ${{ steps.changelog.outputs.repo }}

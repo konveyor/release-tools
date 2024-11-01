@@ -18,11 +18,7 @@ inputs:
   ref:
     description: 'The branch or SHA for the release (defaults to main)'
     required: false
-  skip_release:
-    description: 'Skip creating the release and only generate the changelog'
-    required: false
-    default: 'false'
-
+    default: ${{ github.ref }}
 outputs:
   breaking-changes:
     description: "Breaking changes introduced in this release"
@@ -155,7 +151,6 @@ runs:
     id: changelog
 
   - uses: ncipollo/release-action@main
-    if: ${{ inputs.skip_release == 'false' }}
     with:
       owner: ${{ steps.changelog.outputs.owner }}
       repo: ${{ steps.changelog.outputs.repo }}

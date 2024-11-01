@@ -34,32 +34,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.token }}
-          repository: ${{ inputs.repository }}
-          ref: ${{ inputs.ref }}
+          token: "${{ secrets.token }}"
+          repository: "${{ inputs.repository }}"
+          ref: "${{ inputs.ref }}"
 
       - name: Generate Changelog
         id: changelog
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: "${{ secrets.token }}"
         run: |
           set -x
 
-          REPOSITORY=${{ inputs.repository }}
-          SHA=$(git rev-parse HEAD)
-          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          REPOSITORY="${{ inputs.repository }}"
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
 
           # Get the previous tag
-          if [ -n "${{ inputs.prev_version }}" ] && git rev-list ${{ inputs.prev_version }} 2> /dev/null; then
+          if [ -n "${{ inputs.prev_version }}" ] && git rev-list "${{ inputs.prev_version }}" 2> /dev/null; then
             PREV_TAG="${{ inputs.prev_version }}"
           else
-            PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" /repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
+            PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" "/repos/${{ inputs.repository }}/releases/latest" | jq -r '.tag_name // empty')
           fi
 
           # Generate release notes
           NOTES=$(gh api --method POST \
             -H "Accept: application/vnd.github+json" \
-            /repos/${{ inputs.repository }}/releases/generate-notes \
+            "/repos/${{ inputs.repository }}/releases/generate-notes" \
             -f tag_name="${{ inputs.version }}" \
             -f target_commitish="${SHA}" \
             -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
@@ -71,30 +71,30 @@ jobs:
 
           BREAKING_CHANGES="$(filterfunc warning)"
           if [ -n "${BREAKING_CHANGES}" ]; then
-            echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
-            echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
-            echo "" >> ${RELEASE_DOC}
+            echo "## :warning: Breaking Changes" >> "${RELEASE_DOC}"
+            echo "${BREAKING_CHANGES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
           fi
 
           FEATURE_CHANGES="$(filterfunc sparkles)"
           if [ -n "${FEATURE_CHANGES}" ]; then
-            echo "## :sparkles: Features" >> ${RELEASE_DOC}
-            echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
-            echo "" >> ${RELEASE_DOC}
+            echo "## :sparkles: Features" >> "${RELEASE_DOC}"
+            echo "${FEATURE_CHANGES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
           fi
 
           BUG_FIXES="$(filterfunc bug)"
           if [ -n "${BUG_FIXES}" ]; then
-            echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
-            echo "${BUG_FIXES}" >> ${RELEASE_DOC}
-            echo "" >> ${RELEASE_DOC}
+            echo "## :bug: Bug Fixes" >> "${RELEASE_DOC}"
+            echo "${BUG_FIXES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
           fi
 
           NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
           if [ -n "${NEW_CONTRIB}" ]; then
-            echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
+            echo "${NEW_CONTRIB}" >> "${RELEASE_DOC}"
           else
-            echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
+            echo "${NOTES}" | sed -n "/Changelog/,\$p" >> "${RELEASE_DOC}"
           fi
 
       - name: Upload Changelog Artifact

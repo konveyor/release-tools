@@ -22,10 +22,11 @@ on:
         required: false
         default: ${{ github.ref }}
         type: string
-    secrets:
-      token:
+      github_token:
         description: 'GitHub token'
         required: true
+        type: string
+
 
 jobs:
   changelog:
@@ -34,14 +35,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: "${{ secrets.token }}"
+          token: "${{ inputs.github_token }}"
           repository: "${{ inputs.repository }}"
           ref: "${{ inputs.ref }}"
 
       - name: Generate Changelog
         id: changelog
         env:
-          GITHUB_TOKEN: "${{ secrets.token }}"
+          GITHUB_TOKEN: "${{ inputs.github_token }}"
         run: |
           set -x
 

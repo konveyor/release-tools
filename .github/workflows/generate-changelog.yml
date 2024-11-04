@@ -24,25 +24,37 @@ on:
         type: string
       github_token:
         description: 'GitHub token'
-        required: true
+        required: false
         type: string
+    secrets:
+      token:
+        description: 'GitHub token'
+        required: false
 
 
 jobs:
   changelog:
     runs-on: ubuntu-latest
     steps:
+      - name: Set GITHUB_TOKEN environment variable
+        run: |
+          if [ -n "${{ inputs.github_token }}" ]; then
+            echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> $GITHUB_ENV
+          else
+            echo "GITHUB_TOKEN=${{ secrets.token }}" >> $GITHUB_ENV
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: "${{ inputs.github_token }}"
+          token: "${{ env.GITHUB_TOKEN }}"
           repository: "${{ inputs.repository }}"
           ref: "${{ inputs.ref }}"
 
       - name: Generate Changelog
         id: changelog
         env:
-          GITHUB_TOKEN: "${{ inputs.github_token }}"
+          GITHUB_TOKEN: "${{ env.GITHUB_TOKEN }}"
         run: |
           set -x
 

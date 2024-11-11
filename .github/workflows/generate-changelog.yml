@@ -1,0 +1,117 @@
+name: Generate Changelog
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Semantic version of the release (e.g., v1.2.3)'
+        required: true
+        type: string
+      prev_version:
+        description: 'Previous release version (e.g., v1.2.2)'
+        required: false
+        default: ''
+        type: string
+      repository:
+        description: 'Repository name'
+        required: false
+        default: ${{ github.repository }}
+        type: string
+      ref:
+        description: 'Branch or SHA for the release'
+        required: false
+        default: ${{ github.ref }}
+        type: string
+      github_token:
+        description: 'GitHub token'
+        required: false
+        type: string
+    secrets:
+      token:
+        description: 'GitHub token'
+        required: false
+
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set GITHUB_TOKEN environment variable
+        run: |
+          if [ -n "${{ inputs.github_token }}" ]; then
+            echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> $GITHUB_ENV
+          else
+            echo "GITHUB_TOKEN=${{ secrets.token }}" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: "${{ env.GITHUB_TOKEN }}"
+          repository: "${{ inputs.repository }}"
+          ref: "${{ inputs.ref }}"
+
+      - name: Generate Changelog
+        id: changelog
+        env:
+          GITHUB_TOKEN: "${{ env.GITHUB_TOKEN }}"
+        run: |
+          set -x
+
+          REPOSITORY="${{ inputs.repository }}"
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+          # Get the previous tag
+          if [ -n "${{ inputs.prev_version }}" ] && git rev-list "${{ inputs.prev_version }}" 2> /dev/null; then
+            PREV_TAG="${{ inputs.prev_version }}"
+          else
+            PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" "/repos/${{ inputs.repository }}/releases/latest" | jq -r '.tag_name // empty')
+          fi
+
+          # Generate release notes
+          NOTES=$(gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ inputs.repository }}/releases/generate-notes" \
+            -f tag_name="${{ inputs.version }}" \
+            -f target_commitish="${SHA}" \
+            -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
+
+          RELEASE_DOC="${PWD}/release.md"
+          echo "**Full Changelog**: https://github.com/${REPOSITORY}/commits/${{ inputs.version }}" > "${RELEASE_DOC}"
+
+          filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /"; }
+
+          BREAKING_CHANGES="$(filterfunc warning)"
+          if [ -n "${BREAKING_CHANGES}" ]; then
+            echo "## :warning: Breaking Changes" >> "${RELEASE_DOC}"
+            echo "${BREAKING_CHANGES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
+          fi
+
+          FEATURE_CHANGES="$(filterfunc sparkles)"
+          if [ -n "${FEATURE_CHANGES}" ]; then
+            echo "## :sparkles: Features" >> "${RELEASE_DOC}"
+            echo "${FEATURE_CHANGES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
+          fi
+
+          BUG_FIXES="$(filterfunc bug)"
+          if [ -n "${BUG_FIXES}" ]; then
+            echo "## :bug: Bug Fixes" >> "${RELEASE_DOC}"
+            echo "${BUG_FIXES}" >> "${RELEASE_DOC}"
+            echo "" >> "${RELEASE_DOC}"
+          fi
+
+          NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
+          if [ -n "${NEW_CONTRIB}" ]; then
+            echo "${NEW_CONTRIB}" >> "${RELEASE_DOC}"
+          else
+            echo "${NOTES}" | sed -n "/Changelog/,\$p" >> "${RELEASE_DOC}"
+          fi
+
+      - name: Upload Changelog Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-artifact
+          path: release.md

@@ -19,19 +19,11 @@ inputs:
     description: 'The branch or SHA for the release (defaults to main)'
     required: false
     default: ${{ github.ref }}
-outputs:
-  breaking-changes:
-    description: "Breaking changes introduced in this release"
-    value: ${{ steps.changelog.outputs.breaking-changes }}
-  features:
-    description: "Features introduced in this release"
-    value: ${{ steps.changelog.outputs.features }}
-  bug-fixes:
-    description: "Bug fixes introduced in this release"
-    value: ${{ steps.changelog.outputs.bug-fixes }}
-  new-contributors:
-    description: "New contributors to this release"
-    value: ${{ steps.changelog.outputs.new-contributors }}
+  is_prerelease:
+    description: 'Is this a pre-release?'
+    required: false
+    default: "false" 
+
 runs:
   using: "composite"
   steps:
@@ -61,103 +53,30 @@ runs:
       echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
     id: check_tag
 
-  - name: Checkout code
-    uses: actions/checkout@v4
+  - name: Generate Changelog
+    uses: ./.github/workflows/generate-changelog.yml
     with:
-      fetch-depth: 0
-      repository: ${{ inputs.repository }}
-      ref: ${{ inputs.ref }}
-      path: ${{ inputs.repository }}
-      token: ${{ inputs.github_token }}
+      version: ${{ github.event.inputs.version }}
+      prev_version: ${{ github.event.inputs.prev_version }}
+      repository: ${{ github.event.inputs.repository }}
+      ref: ${{ github.event.inputs.ref }}
+      github_token: ${{ inputs.github_token }}
 
-  - name: Make changelog
-    working-directory: ./${{ inputs.repository }}
-    env:
-      GITHUB_TOKEN: ${{ inputs.github_token }}
-    shell: bash
-    run: |
-      set -x
-      set +o pipefail
+  - name: Download Changelog
+    uses: actions/download-artifact@v4
+    with:
+      name: changelog-artifact
+      path: .
 
-      # Details we need in order to create the release
-      REPOSITORY=${{ inputs.repository }}
-      echo "owner=${REPOSITORY%/*}" >> $GITHUB_OUTPUT
-      echo "repo=${REPOSITORY#*/}" >> $GITHUB_OUTPUT
-      SHA=$(git rev-parse HEAD)
-      echo "sha=${SHA}" >> $GITHUB_OUTPUT
-
-      # Let GitHub format the commits
-      if [ -n "${{ inputs.prev_version }}" ] && git rev-list ${{ inputs.prev_version }} 2> /dev/null; then
-        PREV_TAG="${{ inputs.prev_version }}"
-      else
-        PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ inputs.repository }}/releases/latest | jq -r '.tag_name // empty')
-      fi
-      NOTES=$(gh api \
-        --method POST \
-        -H "Accept: application/vnd.github+json" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        repos/${{ inputs.repository }}/releases/generate-notes \
-        -f tag_name="${{ inputs.version }}" \
-        -f target_commitish="${{ inputs.ref }}" \
-        -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
-      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /"; }
-
-      RELEASE_DOC="${PWD}/release.md"
-      echo "release_doc=${RELEASE_DOC}" >> $GITHUB_ENV
-
-      BREAKING_CHANGES="$(filterfunc warning)"
-      if [ -n "${BREAKING_CHANGES}" ]; then
-        echo "## :warning: Breaking Changes" >> ${RELEASE_DOC}
-        echo "${BREAKING_CHANGES}" >> ${RELEASE_DOC}
-        echo "" >> ${RELEASE_DOC}
-        echo "breaking-changes<<nEOFn" >> $GITHUB_OUTPUT
-        echo "${BREAKING_CHANGES}" >> $GITHUB_OUTPUT
-        echo "nEOFn" >> $GITHUB_OUTPUT
-      fi
-
-      FEATURE_CHANGES="$(filterfunc sparkles)"
-      if [ -n "${FEATURE_CHANGES}" ]; then
-        echo "## :sparkles: Features" >> ${RELEASE_DOC}
-        echo "${FEATURE_CHANGES}" >> ${RELEASE_DOC}
-        echo "" >> ${RELEASE_DOC}
-        echo "features<<nEOFn" >> $GITHUB_OUTPUT
-        echo "${FEATURE_CHANGES}" >> $GITHUB_OUTPUT
-        echo "nEOFn" >> $GITHUB_OUTPUT
-      fi
-
-      BUG_FIXES="$(filterfunc bug)"
-      if [ -n "${BUG_FIXES}" ]; then
-        echo "## :bug: Bug Fixes" >> ${RELEASE_DOC}
-        echo "${BUG_FIXES}" >> ${RELEASE_DOC}
-        echo "" >> ${RELEASE_DOC}
-        echo "bug-fixes<<nEOFn" >> $GITHUB_OUTPUT
-        echo "${BUG_FIXES}" >> $GITHUB_OUTPUT
-        echo "nEOFn" >> $GITHUB_OUTPUT
-      fi
-
-      # TODO(djzager): More? could make this workflow accept as an argument whether or not
-      # to include other types (ie. seedling, docs)
-
-      # Add contributors as GitHub would have added them
-      NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
-      if [ -n "${NEW_CONTRIB}" ]; then
-        echo "${NEW_CONTRIB}" >> ${RELEASE_DOC}
-        echo "new-contributors<<nEOFn" >> $GITHUB_OUTPUT
-        echo "${NEW_CONTRIB}" | head -n -3 >> $GITHUB_OUTPUT
-        echo "nEOFn" >> $GITHUB_OUTPUT
-      else
-        echo "${NOTES}" | sed -n "/Changelog/,\$p" >> ${RELEASE_DOC}
-      fi
-    id: changelog
 
   - uses: ncipollo/release-action@main
     with:
-      owner: ${{ steps.changelog.outputs.owner }}
-      repo: ${{ steps.changelog.outputs.repo }}
+      owner: ${{ github.repository_owner }}
+      repo: ${{ inputs.repository }}
       tag: ${{ inputs.version }}
-      commit: ${{ steps.changelog.outputs.sha }}
-      bodyFile: ${{ env.release_doc }}
+      commit: ${{ github.sha }}
+      bodyFile: release.md
       draft: false
-      prerelease: ${{ steps.check_tag.outputs.is_prerelease }}
+      prerelease: ${{ inputs.is_prerelease }}
       skipIfReleaseExists: true
       token: ${{ inputs.github_token }}

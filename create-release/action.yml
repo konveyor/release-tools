@@ -55,12 +55,6 @@ runs:
 
   - name: Checkout code
     uses: actions/checkout@v4
-    with:
-      fetch-depth: 0
-      repository: ${{ inputs.repository }}
-      ref: ${{ inputs.ref }}
-      path: ${{ inputs.repository }}
-      token: ${{ inputs.github_token }}
 
   - name: Generate Changelog
     uses: ./.github/workflows/generate-changelog.yml

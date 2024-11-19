@@ -53,6 +53,9 @@ runs:
       echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
     id: check_tag
 
+  - name: Checkout code
+    uses: actions/checkout@v4
+
   - name: Generate Changelog
     uses: ./.github/workflows/generate-changelog.yml
     with:

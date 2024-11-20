@@ -128,7 +128,7 @@ labels:
     name: cherry-pick/release-0.5
   - color: fef2d0
     description: This PR should be cherry-picked to release-0.6 branch
-    name: cherry-pick/release-0.5
+    name: cherry-pick/release-0.6
 
 
 # Milestones

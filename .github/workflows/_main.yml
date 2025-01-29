@@ -2,9 +2,9 @@ name: PR tests
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
-      - '**.md'
+      - "**.md"
 
 jobs:
   build:
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       - run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
       - run: |
           GOPATH="$(go env GOPATH)"
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       - run: go test ./...
 
   check-milestones:
@@ -55,7 +55,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       # - name: Get Token
       #   id: get_workflow_token
       #   uses: peter-murray/workflow-application-token-action@v3
@@ -76,7 +76,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       # - name: Get Token
       #   id: get_workflow_token
       #   uses: peter-murray/workflow-application-token-action@v3

@@ -3,10 +3,10 @@ name: Push to Main
 on:
   push:
     branches:
-      - 'main'
-      - 'release-*'
+      - "main"
+      - "release-*"
     tags:
-      - 'v*'
+      - "v*"
 
 concurrency:
   group: march-build-${{ github.ref }}
@@ -43,7 +43,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       - name: Get Token
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@v3
@@ -66,7 +66,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
       - name: Get Token
         id: get_workflow_token
         uses: peter-murray/workflow-application-token-action@v3
@@ -79,4 +79,3 @@ jobs:
       - env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config.yaml -confirm
-

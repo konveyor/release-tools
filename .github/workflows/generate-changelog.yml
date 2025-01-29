@@ -4,33 +4,32 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Semantic version of the release (e.g., v1.2.3)'
+        description: Semantic version of the release (e.g., v1.2.3)
         required: true
         type: string
       prev_version:
-        description: 'Previous release version (e.g., v1.2.2)'
+        description: Previous release version (e.g., v1.2.2)
         required: false
-        default: ''
+        default: ""
         type: string
       repository:
-        description: 'Repository name'
+        description: Repository name
         required: false
         default: ${{ github.repository }}
         type: string
       ref:
-        description: 'Branch or SHA for the release'
+        description: Branch or SHA for the release
         required: false
         default: ${{ github.ref }}
         type: string
       github_token:
-        description: 'GitHub token'
+        description: GitHub token
         required: false
         type: string
     secrets:
       token:
-        description: 'GitHub token'
+        description: GitHub token
         required: false
-
 
 jobs:
   changelog:
@@ -39,9 +38,9 @@ jobs:
       - name: Set GITHUB_TOKEN environment variable
         run: |
           if [ -n "${{ inputs.github_token }}" ]; then
-            echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> $GITHUB_ENV
+            echo "GITHUB_TOKEN=${{ inputs.github_token }}" >> "$GITHUB_ENV"
           else
-            echo "GITHUB_TOKEN=${{ secrets.token }}" >> $GITHUB_ENV
+            echo "GITHUB_TOKEN=${{ secrets.token }}" >> "$GITHUB_ENV"
           fi
 
       - name: Checkout repository
@@ -84,23 +83,17 @@ jobs:
 
           BREAKING_CHANGES="$(filterfunc warning)"
           if [ -n "${BREAKING_CHANGES}" ]; then
-            echo "## :warning: Breaking Changes" >> "${RELEASE_DOC}"
-            echo "${BREAKING_CHANGES}" >> "${RELEASE_DOC}"
-            echo "" >> "${RELEASE_DOC}"
+            { echo "## :warning: Breaking Changes"; echo "${BREAKING_CHANGES}"; echo ""; } >> "${RELEASE_DOC}"
           fi
 
           FEATURE_CHANGES="$(filterfunc sparkles)"
           if [ -n "${FEATURE_CHANGES}" ]; then
-            echo "## :sparkles: Features" >> "${RELEASE_DOC}"
-            echo "${FEATURE_CHANGES}" >> "${RELEASE_DOC}"
-            echo "" >> "${RELEASE_DOC}"
+            { echo "## :sparkles: Features"; echo "${FEATURE_CHANGES}"; echo ""; } >> "${RELEASE_DOC}"
           fi
 
           BUG_FIXES="$(filterfunc bug)"
           if [ -n "${BUG_FIXES}" ]; then
-            echo "## :bug: Bug Fixes" >> "${RELEASE_DOC}"
-            echo "${BUG_FIXES}" >> "${RELEASE_DOC}"
-            echo "" >> "${RELEASE_DOC}"
+            { echo "## :bug: Bug Fixes"; echo "${BUG_FIXES}"; echo ""; } >> "${RELEASE_DOC}"
           fi
 
           NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")

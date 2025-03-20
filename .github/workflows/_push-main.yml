@@ -29,6 +29,7 @@ jobs:
           filters: |
             config:
               - "pkg/config/config.yaml"
+              - "pkg/config/config-kai.yaml"
             milestone:
               - "cmd/milestones/**"
             labels:

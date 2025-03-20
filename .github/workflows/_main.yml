@@ -23,6 +23,7 @@ jobs:
           filters: |
             config:
               - "pkg/config/config.yaml"
+              - "pkg/config/config-kai.yaml"
             milestone:
               - "cmd/milestones/**"
             labels:
@@ -66,6 +67,7 @@ jobs:
       #     GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
       #   run: go run cmd/milestones/main.go -config pkg/config/config.yaml
       - run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8
+      - run: go run cmd/milestones/main.go -config pkg/config/config-kai.yaml -log-level 8
 
   check-labels:
     needs: build
@@ -87,3 +89,4 @@ jobs:
       #     GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
       #   run: go run cmd/labels/main.go -config pkg/config/config.yaml
       - run: go run cmd/labels/main.go -config pkg/config/config.yaml
+      - run: go run cmd/labels/main.go -config pkg/config/config-kai.yaml

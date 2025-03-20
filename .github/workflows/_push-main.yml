@@ -55,7 +55,13 @@ jobs:
         run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8
       - env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/milestones/main.go -config pkg/config/config-kai.yaml -log-level 8
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8 -confirm
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/milestones/main.go -config pkg/config/config-kai.yaml -log-level 8 -confirm
 
   labels:
     needs: build
@@ -79,3 +85,9 @@ jobs:
       - env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config.yaml -confirm
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/labels/main.go -config pkg/config/config-kai.yaml
+      - env:
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: go run cmd/labels/main.go -config pkg/config/config-kai.yaml -confirm

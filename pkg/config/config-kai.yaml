@@ -102,7 +102,6 @@ labels:
     description: Requires massive effort, will not fit in the sprint.
     name: effort/XXL
 
-
 # Milestones
 # List of milestones, and their state, that should exist in the specified repositories.
 #
@@ -116,3 +115,11 @@ milestones:
   - title: Next
     description: Bucket for work we want to accomplish in the next release
     state: open
+  - title: v0.1.0
+    description: The v0.1.0 release of Kai
+    state: closed
+    due: 2025-03-20
+  - title: v0.2.0
+    description: The v0.2.0 release of Kai
+    state: open
+    due: 2025-05-01

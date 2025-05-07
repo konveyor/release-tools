@@ -140,7 +140,7 @@ labels:
 #   - title: the title for the milestone
 #     description: the description
 #     state: open/closed
-#     due: 
+#     due:
 #
 milestones:
   - title: 0.3-beta.2
@@ -186,6 +186,15 @@ milestones:
   - title: v0.7.0
     description: The v0.7.0 release of Konveyor
     state: open
+    due: 2025-05-20
+  - title: v0.7.1
+    description: The v0.7.1 release of Konveyor
+    state: open
+    due: 2025-06-24
+  - title: v0.8.0
+    description: The v0.8.0 release of Konveyor
+    state: open
+    due: 2025-09-16
   - title: Next
     description: Bucket for work we want to accomplish in the next release
     state: open

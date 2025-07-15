@@ -49,6 +49,8 @@ repos:
     repo: go-konveyor-tests
   - org: konveyor
     repo: tackle-keycloak-theme
+  - org: konveyor
+    repo: kai
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

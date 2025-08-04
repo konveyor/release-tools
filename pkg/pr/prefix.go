@@ -17,6 +17,7 @@ const (
 	InfraPR    PRType = "infra"
 	BreakingPR PRType = "breaking"
 	NoNotePR   PRType = "nonote"
+	TestPR     PRType = "test"
 
 	// TODO(djzager): Should we allow emoji?
 	PrefixFeature  string = ":sparkles:"
@@ -25,6 +26,7 @@ const (
 	PrefixInfra    string = ":seedling:"
 	PrefixBreaking string = ":warning:"
 	PrefixNoNote   string = ":ghost:"
+	PrefixTestTube string = ":test_tube:"
 
 	emojiFeature  = string('✨')
 	emojiBugFix   = string('🐛')
@@ -32,6 +34,7 @@ const (
 	emojiInfra    = string('🌱')
 	emojiBreaking = string('⚠')
 	emojiNoNote   = string('👻')
+	emojiTestTube = string('🧪')
 )
 
 // Extracted from kubernetes/test-infra/prow/plugins/wip/wip-label.go
@@ -75,16 +78,20 @@ func TypeFromTitle(title string) (PRType, string, error) {
 	case strings.HasPrefix(title, PrefixNoNote):
 		title = strings.TrimPrefix(title, PrefixNoNote)
 		prType = NoNotePR
+	case strings.HasPrefix(title, PrefixTestTube):
+		title = strings.TrimPrefix(title, PrefixTestTube)
+		prType = TestPR
 	default:
 		if strings.HasPrefix(title, emojiFeature) ||
 			strings.HasPrefix(title, emojiBugFix) ||
 			strings.HasPrefix(title, emojiDocs) ||
 			strings.HasPrefix(title, emojiInfra) ||
 			strings.HasPrefix(title, emojiBreaking) ||
-			strings.HasPrefix(title, emojiNoNote) {
+			strings.HasPrefix(title, emojiNoNote) ||
+			strings.HasPrefix(title, emojiTestTube) {
 			return UnknownPR, title, PRTypeUsedEmojiError{
 				PRTypeError: PRTypeError{title: title},
-				emojiUsed: []rune(title)[0],
+				emojiUsed:   []rune(title)[0],
 			}
 		}
 		return UnknownPR, title, PRTypeError{title: title}

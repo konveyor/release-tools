@@ -30,7 +30,7 @@ these guarantees extend to all user accessible API endpoints.
 In order to maintain our guarantees two types of branches will be maintained:
 `main` and `release-X.Y`.
 
-* `main` branch is where all of the development happens. It is not guaranteed 
+* `main` branch is where all of the development happens. It is not guaranteed
   stable and may contain breaking changes.
 * `release-X.Y` where X.Y is the minor version for a release is considered
   stable. These branches will receive backport fixes for critical issues, but no
@@ -67,6 +67,7 @@ a:
 - Patch fix: :bug: (`:bug:`)
 - Docs: :book: (`:book:`)
 - Infra/Tests/Other: :seedling: (`:seedling:`)
+- Integration/E2E tests: :test_tube: (`:test_tube:`)
 - No release note: :ghost: (`:ghost:`)
 
 Since GitHub supports emoji aliases (ie. `:ghost:`), there is no need to include

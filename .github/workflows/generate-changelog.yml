@@ -96,6 +96,11 @@ jobs:
             { echo "## :bug: Bug Fixes"; echo "${BUG_FIXES}"; echo ""; } >> "${RELEASE_DOC}"
           fi
 
+          TEST_TUBES="$(filterfunc test_tube)"
+          if [ -n "${TEST_TUBES}" ]; then
+            { echo "## :test_tube: Integration or E2E tests"; echo "${TEST_TUBES}"; echo ""; } >> "${RELEASE_DOC}"
+          fi
+
           NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
           if [ -n "${NEW_CONTRIB}" ]; then
             echo "${NEW_CONTRIB}" >> "${RELEASE_DOC}"

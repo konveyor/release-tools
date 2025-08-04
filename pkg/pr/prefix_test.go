@@ -83,8 +83,20 @@ func TestTypeFromTitle(t *testing.T) {
 			expectedTitle: "👻 I should have used the alias",
 			expectedError: PRTypeUsedEmojiError{
 				PRTypeError: PRTypeError{title: "👻 I should have used the alias"},
-				emojiUsed: rune('👻'),
+				emojiUsed:   rune('👻'),
 			},
+		},
+		{
+			title:         "WIP: :test_tube: Integration test",
+			expectedType:  TestPR,
+			expectedTitle: "Integration test",
+			expectedError: nil,
+		},
+		{
+			title:         ":test_tube: Integration test",
+			expectedType:  TestPR,
+			expectedTitle: "Integration test",
+			expectedError: nil,
 		},
 	}
 

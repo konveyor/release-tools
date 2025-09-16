@@ -44,6 +44,8 @@ repos:
   - org: konveyor
     repo: tackle2-addon-discovery
   - org: konveyor
+    repo: tackle2-addon-platform
+  - org: konveyor
     repo: fernflower
   - org: konveyor
     repo: go-konveyor-tests

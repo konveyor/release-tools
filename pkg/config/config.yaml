@@ -134,6 +134,9 @@ labels:
   - color: fef2e0
     description: This PR should be cherry-picked to release-0.7 branch
     name: cherry-pick/release-0.7
+  - color: fef2f0
+    description: This PR should be cherry-picked to release-0.8 branch
+    name: cherry-pick/release-0.8
 
 # Milestones
 # List of milestones, and their state, that should exist in the specified repositories.
@@ -196,7 +199,11 @@ milestones:
   - title: v0.8.0
     description: The v0.8.0 release of Konveyor
     state: open
-    due: 2025-09-16
+    due: 2025-09-30
+  - title: v0.8.1
+    description: The v0.8.1 release of Konveyor
+    state: open
+    due: 2025-10-31
   - title: Next
     description: Bucket for work we want to accomplish in the next release
     state: open

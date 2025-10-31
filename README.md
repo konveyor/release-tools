@@ -39,6 +39,23 @@ It accepts following inputs:
 
 * dockerfile: This is the relative path to the Dockerfile in the repo. Defaults to `./Dockerfile`.
 
+## Available Tools
+
+### Stale Issue Workflow Deployment
+
+See [stale-workflow directory](./stale-workflow/)
+
+This tool helps deploy a GitHub Actions workflow to automatically mark stale issues and pull requests across Konveyor repositories. The workflow:
+
+- Marks issues and PRs as stale after 60 days of inactivity
+- Does not auto-close items (only marks them for visibility)
+- Exempts items with specific labels or assignees
+- Automatically removes the stale label when items are updated
+
+The deployment script can target specific repositories or all repositories in an organization at once.
+
+For detailed usage instructions, see the [stale-workflow README](./stale-workflow/README.md).
+
 # Contributing
 
 We welcome contributions to this project! If you're interested in contributing,

@@ -1,0 +1,7 @@
+# Blacklist file for stale workflow deployment
+# Add one repository name per line (without the org prefix)
+# Lines starting with # are comments and will be ignored
+#
+# Example:
+# konveyor.github.io
+# enhancements

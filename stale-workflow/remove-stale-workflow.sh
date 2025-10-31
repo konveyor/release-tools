@@ -112,22 +112,13 @@ remove_from_repo() {
         return 0
     fi
 
-    # Remove workflow file
-    rm "${WORKFLOW_PATH}"
-
-    # Check if there are changes
-    if git diff --quiet && git diff --cached --quiet; then
-        echo -e "${YELLOW}  No changes detected${NC}"
-        cd - > /dev/null
-        rm -rf "/tmp/${repo}"
-        return 0
-    fi
-
     # Create a new branch
     git checkout -b "$BRANCH_NAME" 2>/dev/null || git checkout "$BRANCH_NAME"
 
-    # Add and commit with DCO sign-off
-    git add "${WORKFLOW_PATH}"
+    # Remove and stage workflow file deletion
+    git rm -f "${WORKFLOW_PATH}"
+
+    # Commit with DCO sign-off
     git commit -s -m "$COMMIT_MESSAGE"
 
     # Push the branch

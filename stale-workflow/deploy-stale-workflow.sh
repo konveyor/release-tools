@@ -24,7 +24,7 @@ BLACKLIST_FILE="${SCRIPT_DIR}/stale-workflow-blacklist.txt"
 WORKFLOW_FILE="stale-issues-workflow.yml"
 WORKFLOW_PATH=".github/workflows/stale.yml"
 BRANCH_NAME="add-stale-workflow"
-COMMIT_MESSAGE="Add stale issue marking workflow"
+COMMIT_MESSAGE=":seedling: Add stale issue marking workflow"
 
 # Check if gh CLI is installed
 if ! command -v gh &> /dev/null; then
@@ -117,8 +117,8 @@ deploy_to_repo() {
     # Copy workflow file
     cp "${SCRIPT_DIR}/${WORKFLOW_FILE}" "${WORKFLOW_PATH}"
 
-    # Check if there are changes
-    if git diff --quiet; then
+    # Check if there are changes (including untracked files)
+    if [ -z "$(git status --porcelain)" ]; then
         echo -e "${YELLOW}  No changes needed (workflow already exists and is identical)${NC}"
         cd - > /dev/null
         rm -rf "/tmp/${repo}"
@@ -132,8 +132,8 @@ deploy_to_repo() {
     git add "${WORKFLOW_PATH}"
     git commit -s -m "$COMMIT_MESSAGE"
 
-    # Push the branch
-    if ! git push -u origin "$BRANCH_NAME" 2>/dev/null; then
+    # Push the branch (force push to handle existing branches)
+    if ! git push -f -u origin "$BRANCH_NAME" 2>/dev/null; then
         echo -e "${RED}  Failed to push to ${full_repo}${NC}"
         cd - > /dev/null
         rm -rf "/tmp/${repo}"
@@ -141,7 +141,7 @@ deploy_to_repo() {
     fi
 
     # Create pull request
-    if gh pr create --title "$COMMIT_MESSAGE" --body "This PR adds an automated workflow to mark stale issues and pull requests.
+    PR_OUTPUT=$(gh pr create --repo "$full_repo" --head "$BRANCH_NAME" --base "$DEFAULT_BRANCH" --title "$COMMIT_MESSAGE" --body "This PR adds an automated workflow to mark stale issues and pull requests.
 
 **Configuration:**
 - Marks items as stale after 60 days of inactivity
@@ -150,10 +150,18 @@ deploy_to_repo() {
 - Exempts items with assignees
 - Automatically removes stale label when items are updated
 
-The workflow runs daily at 1:00 AM UTC and can also be triggered manually." 2>/dev/null; then
+The workflow runs daily at 1:00 AM UTC and can also be triggered manually." 2>&1)
+    PR_EXIT_CODE=$?
+
+    if [ $PR_EXIT_CODE -eq 0 ]; then
         echo -e "${GREEN}  Pull request created successfully${NC}"
+        echo "$PR_OUTPUT"
     else
-        echo -e "${YELLOW}  Branch pushed but PR creation failed (may already exist)${NC}"
+        echo -e "${RED}  Failed to create pull request${NC}"
+        echo "$PR_OUTPUT"
+        cd - > /dev/null
+        rm -rf "/tmp/${repo}"
+        return 1
     fi
 
     cd - > /dev/null

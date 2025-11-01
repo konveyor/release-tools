@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Konveyor Stale Issues Dashboard</title>
+    <title>Konveyor - Stale Issues & PRs Dashboard</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
         <header class="dashboard-header">
             <div class="header-content">
-                <h1>Konveyor Stale Issues & PRs</h1>
+                <div class="header-title">
+                    <img src="konveyor-logo.svg" alt="Konveyor" class="logo">
+                    <h1>Stale Issues & PRs</h1>
+                </div>
                 <div class="header-actions">
                     <button id="refresh-btn" class="btn btn-primary">
                         <span class="icon">↻</span> Refresh
@@ -49,6 +53,31 @@
                     <div class="stat-content">
                         <div class="stat-value" id="total-repos">-</div>
                         <div class="stat-label">Repositories</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends Charts -->
+            <div class="trends-panel" id="trends-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Historical Trends</h2>
+                    <div class="header-actions">
+                        <select id="trend-period" class="filter-select">
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90" selected>Last 90 days</option>
+                            <option value="180">Last 6 months</option>
+                            <option value="365">Last year</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="stale-trends-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="repo-breakdown-chart"></canvas>
                     </div>
                 </div>
             </div>

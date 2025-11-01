@@ -5,9 +5,10 @@ A Grafana-inspired dashboard for monitoring stale issues and pull requests acros
 ## Features
 
 - Real-time data fetched from GitHub API
+- **Historical Trends**: Automated collection and visualization of stale items over time
 - Filter by repository, type (issue/PR), and search by title
 - Sortable columns
-- Statistics overview
+- Statistics overview with trend charts
 - Dark theme inspired by Grafana
 - No backend required - runs entirely in the browser
 - Easy to host on GitHub Pages
@@ -18,7 +19,7 @@ A Grafana-inspired dashboard for monitoring stale issues and pull requests acros
 
 1. Clone the repository and navigate to the dashboard directory:
    ```bash
-   cd dashboard
+   cd stale-dashboard
    ```
 
 2. Serve the files using a local web server:
@@ -34,17 +35,22 @@ A Grafana-inspired dashboard for monitoring stale issues and pull requests acros
 
 ### Option 2: GitHub Pages Deployment
 
-1. Enable GitHub Pages for your fork:
-   - Go to your repository settings
+1. Enable GitHub Pages in the repository (typically upstream konveyor/release-tools):
+   - Go to repository Settings
    - Navigate to "Pages" section
    - Set source to "Deploy from a branch"
-   - Select the branch containing the dashboard
-   - Set the folder to `/dashboard` (or root if you move the files)
+   - Select the `main` branch
+   - Set the folder to `/` (root)
    - Click "Save"
 
-2. Access your dashboard at:
+2. Access the dashboard at:
    ```
-   https://YOUR-USERNAME.github.io/release-tools/
+   https://konveyor.github.io/release-tools/stale-dashboard/
+   ```
+
+   Or if deploying from a fork:
+   ```
+   https://YOUR-USERNAME.github.io/release-tools/stale-dashboard/
    ```
 
 ## Configuration
@@ -111,6 +117,14 @@ clearGitHubToken()
 - **Stale PRs**: Count of stale pull requests
 - **Repositories**: Number of repositories with stale items
 
+### Historical Trends (Optional)
+If you enable historical data collection, the dashboard displays:
+- **Stale Items Over Time**: Line chart showing trends in stale issues and PRs
+- **Repository Breakdown**: Bar chart showing which repos have the most stale items
+- **Time Period Selector**: View trends for last 30/60/90/180/365 days or all time
+
+To enable historical trends, see [Enabling Historical Data Collection](#enabling-historical-data-collection) below.
+
 ### Filters
 - **Repository**: Filter by specific repository
 - **Type**: Show only issues or only PRs
@@ -139,6 +153,61 @@ cd stale-workflow
 ```
 
 See the [stale-workflow README](../stale-workflow/README.md) for more information.
+
+## Enabling Historical Data Collection
+
+To track trends over time, automated data collection can be enabled that runs daily and commits snapshots to the repository.
+
+**Note**: This feature should be enabled in the **upstream konveyor/release-tools repository** by a maintainer. This ensures everyone views the same historical data on a centralized dashboard.
+
+### Setup (for Maintainers)
+
+1. Run the setup script from the `stale-workflow` directory:
+   ```bash
+   cd stale-workflow
+   ./setup-history-collection.sh
+   ```
+
+   This will automatically create a pull request to add the history collection workflow.
+
+2. Review and merge the PR.
+
+3. **Important**: After merging, enable workflow write permissions:
+   - Go to Settings > Actions > General
+   - Under "Workflow permissions", select "Read and write permissions"
+   - Click "Save"
+
+4. The workflow will run automatically daily at 2:00 AM UTC, or can be triggered manually:
+   ```bash
+   gh workflow run collect-stale-history.yml
+   ```
+
+### For Non-Maintainers
+
+If you're not a maintainer but want to see historical trends, wait for a maintainer to enable this feature in upstream. Once enabled, the dashboard will automatically display trend charts when you visit it.
+
+### How It Works
+
+- The workflow collects data from all repositories in `stale-dashboard/config.js`
+- Creates a JSON file with the date (e.g., `2025-11-01.json`) in `stale-dashboard/data/history/`
+- Commits the data automatically
+- The dashboard detects these files and displays trend charts
+
+### Data Format
+
+Each historical data file contains:
+```json
+{
+  "date": "2025-11-01",
+  "totals": {
+    "totalStale": 42,
+    "staleIssues": 30,
+    "stalePRs": 12,
+    "repositories": 5
+  },
+  "repositories": [...]
+}
+```
 
 ## Browser Support
 
@@ -169,4 +238,4 @@ Contributions are welcome! Please follow the [Konveyor community guidelines](htt
 
 ## License
 
-See the main repository [LICENSE](../LICENSE) file.
+See the main repository [LICENSE](../../LICENSE) file.

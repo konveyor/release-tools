@@ -3,13 +3,19 @@ class StaleDashboard {
     constructor() {
         this.staleItems = [];
         this.filteredItems = [];
+        this.historicalData = [];
         this.currentSort = { field: 'updated', ascending: false };
+        this.charts = {
+            trends: null,
+            breakdown: null
+        };
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.loadData();
+        this.loadHistoricalData();
     }
 
     setupEventListeners() {
@@ -41,6 +47,11 @@ class StaleDashboard {
                 const field = th.dataset.sort;
                 this.sortBy(field);
             });
+        });
+
+        // Trend period selector
+        document.getElementById('trend-period').addEventListener('change', () => {
+            this.updateCharts();
         });
     }
 
@@ -259,6 +270,201 @@ class StaleDashboard {
     showError(message) {
         const tbody = document.getElementById('table-body');
         tbody.innerHTML = `<tr><td colspan="8" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+    }
+
+    async loadHistoricalData() {
+        try {
+            // Try to load historical data files
+            // We'll scan for files in data/history directory
+            const today = new Date();
+            const historyData = [];
+
+            // Try to load data from the last 365 days
+            for (let i = 0; i < 365; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                try {
+                    const response = await fetch(`data/history/${dateStr}.json`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        historyData.push(data);
+                    }
+                } catch (err) {
+                    // File doesn't exist, skip
+                    continue;
+                }
+            }
+
+            if (historyData.length > 0) {
+                this.historicalData = historyData.sort((a, b) =>
+                    new Date(a.date) - new Date(b.date)
+                );
+                document.getElementById('trends-panel').style.display = 'block';
+                this.updateCharts();
+            }
+        } catch (error) {
+            console.log('Historical data not available yet:', error.message);
+        }
+    }
+
+    updateCharts() {
+        if (this.historicalData.length === 0) return;
+
+        const period = document.getElementById('trend-period').value;
+        let data = this.historicalData;
+
+        // Filter by period
+        if (period !== 'all') {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parseInt(period));
+            data = this.historicalData.filter(d => new Date(d.date) >= cutoffDate);
+        }
+
+        this.renderTrendsChart(data);
+        this.renderBreakdownChart(data);
+    }
+
+    renderTrendsChart(data) {
+        const ctx = document.getElementById('stale-trends-chart');
+
+        // Destroy existing chart
+        if (this.charts.trends) {
+            this.charts.trends.destroy();
+        }
+
+        const dates = data.map(d => d.date);
+        const totalStale = data.map(d => d.totals?.totalStale || 0);
+        const staleIssues = data.map(d => d.totals?.staleIssues || 0);
+        const stalePRs = data.map(d => d.totals?.stalePRs || 0);
+
+        this.charts.trends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Total Stale Items',
+                        data: totalStale,
+                        borderColor: '#33b5e5',
+                        backgroundColor: 'rgba(51, 181, 229, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Stale Issues',
+                        data: staleIssues,
+                        borderColor: '#73bf69',
+                        backgroundColor: 'rgba(115, 191, 105, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Stale PRs',
+                        data: stalePRs,
+                        borderColor: '#ff9830',
+                        backgroundColor: 'rgba(255, 152, 48, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#d8d9da',
+                            font: { size: 12 }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Stale Items Over Time',
+                        color: '#d8d9da',
+                        font: { size: 14, weight: 'normal' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9fa3a7', maxTicksLimit: 10 },
+                        grid: { color: '#2d3138' }
+                    },
+                    y: {
+                        ticks: { color: '#9fa3a7' },
+                        grid: { color: '#2d3138' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    renderBreakdownChart(data) {
+        const ctx = document.getElementById('repo-breakdown-chart');
+
+        // Destroy existing chart
+        if (this.charts.breakdown) {
+            this.charts.breakdown.destroy();
+        }
+
+        // Get latest data point
+        const latest = data[data.length - 1];
+        if (!latest || !latest.repositories) return;
+
+        const repos = latest.repositories
+            .filter(r => r.totalStale > 0)
+            .sort((a, b) => b.totalStale - a.totalStale)
+            .slice(0, 10); // Top 10 repos
+
+        const labels = repos.map(r => r.repo);
+        const staleData = repos.map(r => r.totalStale);
+        const colors = [
+            '#33b5e5', '#73bf69', '#ff9830', '#e02f44', '#a77ddc',
+            '#5bc0de', '#f0ad4e', '#d9534f', '#5cb85c', '#337ab7'
+        ];
+
+        this.charts.breakdown = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Stale Items',
+                    data: staleData,
+                    backgroundColor: colors.slice(0, repos.length),
+                    borderColor: colors.slice(0, repos.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Stale Items by Repository (Current)',
+                        color: '#d8d9da',
+                        font: { size: 14, weight: 'normal' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9fa3a7' },
+                        grid: { color: '#2d3138' }
+                    },
+                    y: {
+                        ticks: { color: '#9fa3a7' },
+                        grid: { color: '#2d3138' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
     }
 }
 

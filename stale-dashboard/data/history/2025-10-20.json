@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-10-20T02:00:00.000Z",
+  "date": "2025-10-20",
+  "totals": {
+    "repositories": 3,
+    "totalStale": 35,
+    "staleIssues": 23,
+    "stalePRs": 12
+  },
+  "repositories": [
+    {
+      "org": "konveyor",
+      "repo": "analyzer-lsp",
+      "totalStale": 19,
+      "staleIssues": 13,
+      "stalePRs": 6,
+      "items": []
+    },
+    {
+      "org": "konveyor",
+      "repo": "tackle2-hub",
+      "totalStale": 10,
+      "staleIssues": 6,
+      "stalePRs": 4,
+      "items": []
+    },
+    {
+      "org": "konveyor",
+      "repo": "kai",
+      "totalStale": 6,
+      "staleIssues": 4,
+      "stalePRs": 2,
+      "items": []
+    }
+  ]
+}

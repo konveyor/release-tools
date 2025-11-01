@@ -58,7 +58,7 @@ For detailed usage instructions, see the [stale-workflow README](./stale-workflo
 
 ### Stale Issues Dashboard
 
-See [dashboard directory](./dashboard/)
+See [stale-dashboard directory](./stale-dashboard/)
 
 A web-based dashboard for monitoring and managing stale issues and pull requests across Konveyor repositories. The dashboard provides:
 
@@ -70,7 +70,7 @@ A web-based dashboard for monitoring and managing stale issues and pull requests
 
 The dashboard works in conjunction with the Stale Issue Workflow to provide visibility into items that need attention.
 
-For setup and deployment instructions, see the [dashboard README](./dashboard/README.md).
+For setup and deployment instructions, see the [dashboard README](./stale-dashboard/README.md).
 
 # Contributing
 

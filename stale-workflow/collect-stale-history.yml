@@ -1,0 +1,172 @@
+name: Collect Stale Issues History
+
+on:
+  schedule:
+    # Runs daily at 2:00 AM UTC (after the stale marking workflow)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  collect-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Collect stale data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create data directory if it doesn't exist
+          mkdir -p stale-dashboard/data/history
+
+          # Create inline Node.js script to fetch stale issues
+          cat > collect-data.js << 'SCRIPT_EOF'
+          const https = require('https');
+          const fs = require('fs');
+
+          // Load dashboard config to get repository list
+          const configContent = fs.readFileSync('stale-dashboard/config.js', 'utf8');
+          // Extract repositories array from config.js
+          const repoMatch = configContent.match(/repositories:\s*\[([\s\S]*?)\]/);
+          if (!repoMatch) {
+            console.error('Could not parse repositories from config.js');
+            process.exit(1);
+          }
+
+          // Parse repository entries
+          const repoEntries = repoMatch[1].match(/\{\s*org:\s*['"](\w+)['"]\s*,\s*repo:\s*['"]([^'"]+)['"]\s*\}/g);
+          if (!repoEntries) {
+            console.error('No repositories found in config');
+            process.exit(1);
+          }
+
+          const repositories = repoEntries.map(entry => {
+            const orgMatch = entry.match(/org:\s*['"](\w+)['"]/);
+            const repoMatch = entry.match(/repo:\s*['"]([^'"]+)['"]/);
+            return { org: orgMatch[1], repo: repoMatch[1] };
+          });
+
+          console.log(`Collecting data from ${repositories.length} repositories...`);
+
+          const token = process.env.GITHUB_TOKEN;
+          const data = {
+            timestamp: new Date().toISOString(),
+            date: new Date().toISOString().split('T')[0],
+            repositories: []
+          };
+
+          function fetchStaleItems(org, repo) {
+            return new Promise((resolve, reject) => {
+              const options = {
+                hostname: 'api.github.com',
+                path: `/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100`,
+                headers: {
+                  'User-Agent': 'Konveyor-Stale-History-Collector',
+                  'Authorization': `token ${token}`,
+                  'Accept': 'application/vnd.github.v3+json'
+                }
+              };
+
+              https.get(options, (res) => {
+                let body = '';
+                res.on('data', (chunk) => body += chunk);
+                res.on('end', () => {
+                  if (res.statusCode === 200) {
+                    const issues = JSON.parse(body);
+                    const staleIssues = issues.filter(item => !item.pull_request);
+                    const stalePRs = issues.filter(item => item.pull_request);
+
+                    resolve({
+                      org,
+                      repo,
+                      totalStale: issues.length,
+                      staleIssues: staleIssues.length,
+                      stalePRs: stalePRs.length,
+                      items: issues.map(item => ({
+                        number: item.number,
+                        title: item.title,
+                        type: item.pull_request ? 'pr' : 'issue',
+                        updatedAt: item.updated_at,
+                        author: item.user.login,
+                        labels: item.labels.map(l => l.name)
+                      }))
+                    });
+                  } else if (res.statusCode === 404) {
+                    console.log(`Repository ${org}/${repo} not found or stale workflow not deployed`);
+                    resolve(null);
+                  } else {
+                    console.error(`Error fetching ${org}/${repo}: ${res.statusCode}`);
+                    resolve(null);
+                  }
+                });
+              }).on('error', (err) => {
+                console.error(`Request error for ${org}/${repo}:`, err.message);
+                resolve(null);
+              });
+            });
+          }
+
+          async function collectAllData() {
+            for (const repo of repositories) {
+              const repoData = await fetchStaleItems(repo.org, repo.repo);
+              if (repoData) {
+                data.repositories.push(repoData);
+                console.log(`  ${repo.org}/${repo.repo}: ${repoData.totalStale} stale items (${repoData.staleIssues} issues, ${repoData.stalePRs} PRs)`);
+              }
+            }
+
+            // Calculate totals
+            data.totals = {
+              repositories: data.repositories.length,
+              totalStale: data.repositories.reduce((sum, r) => sum + r.totalStale, 0),
+              staleIssues: data.repositories.reduce((sum, r) => sum + r.staleIssues, 0),
+              stalePRs: data.repositories.reduce((sum, r) => sum + r.stalePRs, 0)
+            };
+
+            // Save to file
+            const filename = `stale-dashboard/data/history/${data.date}.json`;
+            fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+            console.log(`\nData saved to ${filename}`);
+            console.log(`Total: ${data.totals.totalStale} stale items across ${data.totals.repositories} repositories`);
+          }
+
+          collectAllData().catch(err => {
+            console.error('Error collecting data:', err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          # Run the collection script
+          node collect-data.js
+
+      - name: Commit and push data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add only the new/updated history file
+          git add stale-dashboard/data/history/*.json
+
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          # Commit with current date
+          DATE=$(date +%Y-%m-%d)
+          git commit -m ":chart_with_upwards_trend: Add stale issues history for ${DATE}"
+
+          # Push to repository
+          git push

@@ -45,14 +45,14 @@ jobs:
           }
 
           // Parse repository entries
-          const repoEntries = repoMatch[1].match(/\{\s*org:\s*['"](\w+)['"]\s*,\s*repo:\s*['"]([^'"]+)['"]\s*\}/g);
+          const repoEntries = repoMatch[1].match(/\{\s*org:\s*['"]([\w-]+)['"]\s*,\s*repo:\s*['"]([^'"]+)['"]\s*\}/g);
           if (!repoEntries) {
             console.error('No repositories found in config');
             process.exit(1);
           }
 
           const repositories = repoEntries.map(entry => {
-            const orgMatch = entry.match(/org:\s*['"](\w+)['"]/);
+            const orgMatch = entry.match(/org:\s*['"]([\w-]+)['"]/);
             const repoMatch = entry.match(/repo:\s*['"]([^'"]+)['"]/);
             return { org: orgMatch[1], repo: repoMatch[1] };
           });

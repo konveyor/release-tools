@@ -111,8 +111,8 @@ jobs:
                               title: item.title,
                               type: item.pull_request ? 'pr' : 'issue',
                               updatedAt: item.updated_at,
-                              author: item.user.login,
-                              labels: item.labels.map(l => l.name)
+                              author: item.user?.login || 'unknown',
+                              labels: item.labels?.map(l => l.name) || []
                             }))
                           });
                         }

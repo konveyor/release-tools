@@ -68,52 +68,68 @@ jobs:
 
           function fetchStaleItems(org, repo) {
             return new Promise((resolve, reject) => {
-              const options = {
-                hostname: 'api.github.com',
-                path: `/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100`,
-                headers: {
-                  'User-Agent': 'Konveyor-Stale-History-Collector',
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/vnd.github.v3+json'
-                }
-              };
+              let allIssues = [];
+              let page = 1;
 
-              https.get(options, (res) => {
-                let body = '';
-                res.on('data', (chunk) => body += chunk);
-                res.on('end', () => {
-                  if (res.statusCode === 200) {
-                    const issues = JSON.parse(body);
-                    const staleIssues = issues.filter(item => !item.pull_request);
-                    const stalePRs = issues.filter(item => item.pull_request);
-
-                    resolve({
-                      org,
-                      repo,
-                      totalStale: issues.length,
-                      staleIssues: staleIssues.length,
-                      stalePRs: stalePRs.length,
-                      items: issues.map(item => ({
-                        number: item.number,
-                        title: item.title,
-                        type: item.pull_request ? 'pr' : 'issue',
-                        updatedAt: item.updated_at,
-                        author: item.user.login,
-                        labels: item.labels.map(l => l.name)
-                      }))
-                    });
-                  } else if (res.statusCode === 404) {
-                    console.log(`Repository ${org}/${repo} not found or stale workflow not deployed`);
-                    resolve(null);
-                  } else {
-                    console.error(`Error fetching ${org}/${repo}: ${res.statusCode}`);
-                    resolve(null);
+              function fetchPage() {
+                const options = {
+                  hostname: 'api.github.com',
+                  path: `/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100&page=${page}`,
+                  headers: {
+                    'User-Agent': 'Konveyor-Stale-History-Collector',
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
                   }
+                };
+
+                https.get(options, (res) => {
+                  let body = '';
+                  res.on('data', (chunk) => body += chunk);
+                  res.on('end', () => {
+                    if (res.statusCode === 200) {
+                      const issues = JSON.parse(body);
+                      allIssues = allIssues.concat(issues);
+
+                      // Check if there are more pages
+                      if (issues.length === 100) {
+                        page++;
+                        fetchPage();
+                      } else {
+                        // Process all collected issues
+                        const staleIssues = allIssues.filter(item => !item.pull_request);
+                        const stalePRs = allIssues.filter(item => item.pull_request);
+
+                        resolve({
+                          org,
+                          repo,
+                          totalStale: allIssues.length,
+                          staleIssues: staleIssues.length,
+                          stalePRs: stalePRs.length,
+                          items: allIssues.map(item => ({
+                            number: item.number,
+                            title: item.title,
+                            type: item.pull_request ? 'pr' : 'issue',
+                            updatedAt: item.updated_at,
+                            author: item.user.login,
+                            labels: item.labels.map(l => l.name)
+                          }))
+                        });
+                      }
+                    } else if (res.statusCode === 404) {
+                      console.log(`Repository ${org}/${repo} not found or stale workflow not deployed`);
+                      resolve(null);
+                    } else {
+                      console.error(`Error fetching ${org}/${repo}: ${res.statusCode}`);
+                      resolve(null);
+                    }
+                  });
+                }).on('error', (err) => {
+                  console.error(`Request error for ${org}/${repo}:`, err.message);
+                  resolve(null);
                 });
-              }).on('error', (err) => {
-                console.error(`Request error for ${org}/${repo}:`, err.message);
-                resolve(null);
-              });
+              }
+
+              fetchPage();
             });
           }
 

@@ -20,7 +20,7 @@ REPO_ROOT="$( cd "${SCRIPT_DIR}/.." && pwd )"
 WORKFLOW_FILE="collect-stale-history.yml"
 WORKFLOW_DEST=".github/workflows/collect-stale-history.yml"
 BRANCH_NAME="add-stale-history-collection"
-COMMIT_MESSAGE=":chart_with_upwards_trend: Add stale issues history collection workflow"
+COMMIT_MESSAGE=":sparkles: Add stale issues history collection workflow"
 
 echo -e "${YELLOW}Stale Issues History Collection Setup${NC}"
 echo ""

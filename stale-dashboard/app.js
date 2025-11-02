@@ -85,39 +85,49 @@ class StaleDashboard {
 
         // Add token if configured
         if (DASHBOARD_CONFIG.githubToken) {
-            headers['Authorization'] = `token ${DASHBOARD_CONFIG.githubToken}`;
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
         }
 
+        let page = 1;
+        let hasMore = true;
+
         try {
-            // Fetch issues with 'stale' label
-            const issuesResponse = await fetch(
-                `${baseUrl}/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100`,
-                { headers }
-            );
+            // Fetch issues with 'stale' label using pagination
+            while (hasMore) {
+                const issuesResponse = await fetch(
+                    `${baseUrl}/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100&page=${page}`,
+                    { headers }
+                );
 
-            if (!issuesResponse.ok) {
-                console.error(`Failed to fetch issues for ${org}/${repo}:`, issuesResponse.status);
-                return;
+                if (!issuesResponse.ok) {
+                    console.error(`Failed to fetch issues for ${org}/${repo}:`, issuesResponse.status);
+                    break;
+                }
+
+                const issues = await issuesResponse.json();
+
+                if (issues.length === 0) {
+                    hasMore = false;
+                } else {
+                    // Process issues (GitHub API returns both issues and PRs in /issues endpoint)
+                    issues.forEach(item => {
+                        this.staleItems.push({
+                            type: item.pull_request ? 'pr' : 'issue',
+                            repo: `${org}/${repo}`,
+                            org: org,
+                            repoName: repo,
+                            title: item.title,
+                            number: item.number,
+                            author: item.user.login,
+                            updated: new Date(item.updated_at),
+                            labels: item.labels.map(l => l.name),
+                            url: item.html_url,
+                            state: item.state
+                        });
+                    });
+                    page++;
+                }
             }
-
-            const issues = await issuesResponse.json();
-
-            // Process issues (GitHub API returns both issues and PRs in /issues endpoint)
-            issues.forEach(item => {
-                this.staleItems.push({
-                    type: item.pull_request ? 'pr' : 'issue',
-                    repo: `${org}/${repo}`,
-                    org: org,
-                    repoName: repo,
-                    title: item.title,
-                    number: item.number,
-                    author: item.user.login,
-                    updated: new Date(item.updated_at),
-                    labels: item.labels.map(l => l.name),
-                    url: item.html_url,
-                    state: item.state
-                });
-            });
         } catch (error) {
             console.error(`Error fetching data for ${org}/${repo}:`, error);
         }

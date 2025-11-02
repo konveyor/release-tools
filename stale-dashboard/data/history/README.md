@@ -2,6 +2,22 @@
 
 This directory contains daily snapshots of stale issues and pull requests across Konveyor repositories.
 
+## Index File
+
+The `index.json` file lists all available historical data files. This prevents the dashboard from making unnecessary HTTP requests for dates that don't have data.
+
+```json
+{
+  "available_dates": [
+    "2025-11-01",
+    "2025-10-31",
+    "2025-10-30"
+  ]
+}
+```
+
+This file is automatically updated by the collection workflow whenever new data is added.
+
 ## Data Format
 
 Each file is named `YYYY-MM-DD.json` and contains:

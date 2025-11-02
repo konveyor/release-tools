@@ -73,7 +73,7 @@ jobs:
                 path: `/repos/${org}/${repo}/issues?labels=stale&state=open&per_page=100`,
                 headers: {
                   'User-Agent': 'Konveyor-Stale-History-Collector',
-                  'Authorization': `token ${token}`,
+                  'Authorization': `Bearer ${token}`,
                   'Accept': 'application/vnd.github.v3+json'
                 }
               };
@@ -139,6 +139,20 @@ jobs:
             fs.writeFileSync(filename, JSON.stringify(data, null, 2));
             console.log(`\nData saved to ${filename}`);
             console.log(`Total: ${data.totals.totalStale} stale items across ${data.totals.repositories} repositories`);
+
+            // Update index.json with all available dates
+            const historyDir = 'stale-dashboard/data/history';
+            const files = fs.readdirSync(historyDir)
+              .filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.json$/))
+              .map(f => f.replace('.json', ''))
+              .sort();
+
+            const index = {
+              available_dates: files
+            };
+
+            fs.writeFileSync(`${historyDir}/index.json`, JSON.stringify(index, null, 2));
+            console.log(`Updated index with ${files.length} available dates`);
           }
 
           collectAllData().catch(err => {
@@ -155,7 +169,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Add only the new/updated history file
+          # Add history files and index
           git add stale-dashboard/data/history/*.json
 
           # Check if there are changes

@@ -284,31 +284,32 @@ class StaleDashboard {
 
     async loadHistoricalData() {
         try {
-            // Try to load historical data files
-            // We'll scan for files in data/history directory
-            const today = new Date();
-            const historyData = [];
-
-            // Try to load data from the last 365 days
-            for (let i = 0; i < 365; i++) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
-
-                try {
-                    const response = await fetch(`data/history/${dateStr}.json`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        historyData.push(data);
-                    }
-                } catch (err) {
-                    // File doesn't exist, skip
-                    continue;
-                }
+            // Load index of available historical data files
+            const indexResponse = await fetch('data/history/index.json');
+            if (!indexResponse.ok) {
+                console.log('Historical data index not available');
+                return;
             }
 
-            if (historyData.length > 0) {
-                this.historicalData = historyData.sort((a, b) =>
+            const index = await indexResponse.json();
+            const historyData = await Promise.all(
+                index.available_dates.map(async (dateStr) => {
+                    try {
+                        const response = await fetch(`data/history/${dateStr}.json`);
+                        if (response.ok) {
+                            return await response.json();
+                        }
+                    } catch (err) {
+                        console.error(`Failed to load ${dateStr}:`, err);
+                    }
+                    return null;
+                })
+            );
+
+            const validData = historyData.filter(d => d !== null);
+
+            if (validData.length > 0) {
+                this.historicalData = validData.sort((a, b) =>
                     new Date(a.date) - new Date(b.date)
                 );
                 document.getElementById('trends-panel').style.display = 'block';

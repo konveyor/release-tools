@@ -84,9 +84,11 @@ get_org_for_repo() {
 }
 
 # Function to deploy workflow to a single repository
+# Returns PR URL via global variable PR_URL
 deploy_to_repo() {
     local repo="$1"
     local org=$(get_org_for_repo "$repo")
+    PR_URL=""
 
     if [ -z "$org" ]; then
         echo -e "${RED}  Could not find org for repo: ${repo}${NC}"
@@ -156,6 +158,8 @@ The workflow runs daily at 1:00 AM UTC and can also be triggered manually." 2>&1
     if [ $PR_EXIT_CODE -eq 0 ]; then
         echo -e "${GREEN}  Pull request created successfully${NC}"
         echo "$PR_OUTPUT"
+        # Extract PR URL from output
+        PR_URL=$(echo "$PR_OUTPUT" | grep -o 'https://github.com/[^[:space:]]*')
     else
         echo -e "${RED}  Failed to create pull request${NC}"
         echo "$PR_OUTPUT"
@@ -218,6 +222,7 @@ if [ $# -eq 0 ]; then
     SUCCESS_COUNT=0
     FAIL_COUNT=0
     SKIP_COUNT=0
+    declare -a CREATED_PRS
 
     while IFS= read -r repo; do
         if [ -z "$repo" ]; then
@@ -225,6 +230,9 @@ if [ $# -eq 0 ]; then
         fi
         if deploy_to_repo "$repo"; then
             ((SUCCESS_COUNT++))
+            if [ -n "$PR_URL" ]; then
+                CREATED_PRS+=("$(get_org_for_repo "$repo")/${repo}|${PR_URL}")
+            fi
         else
             ((FAIL_COUNT++))
         fi
@@ -236,12 +244,22 @@ if [ $# -eq 0 ]; then
     if [ $BLACKLIST_COUNT -gt 0 ]; then
         echo -e "  Blacklisted: ${BLACKLIST_COUNT}"
     fi
+
+    # Display created PRs
+    if [ ${#CREATED_PRS[@]} -gt 0 ]; then
+        echo -e "\n${GREEN}Created Pull Requests:${NC}"
+        for pr_entry in "${CREATED_PRS[@]}"; do
+            IFS='|' read -r repo_name pr_url <<< "$pr_entry"
+            echo -e "  ${YELLOW}${repo_name}${NC}: ${pr_url}"
+        done
+    fi
 else
     # Deploy to specified repos
     echo "Deploying to specified repositories..."
     SUCCESS_COUNT=0
     FAIL_COUNT=0
     SKIP_COUNT=0
+    declare -a CREATED_PRS
 
     for repo in "$@"; do
         if is_blacklisted "$repo"; then
@@ -252,6 +270,9 @@ else
 
         if deploy_to_repo "$repo"; then
             ((SUCCESS_COUNT++))
+            if [ -n "$PR_URL" ]; then
+                CREATED_PRS+=("$(get_org_for_repo "$repo")/${repo}|${PR_URL}")
+            fi
         else
             ((FAIL_COUNT++))
         fi
@@ -262,5 +283,14 @@ else
     echo -e "  Failed: ${FAIL_COUNT}"
     if [ $SKIP_COUNT -gt 0 ]; then
         echo -e "  Skipped (blacklisted): ${SKIP_COUNT}"
+    fi
+
+    # Display created PRs
+    if [ ${#CREATED_PRS[@]} -gt 0 ]; then
+        echo -e "\n${GREEN}Created Pull Requests:${NC}"
+        for pr_entry in "${CREATED_PRS[@]}"; do
+            IFS='|' read -r repo_name pr_url <<< "$pr_entry"
+            echo -e "  ${YELLOW}${repo_name}${NC}: ${pr_url}"
+        done
     fi
 fi

@@ -28,7 +28,7 @@ echo "This script will create a PR to set up automated collection of stale issue
 echo "The workflow will:"
 echo "  - Run daily at 2:00 AM UTC"
 echo "  - Collect stale issue/PR counts from all configured repositories"
-echo "  - Commit data to dashboard/data/history/"
+echo "  - Commit data to stale-dashboard/data/history/"
 echo "  - Enable historical trend analysis in the dashboard"
 echo ""
 
@@ -191,7 +191,7 @@ PR_OUTPUT=$(gh pr create \
 
 - Adds a GitHub Actions workflow that runs daily at 2:00 AM UTC
 - Collects current counts of stale issues and PRs from all configured repositories
-- Commits daily snapshots to \`dashboard/data/history/\`
+- Commits daily snapshots to \`stale-dashboard/data/history/\`
 - Enables historical trend analysis in the stale issues dashboard
 
 ## How It Works

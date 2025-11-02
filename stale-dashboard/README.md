@@ -35,6 +35,8 @@ A Grafana-inspired dashboard for monitoring stale issues and pull requests acros
 
 ### Option 2: GitHub Pages Deployment
 
+**Note for Maintainers**: GitHub Pages must be configured manually through the repository settings. This requires repository admin access and cannot be automated via script.
+
 1. Enable GitHub Pages in the repository (typically upstream konveyor/release-tools):
    - Go to repository Settings
    - Navigate to "Pages" section
@@ -162,6 +164,10 @@ To track trends over time, automated data collection can be enabled that runs da
 
 ### Setup (for Maintainers)
 
+**Prerequisites**:
+- Repository admin/write access
+- GitHub CLI installed and authenticated
+
 1. Run the setup script from the `stale-workflow` directory:
    ```bash
    cd stale-workflow
@@ -172,10 +178,12 @@ To track trends over time, automated data collection can be enabled that runs da
 
 2. Review and merge the PR.
 
-3. **Important**: After merging, enable workflow write permissions:
+3. **Important - Manual Configuration Required**: After merging, enable workflow write permissions:
    - Go to Settings > Actions > General
    - Under "Workflow permissions", select "Read and write permissions"
    - Click "Save"
+
+   **Note**: This step cannot be automated and must be done manually by a repository maintainer.
 
 4. The workflow will run automatically daily at 2:00 AM UTC, or can be triggered manually:
    ```bash

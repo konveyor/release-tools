@@ -70,7 +70,7 @@ A web-based dashboard for monitoring and managing stale issues and pull requests
 
 The dashboard works in conjunction with the Stale Issue Workflow to provide visibility into items that need attention.
 
-For setup and deployment instructions, see the [dashboard README](./stale-dashboard/README.md).
+**For Maintainers**: Hosting the dashboard requires manually enabling GitHub Pages in repository settings. See the [dashboard README](./stale-dashboard/README.md) for complete setup instructions.
 
 # Contributing
 

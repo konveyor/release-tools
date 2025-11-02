@@ -87,33 +87,38 @@ jobs:
                   res.on('data', (chunk) => body += chunk);
                   res.on('end', () => {
                     if (res.statusCode === 200) {
-                      const issues = JSON.parse(body);
-                      allIssues = allIssues.concat(issues);
+                      try {
+                        const issues = JSON.parse(body);
+                        allIssues = allIssues.concat(issues);
 
-                      // Check if there are more pages
-                      if (issues.length === 100) {
-                        page++;
-                        fetchPage();
-                      } else {
-                        // Process all collected issues
-                        const staleIssues = allIssues.filter(item => !item.pull_request);
-                        const stalePRs = allIssues.filter(item => item.pull_request);
+                        // Check if there are more pages
+                        if (issues.length === 100) {
+                          page++;
+                          fetchPage();
+                        } else {
+                          // Process all collected issues
+                          const staleIssues = allIssues.filter(item => !item.pull_request);
+                          const stalePRs = allIssues.filter(item => item.pull_request);
 
-                        resolve({
-                          org,
-                          repo,
-                          totalStale: allIssues.length,
-                          staleIssues: staleIssues.length,
-                          stalePRs: stalePRs.length,
-                          items: allIssues.map(item => ({
-                            number: item.number,
-                            title: item.title,
-                            type: item.pull_request ? 'pr' : 'issue',
-                            updatedAt: item.updated_at,
-                            author: item.user.login,
-                            labels: item.labels.map(l => l.name)
-                          }))
-                        });
+                          resolve({
+                            org,
+                            repo,
+                            totalStale: allIssues.length,
+                            staleIssues: staleIssues.length,
+                            stalePRs: stalePRs.length,
+                            items: allIssues.map(item => ({
+                              number: item.number,
+                              title: item.title,
+                              type: item.pull_request ? 'pr' : 'issue',
+                              updatedAt: item.updated_at,
+                              author: item.user.login,
+                              labels: item.labels.map(l => l.name)
+                            }))
+                          });
+                        }
+                      } catch (err) {
+                        console.error(`Failed to parse response for ${org}/${repo}:`, err.message);
+                        resolve(null);
                       }
                     } else if (res.statusCode === 404) {
                       console.log(`Repository ${org}/${repo} not found or stale workflow not deployed`);

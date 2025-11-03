@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konveyor - Stale Issues & PRs Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <img src="konveyor-logo.svg" alt="Konveyor" class="logo">
+                    <h1>Stale Issues & PRs</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn btn-primary">
+                        <span class="icon">↻</span> Refresh
+                    </button>
+                    <span id="last-updated" class="last-updated"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-stale">-</div>
+                        <div class="stat-label">Total Stale Items</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🐛</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-issues">-</div>
+                        <div class="stat-label">Stale Issues</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔀</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-prs">-</div>
+                        <div class="stat-label">Stale PRs</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-repos">-</div>
+                        <div class="stat-label">Repositories</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends Charts -->
+            <div class="trends-panel" id="trends-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Historical Trends</h2>
+                    <div class="header-actions">
+                        <select id="trend-period" class="filter-select">
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90" selected>Last 90 days</option>
+                            <option value="180">Last 6 months</option>
+                            <option value="365">Last year</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="stale-trends-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="repo-breakdown-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-panel">
+                <div class="panel-header">
+                    <h2>Filters</h2>
+                </div>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="repo-filter">Repository</label>
+                        <select id="repo-filter" class="filter-select">
+                            <option value="">All Repositories</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="type-filter">Type</label>
+                        <select id="type-filter" class="filter-select">
+                            <option value="">All Types</option>
+                            <option value="issue">Issues</option>
+                            <option value="pr">Pull Requests</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="search-filter">Search</label>
+                        <input type="text" id="search-filter" class="filter-input" placeholder="Search title...">
+                    </div>
+                    <div class="filter-group">
+                        <button id="clear-filters" class="btn btn-secondary">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Stale Items</h2>
+                    <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                        <span class="spinner"></span> Loading...
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="stale-items-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="type">Type</th>
+                                <th class="sortable" data-sort="repo">Repository</th>
+                                <th class="sortable" data-sort="title">Title</th>
+                                <th class="sortable" data-sort="number">Number</th>
+                                <th class="sortable" data-sort="author">Author</th>
+                                <th class="sortable" data-sort="updated">Last Updated</th>
+                                <th class="sortable" data-sort="labels">Labels</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="8" class="no-data">No stale items found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

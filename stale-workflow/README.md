@@ -15,8 +15,12 @@ This package contains files to deploy a stale issues/PRs marking workflow to you
 - `stale-issues-workflow.yml` - The GitHub Actions workflow configuration
 - `deploy-stale-workflow.sh` - Automated deployment script
 - `remove-stale-workflow.sh` - Automated removal script
+- `collect-stale-history.yml` - Historical data collection workflow (optional)
+- `setup-history-collection.sh` - Setup script for historical data tracking
 - `README.md` - This documentation
 - `stale-workflow-blacklist.txt.example` - Example blacklist file
+
+**Note**: The web-based dashboard is located at [../stale-dashboard/](../stale-dashboard/)
 
 ## Automated Deployment
 
@@ -111,6 +115,55 @@ This will:
 ```
 
 The removal script uses the same blacklist file as the deployment script, so any blacklisted repositories will be skipped.
+
+## Historical Data Collection (Optional)
+
+To track trends over time and enable visualizations in the dashboard, you can set up automated historical data collection.
+
+**Note**: This should be set up in the **upstream konveyor/release-tools repository** so that all maintainers can view the same historical data on a shared dashboard.
+
+### Setup
+
+**Prerequisites:**
+- GitHub CLI installed and authenticated
+- Write access to the repository (for upstream maintainers)
+
+Run the setup script to create a PR that enables automated data collection:
+
+```bash
+cd stale-workflow
+./setup-history-collection.sh
+```
+
+This will:
+1. Create a new branch `add-stale-history-collection`
+2. Copy the `collect-stale-history.yml` workflow to `.github/workflows/`
+3. Create the data directory structure
+4. Commit the changes with DCO sign-off
+5. Push the branch
+6. **Create a pull request** for review
+
+Once the PR is merged, enable workflow write permissions:
+- Go to Settings > Actions > General
+- Under "Workflow permissions", select "Read and write permissions"
+- Click "Save"
+
+### How It Works
+
+- Runs daily at 2:00 AM UTC (after the stale marking workflow)
+- Collects current stale issue/PR counts from all configured repositories
+- Commits data to `stale-dashboard/data/history/YYYY-MM-DD.json`
+- Dashboard automatically detects and displays trend charts
+
+### Manual Trigger
+
+To collect data immediately:
+
+```bash
+gh workflow run collect-stale-history.yml
+```
+
+See the [dashboard README](../stale-dashboard/README.md) for information about viewing historical trends.
 
 ## Viewing Stale Items
 

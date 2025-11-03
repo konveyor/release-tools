@@ -56,6 +56,22 @@ The deployment script can target specific repositories or all repositories in an
 
 For detailed usage instructions, see the [stale-workflow README](./stale-workflow/README.md).
 
+### Stale Issues Dashboard
+
+See [stale-dashboard directory](./stale-dashboard/)
+
+A web-based dashboard for monitoring and managing stale issues and pull requests across Konveyor repositories. The dashboard provides:
+
+- Real-time visualization of stale items across all configured repositories
+- Filtering by repository, type (issue/PR), and search functionality
+- Statistics overview with counts of stale issues, PRs, and affected repositories
+- Grafana-inspired dark theme for a modern look
+- Can be hosted on GitHub Pages (no backend required)
+
+The dashboard works in conjunction with the Stale Issue Workflow to provide visibility into items that need attention.
+
+**For Maintainers**: Hosting the dashboard requires manually enabling GitHub Pages in repository settings. See the [dashboard README](./stale-dashboard/README.md) for complete setup instructions.
+
 # Contributing
 
 We welcome contributions to this project! If you're interested in contributing,

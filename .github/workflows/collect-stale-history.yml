@@ -82,7 +82,7 @@ jobs:
                   }
                 };
 
-                https.get(options, (res) => {
+                const req = https.get(options, (res) => {
                   let body = '';
                   res.on('data', (chunk) => body += chunk);
                   res.on('end', () => {
@@ -130,6 +130,13 @@ jobs:
                   });
                 }).on('error', (err) => {
                   console.error(`Request error for ${org}/${repo}:`, err.message);
+                  resolve(null);
+                });
+
+                // Set 10 second timeout
+                req.setTimeout(10000, () => {
+                  req.destroy();
+                  console.error(`Request timeout for ${org}/${repo}`);
                   resolve(null);
                 });
               }

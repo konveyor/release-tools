@@ -155,7 +155,8 @@ class StaleDashboard {
         repos.forEach(repo => {
             const option = document.createElement('option');
             option.value = repo;
-            option.textContent = repo;
+            // Display just the repo name without org prefix
+            option.textContent = repo.split('/')[1] || repo;
             repoFilter.appendChild(option);
         });
     }
@@ -229,7 +230,7 @@ class StaleDashboard {
                         ${item.type === 'issue' ? 'Issue' : 'PR'}
                     </span>
                 </td>
-                <td>${item.repo}</td>
+                <td>${item.repoName}</td>
                 <td>
                     <a href="${item.url}" target="_blank" title="${item.title}">
                         ${this.truncate(item.title, 60)}
@@ -430,7 +431,8 @@ class StaleDashboard {
             .sort((a, b) => b.totalStale - a.totalStale)
             .slice(0, 10); // Top 10 repos
 
-        const labels = repos.map(r => r.repo);
+        // Display just repo names without org prefix
+        const labels = repos.map(r => r.repo.split('/')[1] || r.repo);
         const staleData = repos.map(r => r.totalStale);
         const colors = [
             '#33b5e5', '#73bf69', '#ff9830', '#e02f44', '#a77ddc',

@@ -14,10 +14,14 @@ const DASHBOARD_CONFIG = {
     // Add repositories as you deploy the stale workflow to them
     repositories: [
         { org: 'konveyor', repo: 'analyzer-lsp' },
-        // Add more repositories here as the stale workflow is deployed
-        // { org: 'konveyor', repo: 'tackle2-hub' },
-        // { org: 'konveyor', repo: 'tackle2-ui' },
-        // { org: 'konveyor', repo: 'kai' },
+        { org: 'konveyor', repo: 'enhancements' },
+        { org: 'konveyor', repo: 'java-analyzer-bundle' },
+        { org: 'konveyor', repo: 'kai' },
+        { org: 'konveyor', repo: 'kantra' },
+        { org: 'konveyor', repo: 'operator' },
+        { org: 'konveyor', repo: 'rulesets' },
+        { org: 'konveyor', repo: 'tackle2-hub' },
+        { org: 'konveyor', repo: 'tackle2-ui' },
     ]
 };
 

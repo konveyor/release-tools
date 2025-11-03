@@ -141,11 +141,19 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="pagination" class="pagination"></div>
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Make dashboard accessible globally for pagination
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new StaleDashboard();
+        });
+    </script>
 </body>
 </html>

@@ -5,6 +5,8 @@ class StaleDashboard {
         this.filteredItems = [];
         this.historicalData = [];
         this.currentSort = { field: 'updated', ascending: false };
+        this.currentPage = 1;
+        this.itemsPerPage = 25;
         this.charts = {
             trends: null,
             breakdown: null
@@ -173,13 +175,16 @@ class StaleDashboard {
             return true;
         });
 
+        this.currentPage = 1; // Reset to first page when filters change
         this.renderTable();
+        this.renderPagination();
     }
 
     clearFilters() {
         document.getElementById('repo-filter').value = '';
         document.getElementById('type-filter').value = '';
         document.getElementById('search-filter').value = '';
+        this.currentPage = 1;
         this.applyFilters();
     }
 
@@ -212,7 +217,9 @@ class StaleDashboard {
             return 0;
         });
 
+        this.currentPage = 1; // Reset to first page when sorting
         this.renderTable();
+        this.renderPagination();
     }
 
     renderTable() {
@@ -223,7 +230,12 @@ class StaleDashboard {
             return;
         }
 
-        tbody.innerHTML = this.filteredItems.map(item => `
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const itemsToShow = this.filteredItems.slice(startIndex, endIndex);
+
+        tbody.innerHTML = itemsToShow.map(item => `
             <tr>
                 <td>
                     <span class="badge ${item.type === 'issue' ? 'badge-issue' : 'badge-pr'}">
@@ -249,6 +261,91 @@ class StaleDashboard {
                 </td>
             </tr>
         `).join('');
+    }
+
+    renderPagination() {
+        const totalPages = Math.ceil(this.filteredItems.length / this.itemsPerPage);
+        const paginationContainer = document.getElementById('pagination');
+
+        if (totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+
+        paginationContainer.style.display = 'flex';
+
+        const startItem = this.filteredItems.length === 0 ? 0 : (this.currentPage - 1) * this.itemsPerPage + 1;
+        const endItem = Math.min(this.currentPage * this.itemsPerPage, this.filteredItems.length);
+
+        let paginationHTML = `
+            <div class="pagination-info">
+                Showing ${startItem}-${endItem} of ${this.filteredItems.length}
+            </div>
+            <div class="pagination-controls">
+        `;
+
+        // Previous button
+        paginationHTML += `
+            <button class="pagination-btn" ${this.currentPage === 1 ? 'disabled' : ''}
+                    onclick="dashboard.goToPage(${this.currentPage - 1})">
+                Previous
+            </button>
+        `;
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            paginationHTML += `<button class="pagination-btn" onclick="dashboard.goToPage(1)">1</button>`;
+            if (startPage > 2) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}"
+                        onclick="dashboard.goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+            }
+            paginationHTML += `<button class="pagination-btn" onclick="dashboard.goToPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        // Next button
+        paginationHTML += `
+            <button class="pagination-btn" ${this.currentPage === totalPages ? 'disabled' : ''}
+                    onclick="dashboard.goToPage(${this.currentPage + 1})">
+                Next
+            </button>
+        `;
+
+        paginationHTML += `</div>`;
+        paginationContainer.innerHTML = paginationHTML;
+    }
+
+    goToPage(page) {
+        const totalPages = Math.ceil(this.filteredItems.length / this.itemsPerPage);
+        if (page < 1 || page > totalPages) return;
+
+        this.currentPage = page;
+        this.renderTable();
+        this.renderPagination();
+
+        // Scroll to top of table
+        document.querySelector('.table-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     formatDate(date) {
@@ -481,7 +578,4 @@ class StaleDashboard {
     }
 }
 
-// Initialize dashboard when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new StaleDashboard();
-});
+// Dashboard is initialized in index.html to make it globally accessible

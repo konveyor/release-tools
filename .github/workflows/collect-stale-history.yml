@@ -187,6 +187,7 @@ jobs:
 
       - name: Commit and push data
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 

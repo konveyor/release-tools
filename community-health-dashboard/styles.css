@@ -126,6 +126,45 @@ body {
     padding: 2rem;
 }
 
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+.tab-btn.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 /* Stats Grid */
 .stats-grid {
     display: grid;
@@ -472,6 +511,112 @@ a:hover {
 .pagination-ellipsis {
     color: var(--text-muted);
     padding: 0 0.25rem;
+}
+
+/* Heatmap */
+.heatmap-container {
+    padding: 2rem 1.5rem;
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.legend-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    border: 1px solid var(--border-color);
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: 60px repeat(24, 1fr);
+    gap: 3px;
+    font-size: 0.75rem;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.heatmap-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.heatmap-hour {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 0.25rem;
+}
+
+.heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-width: 20px;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    border: 2px solid var(--text-primary);
+}
+
+.heatmap-cell::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    border: 1px solid var(--border-color);
+    z-index: 100;
+    margin-bottom: 0.5rem;
+}
+
+.heatmap-cell:hover::after {
+    opacity: 1;
+}
+
+/* Heatmap color intensities */
+.heatmap-0 {
+    background-color: #0e4429;
+}
+
+.heatmap-1 {
+    background-color: #006d32;
+}
+
+.heatmap-2 {
+    background-color: #26a641;
+}
+
+.heatmap-3 {
+    background-color: #39d353;
 }
 
 /* Responsive */

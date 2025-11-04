@@ -83,21 +83,27 @@ class StaleDashboard {
             }
 
             // Check the OAuth scopes header
-            const scopes = response.headers.get('X-OAuth-Scopes');
-            if (scopes) {
-                // Check if token has 'repo' scope (full repository access)
-                const scopeList = scopes.split(',').map(s => s.trim());
-                this.hasWriteAccess = scopeList.includes('repo');
+            const scopesHeader = response.headers.get('X-OAuth-Scopes');
+            if (scopesHeader) {
+                const scopeList = scopesHeader.split(',').map(s => s.trim());
+                this.hasWriteAccess = scopeList.some(scope =>
+                    scope === 'repo' ||
+                    scope === 'public_repo' ||
+                    scope === 'write:issues' ||
+                    scope === 'issues:write'
+                );
 
                 if (this.hasWriteAccess) {
-                    console.log('✓ GitHub token has write access (repo scope)');
+                    console.log('✓ GitHub token appears to have write access for issues/PRs.');
                 } else {
                     console.log('✗ GitHub token does not have write access. Close buttons will be disabled.');
-                    console.log('  Current scopes:', scopes);
-                    console.log('  To enable closing items, create a token with "repo" scope.');
+                    console.log('  Current scopes:', scopesHeader);
+                    console.log('  Ensure your token includes repository write permissions (e.g., repo/public_repo or issues:write).');
                 }
             } else {
-                this.hasWriteAccess = false;
+                // Fine-grained tokens don't expose scopes; let the close call surface a 403 if the token is read-only.
+                this.hasWriteAccess = true;
+                console.log('⚠️ Unable to read token scopes; assuming write access. Closing requests will fail with 403 if the token is read-only.');
             }
         } catch (error) {
             console.error('Error checking token permissions:', error);

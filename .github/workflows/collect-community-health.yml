@@ -1,0 +1,338 @@
+name: Collect Community Health Metrics
+
+on:
+  schedule:
+    # Runs daily at 3:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  collect-health-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Collect community health metrics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create data directory if it doesn't exist
+          mkdir -p community-health-dashboard/data/history
+
+          # Create inline Node.js script to fetch community health metrics
+          cat > collect-health-data.js << 'SCRIPT_EOF'
+          const https = require('https');
+          const fs = require('fs');
+
+          // Load dashboard config to get repository list
+          const configContent = fs.readFileSync('community-health-dashboard/config.js', 'utf8');
+
+          // Extract repositories array from config.js
+          const repoMatch = configContent.match(/repositories:\s*\[([\s\S]*?)\]/);
+          if (!repoMatch) {
+            console.error('Could not parse repositories from config.js');
+            process.exit(1);
+          }
+
+          // Parse repository entries
+          const repoEntries = repoMatch[1].match(/\{\s*org:\s*['"]([\w-]+)['"]\s*,\s*repo:\s*['"]([^'"]+)['"]\s*\}/g);
+          if (!repoEntries) {
+            console.error('No repositories found in config');
+            process.exit(1);
+          }
+
+          const repositories = repoEntries.map(entry => {
+            const orgMatch = entry.match(/org:\s*['"]([\w-]+)['"]/);
+            const repoMatch = entry.match(/repo:\s*['"]([^'"]+)['"]/);
+            return { org: orgMatch[1], repo: repoMatch[1] };
+          });
+
+          console.log(`Collecting health metrics from ${repositories.length} repositories...`);
+
+          const token = process.env.GITHUB_TOKEN;
+          const data = {
+            timestamp: new Date().toISOString(),
+            date: new Date().toISOString().split('T')[0],
+            repositories: [],
+            metrics: {}
+          };
+
+          // Date calculations
+          const now = new Date();
+          const contributorsPeriod = new Date(now - 90 * 24 * 60 * 60 * 1000);
+          const newContribPeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
+          const responseTimePeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+          function httpsRequest(options) {
+            return new Promise((resolve, reject) => {
+              const req = https.get(options, (res) => {
+                let body = '';
+                res.on('data', (chunk) => body += chunk);
+                res.on('end', () => {
+                  if (res.statusCode === 200) {
+                    try {
+                      resolve(JSON.parse(body));
+                    } catch (err) {
+                      reject(new Error(`Failed to parse JSON: ${err.message}`));
+                    }
+                  } else {
+                    resolve(null);
+                  }
+                });
+              }).on('error', reject);
+
+              req.setTimeout(10000, () => {
+                req.destroy();
+                reject(new Error('Request timeout'));
+              });
+            });
+          }
+
+          async function fetchRepoHealth(org, repo) {
+            try {
+              console.log(`  Fetching ${org}/${repo}...`);
+
+              const baseOptions = {
+                hostname: 'api.github.com',
+                headers: {
+                  'User-Agent': 'Konveyor-Community-Health-Collector',
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'application/vnd.github.v3+json'
+                }
+              };
+
+              // Fetch recent commits for contributor stats
+              const commits = await httpsRequest({
+                ...baseOptions,
+                path: `/repos/${org}/${repo}/commits?since=${contributorsPeriod.toISOString()}&per_page=100`
+              });
+
+              const contributors = new Set();
+              const newContributors = new Set();
+
+              if (commits && Array.isArray(commits)) {
+                commits.forEach(commit => {
+                  if (commit.author && commit.author.login) {
+                    contributors.add(commit.author.login);
+                    const commitDate = new Date(commit.commit.author.date);
+                    if (commitDate >= newContribPeriod) {
+                      newContributors.add(commit.author.login);
+                    }
+                  }
+                });
+              }
+
+              // Fetch repository info for open issues/PRs count
+              const repoInfo = await httpsRequest({
+                ...baseOptions,
+                path: `/repos/${org}/${repo}`
+              });
+
+              const openIssues = repoInfo ? repoInfo.open_issues_count : 0;
+
+              // Fetch open PRs
+              const prs = await httpsRequest({
+                ...baseOptions,
+                path: `/repos/${org}/${repo}/pulls?state=open&per_page=100`
+              });
+
+              const openPRs = prs ? prs.length : 0;
+
+              // Calculate actual open issues (total open issues - open PRs)
+              const actualOpenIssues = Math.max(0, openIssues - openPRs);
+
+              // Fetch recent issues for response time (limited sample)
+              const issues = await httpsRequest({
+                ...baseOptions,
+                path: `/repos/${org}/${repo}/issues?state=all&since=${responseTimePeriod.toISOString()}&per_page=30`
+              });
+
+              let avgIssueResponseMs = 0;
+              let avgPRResponseMs = 0;
+              let issueResponseCount = 0;
+              let prResponseCount = 0;
+
+              if (issues && Array.isArray(issues)) {
+                for (const issue of issues.slice(0, 10)) { // Sample first 10 to avoid rate limits
+                  const comments = await httpsRequest({
+                    ...baseOptions,
+                    path: `/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=1`
+                  });
+
+                  if (comments && comments.length > 0) {
+                    const createdAt = new Date(issue.created_at);
+                    const firstResponseAt = new Date(comments[0].created_at);
+                    const responseTime = firstResponseAt - createdAt;
+
+                    if (issue.pull_request) {
+                      avgPRResponseMs += responseTime;
+                      prResponseCount++;
+                    } else {
+                      avgIssueResponseMs += responseTime;
+                      issueResponseCount++;
+                    }
+                  }
+
+                  // Small delay to avoid rate limiting
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                }
+              }
+
+              avgIssueResponseMs = issueResponseCount > 0 ? avgIssueResponseMs / issueResponseCount : 0;
+              avgPRResponseMs = prResponseCount > 0 ? avgPRResponseMs / prResponseCount : 0;
+
+              // Fetch PR merge rate (sample of recent PRs)
+              const allPRs = await httpsRequest({
+                ...baseOptions,
+                path: `/repos/${org}/${repo}/pulls?state=all&per_page=50`
+              });
+
+              let totalPRs = 0;
+              let mergedPRs = 0;
+
+              if (allPRs && Array.isArray(allPRs)) {
+                const recentPRs = allPRs.filter(pr => {
+                  const createdAt = new Date(pr.created_at);
+                  return createdAt >= responseTimePeriod;
+                });
+
+                totalPRs = recentPRs.length;
+                mergedPRs = recentPRs.filter(pr => pr.merged_at !== null).length;
+              }
+
+              const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
+
+              const repoData = {
+                org,
+                repo,
+                contributors: contributors.size,
+                newContributors: newContributors.size,
+                avgIssueResponseMs,
+                avgPRResponseMs,
+                prMergeRate,
+                openIssues: actualOpenIssues,
+                openPRs
+              };
+
+              console.log(`    ✓ ${contributors.size} contributors, ${newContributors.size} new, ${actualOpenIssues} issues, ${openPRs} PRs`);
+
+              return repoData;
+            } catch (err) {
+              console.error(`    ✗ Error: ${err.message}`);
+              return null;
+            }
+          }
+
+          async function collectAllData() {
+            for (const repo of repositories) {
+              const repoData = await fetchRepoHealth(repo.org, repo.repo);
+              if (repoData) {
+                data.repositories.push(repoData);
+              }
+
+              // Delay between repos to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Calculate aggregate metrics
+            const totalContributors = data.repositories.reduce((sum, r) => sum + r.contributors, 0);
+            const totalNewContributors = data.repositories.reduce((sum, r) => sum + r.newContributors, 0);
+
+            let totalIssueResponseMs = 0;
+            let totalPRResponseMs = 0;
+            let issueRepoCount = 0;
+            let prRepoCount = 0;
+
+            data.repositories.forEach(repo => {
+              if (repo.avgIssueResponseMs > 0) {
+                totalIssueResponseMs += repo.avgIssueResponseMs;
+                issueRepoCount++;
+              }
+              if (repo.avgPRResponseMs > 0) {
+                totalPRResponseMs += repo.avgPRResponseMs;
+                prRepoCount++;
+              }
+            });
+
+            const avgIssueResponse = issueRepoCount > 0 ? totalIssueResponseMs / issueRepoCount : 0;
+            const avgPRResponse = prRepoCount > 0 ? totalPRResponseMs / prRepoCount : 0;
+            const avgResponseTime = (avgIssueResponse + avgPRResponse) / 2;
+
+            const avgPRMergeRate = data.repositories.reduce((sum, r) => sum + r.prMergeRate, 0) / data.repositories.length;
+            const totalOpenIssues = data.repositories.reduce((sum, r) => sum + r.openIssues, 0);
+            const totalOpenPRs = data.repositories.reduce((sum, r) => sum + r.openPRs, 0);
+
+            data.metrics = {
+              totalContributors,
+              newContributors: totalNewContributors,
+              avgResponseTime,
+              avgIssueResponse,
+              avgPRResponse,
+              prMergeRate: avgPRMergeRate,
+              openIssues: totalOpenIssues,
+              openPRs: totalOpenPRs,
+              repositories: data.repositories.length
+            };
+
+            // Save to file
+            const filename = `community-health-dashboard/data/history/${data.date}.json`;
+            fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+            console.log(`\nData saved to ${filename}`);
+            console.log(`Total: ${totalContributors} contributors (${totalNewContributors} new) across ${data.repositories.length} repositories`);
+
+            // Update index.json with all available dates
+            const historyDir = 'community-health-dashboard/data/history';
+            const files = fs.readdirSync(historyDir)
+              .filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.json$/))
+              .map(f => f.replace('.json', ''))
+              .sort();
+
+            const index = {
+              available_dates: files
+            };
+
+            fs.writeFileSync(`${historyDir}/index.json`, JSON.stringify(index, null, 2));
+            console.log(`Updated index with ${files.length} available dates`);
+          }
+
+          collectAllData().catch(err => {
+            console.error('Error collecting data:', err);
+            process.exit(1);
+          });
+          SCRIPT_EOF
+
+          # Run the collection script
+          node collect-health-data.js
+
+      - name: Commit and push data
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add history files and index
+          git add community-health-dashboard/data/history/*.json
+
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          # Commit with current date
+          DATE=$(date +%Y-%m-%d)
+          git commit -m ":chart_with_upwards_trend: Add community health metrics for ${DATE}"
+
+          # Push to repository
+          git push

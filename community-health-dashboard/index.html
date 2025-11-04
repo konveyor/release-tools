@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konveyor - Community Health Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <img src="konveyor-logo.svg" alt="Konveyor" class="logo">
+                    <h1>Community Health</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn btn-primary">
+                        <span class="icon">↻</span> Refresh
+                    </button>
+                    <span id="last-updated" class="last-updated"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-contributors">-</div>
+                        <div class="stat-label">Total Contributors (90d)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✨</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="new-contributors">-</div>
+                        <div class="stat-label">New Contributors (30d)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avg-response-time">-</div>
+                        <div class="stat-label">Avg Response Time</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="pr-merge-rate">-</div>
+                        <div class="stat-label">PR Merge Rate (30d)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends Charts -->
+            <div class="trends-panel" id="trends-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Historical Trends</h2>
+                    <div class="header-actions">
+                        <select id="trend-period" class="filter-select">
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90" selected>Last 90 days</option>
+                            <option value="180">Last 6 months</option>
+                            <option value="365">Last year</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="contributors-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activity-chart"></canvas>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="response-time-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="merge-rate-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repository Breakdown -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Repository Breakdown</h2>
+                    <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                        <span class="spinner"></span> Loading...
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="repo-health-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="repo">Repository</th>
+                                <th class="sortable" data-sort="contributors">Contributors</th>
+                                <th class="sortable" data-sort="newContributors">New Contributors</th>
+                                <th class="sortable" data-sort="avgIssueResponse">Avg Issue Response</th>
+                                <th class="sortable" data-sort="avgPRResponse">Avg PR Response</th>
+                                <th class="sortable" data-sort="prMergeRate">PR Merge Rate</th>
+                                <th class="sortable" data-sort="openIssues">Open Issues</th>
+                                <th class="sortable" data-sort="openPRs">Open PRs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="8" class="no-data">Loading repository health data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Recent Activity</h2>
+                    <div class="header-actions">
+                        <select id="activity-filter" class="filter-select">
+                            <option value="all">All Repositories</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Repository</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-body">
+                            <tr>
+                                <td colspan="6" class="no-data">Loading recent activity...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Make dashboard accessible globally for pagination
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new CommunityHealthDashboard();
+        });
+    </script>
+</body>
+</html>

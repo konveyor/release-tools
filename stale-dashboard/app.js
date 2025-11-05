@@ -730,7 +730,7 @@ class StaleDashboard {
                 const errorMsg = `Failed to close ${itemType}: ${closeResponse.status} ${closeResponse.statusText}`;
                 // Comment was posted but close failed - inform user about partial state
                 alert(`Warning: Closing comment was posted, but closing the ${itemType} failed.\n\n${errorMsg}\n\nYou can manually close it from GitHub without re-posting the comment.`);
-                throw new Error(errorMsg);
+                return; // Don't throw after showing the partial-failure alert
             }
 
             // Success! Reload the dashboard to reflect changes

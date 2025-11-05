@@ -22,7 +22,12 @@ const DASHBOARD_CONFIG = {
         { org: 'konveyor', repo: 'rulesets' },
         { org: 'konveyor', repo: 'tackle2-hub' },
         { org: 'konveyor', repo: 'tackle2-ui' },
-    ]
+    ],
+
+    // Message to post when closing stale items
+    staleCloseMessage: `This issue/PR has been marked as stale and is being closed due to inactivity. If you believe this is still relevant, please feel free to reopen it with updated information or context.
+
+Thank you for your contributions to the Konveyor project!`
 };
 
 // Helper: Set GitHub token via browser console

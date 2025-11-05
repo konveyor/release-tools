@@ -6,6 +6,7 @@ A Grafana-inspired dashboard for monitoring stale issues and pull requests acros
 
 - Real-time data fetched from GitHub API
 - **Historical Trends**: Automated collection and visualization of stale items over time
+- **Close Stale Items**: Close issues and PRs directly from the dashboard with customizable closing messages
 - Filter by repository, type (issue/PR), and search by title
 - Sortable columns
 - Statistics overview with trend charts
@@ -70,32 +71,57 @@ repositories: [
 ]
 ```
 
-### GitHub Token (Optional but Recommended)
+### GitHub Token
 
 GitHub's API has rate limits:
 - **Unauthenticated**: 60 requests per hour
 - **Authenticated**: 5,000 requests per hour
 
-To avoid rate limiting, create a GitHub Personal Access Token:
+**Token Requirements:**
+- **Optional**: For viewing data (recommended to avoid rate limits)
+- **Required**: For closing stale items from the dashboard
+
+To create a GitHub Personal Access Token:
 
 1. Go to https://github.com/settings/tokens
 2. Click "Generate new token" → "Generate new token (classic)"
 3. Give it a descriptive name (e.g., "Stale Dashboard")
-4. Select scopes:
-   - `public_repo` (for public repositories)
+4. Select scopes based on your needs:
+   - **Read-only access**: `public_repo` (view stale items, avoid rate limits)
+   - **Close items**: `repo` (full repository access - required to close issues/PRs)
 5. Click "Generate token"
 6. Copy the token
+
+**Note**: The `repo` scope grants write access to your repositories. Only use tokens with this scope if you need to close stale items from the dashboard.
 
 #### Setting the Token
 
 **Method 1: Browser Console (Recommended for GitHub Pages)**
 
-Open the browser console and run:
-```javascript
-setGitHubToken('your_token_here')
-```
+This method stores your token securely in your browser's local storage without committing it to the repository.
 
-The token will be stored in localStorage and persist across sessions.
+1. **Open the browser developer console**:
+   - **Chrome/Edge**: Press `F12` or `Cmd+Option+J` (Mac) / `Ctrl+Shift+J` (Windows/Linux)
+   - **Firefox**: Press `F12` or `Cmd+Option+K` (Mac) / `Ctrl+Shift+K` (Windows/Linux)
+   - **Safari**: Enable Developer menu in Preferences → Advanced, then press `Cmd+Option+C`
+
+2. **Navigate to the Console tab** in the developer tools panel
+
+3. **Type the following command** in the console and press Enter:
+   ```javascript
+   setGitHubToken('ghp_your_actual_token_here')
+   ```
+   Replace `ghp_your_actual_token_here` with your actual GitHub personal access token.
+
+4. **You should see**:
+   ```
+   GitHub token saved to localStorage
+   Refresh the page to use the new token
+   ```
+
+5. **Refresh the page** to apply the token. The dashboard will now use your token for API requests.
+
+The token will be stored in localStorage and persist across browser sessions. You won't need to re-enter it unless you clear your browser data or use a different browser/device.
 
 **Method 2: Direct Configuration (Not recommended for public repos)**
 
@@ -109,6 +135,51 @@ githubToken: 'your_token_here',
 To clear the token:
 ```javascript
 clearGitHubToken()
+```
+
+**Troubleshooting Token Setup:**
+
+If you see `Uncaught ReferenceError: setGitHubToken is not defined`:
+1. Make sure the page has fully loaded (wait for the dashboard to appear)
+2. Hard refresh the page: `Cmd+Shift+R` (Mac) or `Ctrl+F5` (Windows/Linux)
+3. Check the browser console for any red JavaScript errors
+4. Verify you're running the command in the Console tab (not Elements or Network)
+
+To verify your token is set:
+```javascript
+localStorage.getItem('github_token')
+```
+This will display your stored token (or `null` if not set).
+
+### Customizing the Stale Close Message
+
+When closing stale items from the dashboard, a comment is automatically posted before closing. You can customize this message in `config.js`:
+
+```javascript
+staleCloseMessage: `This issue/PR has been marked as stale and is being closed due to inactivity. If you believe this is still relevant, please feel free to reopen it with updated information or context.
+
+Thank you for your contributions to the Konveyor project!`
+```
+
+The message will be posted as a comment on the issue/PR before it is closed.
+
+### Automatic Token Validation
+
+The dashboard automatically checks your GitHub token permissions when it loads:
+
+- **With `repo` scope**: Close buttons are enabled and shown in red
+- **Without `repo` scope**: Close buttons are disabled (greyed out) with a tooltip explaining why
+- **No token**: Close buttons are disabled
+
+Check your browser console for detailed information about token permissions. The dashboard will log:
+```
+✓ GitHub token has write access (repo scope)
+```
+or
+```
+✗ GitHub token does not have write access. Close buttons will be disabled.
+  Current scopes: public_repo
+  To enable closing items, create a token with "repo" scope.
 ```
 
 ## Dashboard Features
@@ -138,6 +209,13 @@ To enable historical trends, see [Enabling Historical Data Collection](#enabling
 - Color-coded badges for issues vs PRs
 - Label display
 - Direct links to GitHub
+- **Close Button**: Close stale items directly from the dashboard
+  - Requires GitHub token with `repo` scope
+  - Buttons are automatically disabled if token lacks write permissions
+  - Hover over disabled buttons to see why they're disabled
+  - Shows confirmation dialog before closing
+  - Posts a configurable closing message as a comment
+  - Automatically refreshes the dashboard after closing
 
 ## Stale Workflow Integration
 
@@ -239,6 +317,12 @@ The dashboard works in all modern browsers:
 ### CORS errors
 - The GitHub API supports CORS, so this shouldn't happen
 - If using a local file:// URL, use a local web server instead
+
+### Close button not working
+- Ensure you have a GitHub token set with `repo` scope (not just `public_repo`)
+- Check browser console for error messages
+- Verify you have permissions to close issues in the target repository
+- Make sure you're not hitting API rate limits
 
 ## Contributing
 

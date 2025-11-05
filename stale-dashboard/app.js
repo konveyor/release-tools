@@ -7,6 +7,7 @@ class StaleDashboard {
         this.currentSort = { field: 'updated', ascending: false };
         this.currentPage = 1;
         this.itemsPerPage = 25;
+        this.hasWriteAccess = false; // Track if user has repo scope
         this.charts = {
             trends: null,
             breakdown: null
@@ -14,8 +15,9 @@ class StaleDashboard {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
+        await this.checkTokenPermissions();
         this.loadData();
         this.loadHistoricalData();
     }
@@ -55,6 +57,58 @@ class StaleDashboard {
         document.getElementById('trend-period').addEventListener('change', () => {
             this.updateCharts();
         });
+    }
+
+    async checkTokenPermissions() {
+        const token = DASHBOARD_CONFIG.githubToken;
+
+        if (!token) {
+            this.hasWriteAccess = false;
+            return;
+        }
+
+        try {
+            // Check token scopes by making a test request to the user endpoint
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                console.warn('Failed to check token permissions:', response.status);
+                this.hasWriteAccess = false;
+                return;
+            }
+
+            // Check the OAuth scopes header
+            const scopesHeader = response.headers.get('X-OAuth-Scopes');
+            if (scopesHeader) {
+                const scopeList = scopesHeader.split(',').map(s => s.trim());
+                this.hasWriteAccess = scopeList.some(scope =>
+                    scope === 'repo' ||
+                    scope === 'public_repo' ||
+                    scope === 'write:issues' ||
+                    scope === 'issues:write'
+                );
+
+                if (this.hasWriteAccess) {
+                    console.log('✓ GitHub token appears to have write access for issues/PRs.');
+                } else {
+                    console.log('✗ GitHub token does not have write access. Close buttons will be disabled.');
+                    console.log('  Current scopes:', scopesHeader);
+                    console.log('  Ensure your token includes repository write permissions (e.g., repo/public_repo or issues:write).');
+                }
+            } else {
+                // Fine-grained tokens don't expose scopes; let the close call surface a 403 if the token is read-only.
+                this.hasWriteAccess = true;
+                console.log('⚠️ Unable to read token scopes; assuming write access. Closing requests will fail with 403 if the token is read-only.');
+            }
+        } catch (error) {
+            console.error('Error checking token permissions:', error);
+            this.hasWriteAccess = false;
+        }
     }
 
     async loadData() {
@@ -258,9 +312,26 @@ class StaleDashboard {
                 </td>
                 <td>
                     <a href="${item.url}" target="_blank" class="view-link">View</a>
+                    <button class="btn-close"
+                            ${!this.hasWriteAccess ? 'disabled' : ''}
+                            ${!this.hasWriteAccess ? 'title="Requires GitHub token with \'repo\' scope. See README for instructions."' : ''}
+                            data-org="${item.org}"
+                            data-repo="${item.repoName}"
+                            data-number="${item.number}"
+                            data-type="${item.type}"
+                            data-title="${encodeURIComponent(item.title)}">Close</button>
                 </td>
             </tr>
         `).join('');
+
+        // Attach event listeners to close buttons
+        tbody.querySelectorAll('.btn-close:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const { org, repo, number, type, title: encodedTitle } = btn.dataset;
+                const title = decodeURIComponent(encodedTitle);
+                this.closeStaleItem(org, repo, parseInt(number), type, title);
+            });
+        });
     }
 
     renderPagination() {
@@ -575,6 +646,102 @@ class StaleDashboard {
                 }
             }
         });
+    }
+
+    async closeStaleItem(org, repo, number, type, title) {
+        // Show confirmation dialog
+        const itemType = type === 'issue' ? 'issue' : 'pull request';
+        const confirmed = confirm(
+            `Are you sure you want to close this stale ${itemType}?\n\n` +
+            `Repository: ${org}/${repo}\n` +
+            `${type === 'issue' ? 'Issue' : 'PR'} #${number}: ${title}\n\n` +
+            `This will post a closing message and close the ${itemType}.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const loadingIndicator = document.getElementById('loading-indicator');
+        loadingIndicator.style.display = 'flex';
+
+        try {
+            const token = DASHBOARD_CONFIG.githubToken;
+
+            if (!token) {
+                alert('GitHub token is required to close items. Please set your token using setGitHubToken() in the browser console.');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+
+            const baseUrl = 'https://api.github.com';
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            };
+
+            // Check if item is already closed before posting comment
+            // This prevents duplicate closing comments on retries
+            const checkUrl = `${baseUrl}/repos/${org}/${repo}/issues/${number}`;
+            const checkResponse = await fetch(checkUrl, { headers });
+
+            if (!checkResponse.ok) {
+                throw new Error(`Failed to check ${itemType} status: ${checkResponse.status} ${checkResponse.statusText}`);
+            }
+
+            const itemData = await checkResponse.json();
+            if (itemData.state === 'closed') {
+                alert(`This ${itemType} is already closed.`);
+                loadingIndicator.style.display = 'none';
+                this.loadData();
+                return;
+            }
+
+            // Note: If closing fails after posting the comment, the comment will remain.
+            // This is intentional to provide visibility. Users can manually close the item
+            // from GitHub without re-posting the comment.
+
+            // Post closing comment
+            const commentUrl = `${baseUrl}/repos/${org}/${repo}/issues/${number}/comments`;
+            const commentResponse = await fetch(commentUrl, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    body: DASHBOARD_CONFIG.staleCloseMessage
+                })
+            });
+
+            if (!commentResponse.ok) {
+                throw new Error(`Failed to post comment: ${commentResponse.status} ${commentResponse.statusText}`);
+            }
+
+            // Close the issue/PR
+            const closeUrl = `${baseUrl}/repos/${org}/${repo}/issues/${number}`;
+            const closeResponse = await fetch(closeUrl, {
+                method: 'PATCH',
+                headers: headers,
+                body: JSON.stringify({
+                    state: 'closed'
+                })
+            });
+
+            if (!closeResponse.ok) {
+                const errorMsg = `Failed to close ${itemType}: ${closeResponse.status} ${closeResponse.statusText}`;
+                // Comment was posted but close failed - inform user about partial state
+                alert(`Warning: Closing comment was posted, but closing the ${itemType} failed.\n\n${errorMsg}\n\nYou can manually close it from GitHub without re-posting the comment.`);
+                return; // Don't throw after showing the partial-failure alert
+            }
+
+            // Success! Reload the dashboard to reflect changes
+            alert(`Successfully closed ${itemType} #${number}`);
+            this.loadData();
+        } catch (error) {
+            console.error('Error closing stale item:', error);
+            alert(`Failed to close ${itemType}: ${error.message}`);
+        } finally {
+            loadingIndicator.style.display = 'none';
+        }
     }
 }
 

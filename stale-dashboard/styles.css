@@ -115,6 +115,34 @@ body {
     background-color: var(--bg-hover);
 }
 
+.btn-close {
+    padding: 0.25rem 0.75rem;
+    background-color: var(--accent-red);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-close:hover:not(:disabled) {
+    background-color: #c92a3e;
+}
+
+.btn-close:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.btn-close:disabled {
+    background-color: var(--bg-tertiary);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 .icon {
     font-size: 1.2rem;
 }

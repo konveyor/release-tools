@@ -681,6 +681,10 @@ class StaleDashboard {
                 'Content-Type': 'application/json'
             };
 
+            // Note: If closing fails after posting the comment, the comment will remain.
+            // This is intentional to provide visibility. Users can manually close the item
+            // from GitHub without re-posting the comment.
+
             // Post closing comment
             const commentUrl = `${baseUrl}/repos/${org}/${repo}/issues/${number}/comments`;
             const commentResponse = await fetch(commentUrl, {
@@ -706,7 +710,10 @@ class StaleDashboard {
             });
 
             if (!closeResponse.ok) {
-                throw new Error(`Failed to close ${itemType}: ${closeResponse.status} ${closeResponse.statusText}`);
+                const errorMsg = `Failed to close ${itemType}: ${closeResponse.status} ${closeResponse.statusText}`;
+                // Comment was posted but close failed - inform user about partial state
+                alert(`Warning: Closing comment was posted, but closing the ${itemType} failed.\n\n${errorMsg}\n\nYou can manually close it from GitHub without re-posting the comment.`);
+                throw new Error(errorMsg);
             }
 
             // Success! Reload the dashboard to reflect changes

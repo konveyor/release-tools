@@ -205,7 +205,11 @@ milestones:
   - title: v0.8.1
     description: The v0.8.1 release of Konveyor
     state: open
-    due: 2025-10-31
+    due: 2025-11-18
+  - title: v0.9.0
+    description: The v0.9.0 release of Konveyor
+    state: open
+    due: 2026-01-27
   - title: Next
     description: Bucket for work we want to accomplish in the next release
     state: open

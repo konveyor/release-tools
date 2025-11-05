@@ -319,7 +319,7 @@ class StaleDashboard {
                             data-repo="${item.repoName}"
                             data-number="${item.number}"
                             data-type="${item.type}"
-                            data-title="${item.title}">Close</button>
+                            data-title="${encodeURIComponent(item.title)}">Close</button>
                 </td>
             </tr>
         `).join('');
@@ -327,7 +327,8 @@ class StaleDashboard {
         // Attach event listeners to close buttons
         tbody.querySelectorAll('.btn-close:not([disabled])').forEach(btn => {
             btn.addEventListener('click', () => {
-                const { org, repo, number, type, title } = btn.dataset;
+                const { org, repo, number, type, title: encodedTitle } = btn.dataset;
+                const title = decodeURIComponent(encodedTitle);
                 this.closeStaleItem(org, repo, parseInt(number), type, title);
             });
         });

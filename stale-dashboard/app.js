@@ -315,10 +315,22 @@ class StaleDashboard {
                     <button class="btn-close"
                             ${!this.hasWriteAccess ? 'disabled' : ''}
                             ${!this.hasWriteAccess ? 'title="Requires GitHub token with \'repo\' scope. See README for instructions."' : ''}
-                            onclick="dashboard.closeStaleItem('${item.org}', '${item.repo}', ${item.number}, '${item.type}', '${item.title.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')">Close</button>
+                            data-org="${item.org}"
+                            data-repo="${item.repoName}"
+                            data-number="${item.number}"
+                            data-type="${item.type}"
+                            data-title="${item.title}">Close</button>
                 </td>
             </tr>
         `).join('');
+
+        // Attach event listeners to close buttons
+        tbody.querySelectorAll('.btn-close:not([disabled])').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const { org, repo, number, type, title } = btn.dataset;
+                this.closeStaleItem(org, repo, parseInt(number), type, title);
+            });
+        });
     }
 
     renderPagination() {

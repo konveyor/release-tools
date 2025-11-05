@@ -681,6 +681,23 @@ class StaleDashboard {
                 'Content-Type': 'application/json'
             };
 
+            // Check if item is already closed before posting comment
+            // This prevents duplicate closing comments on retries
+            const checkUrl = `${baseUrl}/repos/${org}/${repo}/issues/${number}`;
+            const checkResponse = await fetch(checkUrl, { headers });
+
+            if (!checkResponse.ok) {
+                throw new Error(`Failed to check ${itemType} status: ${checkResponse.status} ${checkResponse.statusText}`);
+            }
+
+            const itemData = await checkResponse.json();
+            if (itemData.state === 'closed') {
+                alert(`This ${itemType} is already closed.`);
+                loadingIndicator.style.display = 'none';
+                this.loadData();
+                return;
+            }
+
             // Note: If closing fails after posting the comment, the comment will remain.
             // This is intentional to provide visibility. Users can manually close the item
             // from GitHub without re-posting the comment.

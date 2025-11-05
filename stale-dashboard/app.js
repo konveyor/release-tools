@@ -315,7 +315,7 @@ class StaleDashboard {
                     <button class="btn-close"
                             ${!this.hasWriteAccess ? 'disabled' : ''}
                             ${!this.hasWriteAccess ? 'title="Requires GitHub token with \'repo\' scope. See README for instructions."' : ''}
-                            onclick="dashboard.closeStaleItem('${item.org}', '${item.repo}', ${item.number}, '${item.type}', '${item.title.replace(/'/g, "\\'")}')">Close</button>
+                            onclick="dashboard.closeStaleItem('${item.org}', '${item.repo}', ${item.number}, '${item.type}', '${item.title.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')">Close</button>
                 </td>
             </tr>
         `).join('');

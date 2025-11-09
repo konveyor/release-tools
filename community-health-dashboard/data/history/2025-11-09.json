@@ -103,8 +103,8 @@
     }
   ],
   "metrics": {
-    "totalContributors": 60,
-    "newContributors": 36,
+    "totalContributors": 23,
+    "newContributors": 15,
     "avgResponseTime": 14388.888888888889,
     "avgIssueResponse": 16500,
     "avgPRResponse": 12277.777777777777,

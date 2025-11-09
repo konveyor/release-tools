@@ -312,7 +312,7 @@ class CommunityHealthDashboard {
 
             // Fetch PR merge rate
             const prsResponse = await fetch(
-                `${baseUrl}/repos/${org}/${repo}/pulls?state=all&per_page=100`,
+                `${baseUrl}/repos/${org}/${repo}/pulls?state=all&per_page=100&sort=updated&direction=desc`,
                 { headers }
             );
 

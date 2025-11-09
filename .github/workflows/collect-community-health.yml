@@ -218,7 +218,7 @@ jobs:
               // Fetch PR merge rate (sample of recent PRs)
               const allPRs = await httpsRequest({
                 ...baseOptions,
-                path: `/repos/${org}/${repo}/pulls?state=all&per_page=50`
+                path: `/repos/${org}/${repo}/pulls?state=all&per_page=100&sort=updated&direction=desc`
               });
 
               let totalPRs = 0;

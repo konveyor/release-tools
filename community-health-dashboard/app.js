@@ -113,6 +113,38 @@ class CommunityHealthDashboard {
                 this.updateMaintainerTrendCharts();
             });
         }
+
+        // Contributor cards click handlers
+        const totalContributorsCard = document.getElementById('total-contributors-card');
+        if (totalContributorsCard) {
+            totalContributorsCard.addEventListener('click', () => {
+                this.showContributorsModal('total');
+            });
+        }
+
+        const newContributorsCard = document.getElementById('new-contributors-card');
+        if (newContributorsCard) {
+            newContributorsCard.addEventListener('click', () => {
+                this.showContributorsModal('new');
+            });
+        }
+
+        // Modal close handlers
+        const closeModal = document.getElementById('close-modal');
+        if (closeModal) {
+            closeModal.addEventListener('click', () => {
+                this.hideContributorsModal();
+            });
+        }
+
+        const modal = document.getElementById('contributors-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideContributorsModal();
+                }
+            });
+        }
     }
 
     switchTab(tabName) {
@@ -2573,6 +2605,89 @@ class CommunityHealthDashboard {
                 </tr>
             `;
         }).join('');
+    }
+
+    // Contributor Modal Methods
+    showContributorsModal(type) {
+        const modal = document.getElementById('contributors-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalTotalCount = document.getElementById('modal-total-count');
+        const contributorsList = document.getElementById('contributors-list');
+
+        if (!modal || !modalTitle || !modalTotalCount || !contributorsList) {
+            return;
+        }
+
+        // Gather contributor data with repo information
+        const contributorData = this.getContributorData(type);
+
+        // Update modal title and count
+        if (type === 'total') {
+            modalTitle.textContent = 'Total Contributors (90d)';
+        } else {
+            modalTitle.textContent = 'New Contributors (30d)';
+        }
+        modalTotalCount.textContent = contributorData.length;
+
+        // Populate contributors list
+        if (contributorData.length === 0) {
+            contributorsList.innerHTML = '<p class="no-data">No contributors found</p>';
+        } else {
+            contributorsList.innerHTML = contributorData
+                .sort((a, b) => a.username.toLowerCase().localeCompare(b.username.toLowerCase()))
+                .map(contributor => `
+                    <div class="contributor-item">
+                        <a href="https://github.com/${contributor.username}"
+                           target="_blank"
+                           class="contributor-name">
+                            ${contributor.username}
+                        </a>
+                        <div class="contributor-repos">
+                            ${contributor.repos.length} repo${contributor.repos.length > 1 ? 's' : ''}:
+                            ${contributor.repos.join(', ')}
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        // Show modal
+        modal.classList.add('active');
+    }
+
+    hideContributorsModal() {
+        const modal = document.getElementById('contributors-modal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    getContributorData(type) {
+        // Create a map to track which repos each contributor has contributed to
+        const contributorRepoMap = new Map();
+
+        this.repoHealthData.forEach(repo => {
+            const list = type === 'total' ? repo.contributorsList : repo.newContributorsList;
+
+            if (list && Array.isArray(list)) {
+                list.forEach(username => {
+                    if (!contributorRepoMap.has(username)) {
+                        contributorRepoMap.set(username, []);
+                    }
+                    contributorRepoMap.get(username).push(repo.repo);
+                });
+            }
+        });
+
+        // Convert map to array of objects
+        const contributors = [];
+        contributorRepoMap.forEach((repos, username) => {
+            contributors.push({
+                username,
+                repos: repos.sort()
+            });
+        });
+
+        return contributors;
     }
 }
 

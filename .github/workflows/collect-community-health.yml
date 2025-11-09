@@ -165,7 +165,10 @@ jobs:
               let prResponseCount = 0;
 
               if (issues && Array.isArray(issues)) {
-                for (const issue of issues.slice(0, 10)) { // Sample first 10 to avoid rate limits
+                // Sample only 3 issues per repo to avoid rate limits
+                // With 9 repos, this is ~27 comment fetches instead of 90+
+                // This provides representative data while staying well within API limits
+                for (const issue of issues.slice(0, 3)) {
                   const comments = await httpsRequest({
                     ...baseOptions,
                     path: `/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=1`
@@ -186,7 +189,7 @@ jobs:
                   }
 
                   // Small delay to avoid rate limiting
-                  await new Promise(resolve => setTimeout(resolve, 100));
+                  await new Promise(resolve => setTimeout(resolve, 150));
                 }
               }
 

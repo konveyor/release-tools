@@ -38,14 +38,14 @@
             <div id="overview-tab" class="tab-content active">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card clickable" id="total-contributors-card" title="Click to view contributor details">
                     <div class="stat-icon">👥</div>
                     <div class="stat-content">
                         <div class="stat-value" id="total-contributors">-</div>
                         <div class="stat-label">Total Contributors (90d)</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card clickable" id="new-contributors-card" title="Click to view contributor details">
                     <div class="stat-icon">✨</div>
                     <div class="stat-content">
                         <div class="stat-value" id="new-contributors">-</div>
@@ -670,6 +670,27 @@
                 </div>
             </div>
             <!-- End CI/CD Health Tab -->
+        </div>
+    </div>
+
+    <!-- Contributors Modal -->
+    <div id="contributors-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Contributors</h2>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-stats">
+                    <div class="modal-stat">
+                        <span class="modal-stat-label">Total:</span>
+                        <span class="modal-stat-value" id="modal-total-count">-</span>
+                    </div>
+                </div>
+                <div class="contributors-list" id="contributors-list">
+                    <!-- Contributors will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 

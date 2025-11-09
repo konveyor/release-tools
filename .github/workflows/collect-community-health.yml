@@ -221,7 +221,9 @@ jobs:
                 org,
                 repo,
                 contributors: contributors.size,
+                contributorsList: Array.from(contributors),
                 newContributors: newContributors.size,
+                newContributorsList: Array.from(newContributors),
                 avgIssueResponseMs,
                 avgPRResponseMs,
                 prMergeRate,
@@ -249,9 +251,21 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            // Calculate aggregate metrics
-            const totalContributors = data.repositories.reduce((sum, r) => sum + r.contributors, 0);
-            const totalNewContributors = data.repositories.reduce((sum, r) => sum + r.newContributors, 0);
+            // Calculate aggregate metrics - deduplicate contributors across repos
+            const allContributors = new Set();
+            const allNewContributors = new Set();
+
+            data.repositories.forEach(repo => {
+              if (repo.contributorsList) {
+                repo.contributorsList.forEach(username => allContributors.add(username));
+              }
+              if (repo.newContributorsList) {
+                repo.newContributorsList.forEach(username => allNewContributors.add(username));
+              }
+            });
+
+            const totalContributors = allContributors.size;
+            const totalNewContributors = allNewContributors.size;
 
             let totalIssueResponseMs = 0;
             let totalPRResponseMs = 0;

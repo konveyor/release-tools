@@ -225,9 +225,10 @@ jobs:
               let mergedPRs = 0;
 
               if (allPRs && Array.isArray(allPRs)) {
+                // Filter to PRs that concluded (closed or merged) in last 30 days
                 const recentPRs = allPRs.filter(pr => {
-                  const createdAt = new Date(pr.created_at);
-                  return createdAt >= responseTimePeriod;
+                  const closedDate = pr.closed_at || pr.merged_at;
+                  return closedDate && new Date(closedDate) >= responseTimePeriod;
                 });
 
                 totalPRs = recentPRs.length;

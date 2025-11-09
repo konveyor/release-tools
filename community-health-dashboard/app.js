@@ -321,9 +321,10 @@ class CommunityHealthDashboard {
 
             if (prsResponse.ok) {
                 const prs = await prsResponse.json();
+                // Filter to PRs that concluded (closed or merged) in last 30 days
                 const recentPRs = prs.filter(pr => {
-                    const createdAt = new Date(pr.created_at);
-                    return createdAt >= responseTimePeriod;
+                    const closedDate = pr.closed_at || pr.merged_at;
+                    return closedDate && new Date(closedDate) >= responseTimePeriod;
                 });
 
                 totalPRs = recentPRs.length;
@@ -1053,10 +1054,10 @@ class CommunityHealthDashboard {
 
             const allPRs = await prsResponse.json();
 
-            // Filter to PRs from last 30 days
+            // Filter to PRs that concluded (closed or merged) in last 30 days
             const recentPRs = allPRs.filter(pr => {
-                const createdAt = new Date(pr.created_at);
-                return createdAt >= thirtyDaysAgo;
+                const closedDate = pr.closed_at || pr.merged_at;
+                return closedDate && new Date(closedDate) >= thirtyDaysAgo;
             });
 
             let totalReviewTimeMs = 0;

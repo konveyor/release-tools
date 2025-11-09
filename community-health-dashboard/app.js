@@ -545,7 +545,7 @@ class CommunityHealthDashboard {
                 <td>${this.formatDuration(repo.avgIssueResponse)}</td>
                 <td>${this.formatDuration(repo.avgPRResponse)}</td>
                 <td>
-                    <span class="badge ${repo.prMergeRate >= 70 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.prMergeRate >= 70 ? 'badge-issue' : repo.prMergeRate >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.prMergeRate.toFixed(1)}%
                     </span>
                 </td>
@@ -1185,7 +1185,7 @@ class CommunityHealthDashboard {
             <tr>
                 <td><a href="https://github.com/${repo.repoFullName}" target="_blank">${repo.repo}</a></td>
                 <td>
-                    <span class="badge ${repo.mergeRate >= 70 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.mergeRate >= 70 ? 'badge-issue' : repo.mergeRate >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.mergeRate.toFixed(1)}%
                     </span>
                 </td>

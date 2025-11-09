@@ -265,29 +265,41 @@ class CommunityHealthDashboard {
             if (issuesResponse.ok) {
                 const issues = await issuesResponse.json();
 
-                // Sample only 3 issues per repo to avoid rate limits and get representative data
-                // Filter to only include issues created within the response time period
-                const recentIssues = issues
-                    .filter(issue => {
-                        const createdAt = new Date(issue.created_at);
-                        return createdAt >= responseTimePeriod;
-                    })
-                    .slice(0, 3);
+                console.log(`[${org}/${repo}] Total issues from API:`, issues.length);
 
-                // Calculate response times from sampled recent issues
-                for (const issue of recentIssues) {
+                // Sample up to 10 issues per repo to get representative data
+                // We measure recent RESPONSE activity, not responses to recent issues
+                const sampledIssues = issues.slice(0, 10);
+
+                console.log(`[${org}/${repo}] Sampling ${sampledIssues.length} issues`);
+                console.log(`[${org}/${repo}] Response time period:`, responseTimePeriod.toISOString());
+
+                // Calculate response times for responses that happened recently
+                for (const issue of sampledIssues) {
+                    console.log(`[${org}/${repo}] Checking issue #${issue.number} created:`, issue.created_at);
                     const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
                     if (firstComment) {
-                        const createdAt = new Date(issue.created_at);
                         const firstResponseAt = new Date(firstComment.created_at);
 
-                        if (issue.pull_request) {
-                            avgPRResponseMs += (firstResponseAt - createdAt);
-                            prCount++;
+                        // Only count if the RESPONSE happened in the last 30 days
+                        if (firstResponseAt >= responseTimePeriod) {
+                            const createdAt = new Date(issue.created_at);
+                            const responseTimeMs = firstResponseAt - createdAt;
+
+                            console.log(`[${org}/${repo}] Issue #${issue.number} response time:`, responseTimeMs, 'ms (', this.formatDuration(responseTimeMs), ')');
+
+                            if (issue.pull_request) {
+                                avgPRResponseMs += responseTimeMs;
+                                prCount++;
+                            } else {
+                                avgIssueResponseMs += responseTimeMs;
+                                issueCount++;
+                            }
                         } else {
-                            avgIssueResponseMs += (firstResponseAt - createdAt);
-                            issueCount++;
+                            console.log(`[${org}/${repo}] Issue #${issue.number} first response was outside period (${firstComment.created_at})`);
                         }
+                    } else {
+                        console.log(`[${org}/${repo}] Issue #${issue.number} has no comments`);
                     }
                 }
 
@@ -306,6 +318,9 @@ class CommunityHealthDashboard {
             // Calculate averages
             const avgIssueResponse = issueCount > 0 ? avgIssueResponseMs / issueCount : 0;
             const avgPRResponse = prCount > 0 ? avgPRResponseMs / prCount : 0;
+
+            console.log(`[${org}/${repo}] Final - Issue responses: ${issueCount}, avg: ${this.formatDuration(avgIssueResponse)}`);
+            console.log(`[${org}/${repo}] Final - PR responses: ${prCount}, avg: ${this.formatDuration(avgPRResponse)}`);
 
             // Fetch PR merge rate
             const prsResponse = await fetch(
@@ -428,6 +443,11 @@ class CommunityHealthDashboard {
         const avgIssueResponse = issueRepoCount > 0 ? totalIssueResponseMs / issueRepoCount : 0;
         const avgPRResponse = prRepoCount > 0 ? totalPRResponseMs / prRepoCount : 0;
         const avgResponseTime = (avgIssueResponse + avgPRResponse) / 2;
+
+        console.log('=== AGGREGATE RESPONSE TIME CALCULATION ===');
+        console.log(`Issue repos with data: ${issueRepoCount}, total ms: ${totalIssueResponseMs}, avg: ${this.formatDuration(avgIssueResponse)}`);
+        console.log(`PR repos with data: ${prRepoCount}, total ms: ${totalPRResponseMs}, avg: ${this.formatDuration(avgPRResponse)}`);
+        console.log(`Final avg response time: ${this.formatDuration(avgResponseTime)}`);
 
         // Calculate average PR merge rate
         const avgPRMergeRate = this.repoHealthData.reduce((sum, repo) =>

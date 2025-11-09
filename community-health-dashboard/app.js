@@ -206,11 +206,31 @@ class CommunityHealthDashboard {
             this.renderRecentActivity();
             this.renderActivityHeatmap();
             this.updateLastUpdated();
+
+            // Preload other tabs in the background for faster tab switching
+            this.preloadTabs();
         } catch (error) {
             console.error('Error loading data:', error);
             this.showError('Failed to load data. Please check your GitHub token and try again.');
         } finally {
             loadingIndicator.style.display = 'none';
+        }
+    }
+
+    async preloadTabs() {
+        // Load all tabs in the background after Overview is ready
+        // This makes tab switching instant without slowing down initial page load
+        try {
+            await Promise.all([
+                this.loadPRHealthData(),
+                this.loadIssueHealthData(),
+                this.loadMaintainerHealthData(),
+                this.loadCIHealthData()
+            ]);
+            console.log('All tabs preloaded successfully');
+        } catch (error) {
+            console.log('Error preloading tabs (non-critical):', error);
+            // Don't show error to user - tabs will still load on demand
         }
     }
 

@@ -132,6 +132,12 @@ body {
     gap: 0.5rem;
     margin-bottom: 2rem;
     border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-primary);
+    z-index: 100;
+    padding-top: 1rem;
+    margin-top: -1rem;
 }
 
 .tab-btn {
@@ -358,6 +364,11 @@ tbody tr:hover {
 .badge-pr {
     background-color: rgba(51, 181, 229, 0.15);
     color: var(--accent-blue);
+}
+
+.badge-failure {
+    background-color: rgba(224, 47, 68, 0.15);
+    color: var(--accent-red);
 }
 
 .label-badge {

@@ -30,7 +30,17 @@ const DASHBOARD_CONFIG = {
         responseTime: 30,      // Calculate response times over last 30 days
         prMergeRate: 30,       // PR merge rate over last 30 days
         recentActivity: 14,    // Show activity from last 14 days
-    }
+    },
+
+    // Mock data configuration
+    // Auto-detects environment: uses mock data locally, live data on GitHub Pages
+    // To override: set useMockData to true (always mock) or false (always live)
+    useMockData: (() => {
+        // Check if running on GitHub Pages (production)
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        // Use live data on GitHub Pages, mock data locally
+        return !isGitHubPages;
+    })()
 };
 
 // Helper: Set GitHub token via browser console

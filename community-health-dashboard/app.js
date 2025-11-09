@@ -5,12 +5,15 @@ class CommunityHealthDashboard {
         this.prHealthData = [];
         this.issueHealthData = [];
         this.maintainerHealthData = [];
+        this.ciHealthData = [];
+        this.componentCIData = [];
         this.recentActivity = [];
         this.historicalData = [];
         this.currentSort = { field: 'repo', ascending: true };
         this.prCurrentSort = { field: 'repo', ascending: true };
         this.issueCurrentSort = { field: 'repo', ascending: true };
         this.maintainerCurrentSort = { field: 'responseCount', ascending: false };
+        this.ciCurrentSort = { field: 'name', ascending: true };
         this.currentPage = 1;
         this.itemsPerPage = 25;
         this.charts = {
@@ -28,7 +31,10 @@ class CommunityHealthDashboard {
             maintainerConcentration: null,
             busFactor: null,
             maintainerCountTrend: null,
-            maintainerResponseTrend: null
+            maintainerResponseTrend: null,
+            ciSuccessTrend: null,
+            ciDurationTrend: null,
+            branchHealth: null
         };
         this.init();
     }
@@ -131,6 +137,8 @@ class CommunityHealthDashboard {
             this.loadIssueHealthData();
         } else if (tabName === 'maintainer-health' && this.maintainerHealthData.length === 0) {
             this.loadMaintainerHealthData();
+        } else if (tabName === 'ci-health' && this.ciHealthData.length === 0) {
+            this.loadCIHealthData();
         }
     }
 
@@ -866,8 +874,8 @@ class CommunityHealthDashboard {
         try {
             this.prHealthData = [];
 
-            // Use mock data for testing (comment out to use real API)
-            const useMockData = true;
+            // Use mock data for local development, live data on GitHub Pages
+            const useMockData = DASHBOARD_CONFIG.useMockData;
 
             if (useMockData) {
                 // Generate mock PR health data
@@ -1286,8 +1294,8 @@ class CommunityHealthDashboard {
         try {
             this.issueHealthData = [];
 
-            // Use mock data for testing
-            const useMockData = true;
+            // Use mock data for local development, live data on GitHub Pages
+            const useMockData = DASHBOARD_CONFIG.useMockData;
 
             if (useMockData) {
                 this.generateMockIssueHealthData();
@@ -1651,8 +1659,8 @@ class CommunityHealthDashboard {
         try {
             this.maintainerHealthData = [];
 
-            // Use mock data for testing
-            const useMockData = true;
+            // Use mock data for local development, live data on GitHub Pages
+            const useMockData = DASHBOARD_CONFIG.useMockData;
 
             if (useMockData) {
                 this.generateMockMaintainerHealthData();
@@ -2019,6 +2027,543 @@ class CommunityHealthDashboard {
     showMaintainerError(message) {
         const tbody = document.getElementById('maintainer-metrics-body');
         tbody.innerHTML = `<tr><td colspan="7" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+    }
+
+    // CI/CD Health Methods
+    async loadCIHealthData() {
+        const loadingIndicator = document.getElementById('ci-loading-indicator');
+        loadingIndicator.style.display = 'flex';
+
+        try {
+            this.ciHealthData = [];
+            this.componentCIData = [];
+
+            // Use mock data for local development, live data on GitHub Pages
+            const useMockData = DASHBOARD_CONFIG.useMockData;
+
+            if (useMockData) {
+                this.generateMockCIHealthData();
+                this.generateMockComponentCIData();
+            } else {
+                await this.fetchCIHealth();
+                await this.fetchComponentCIHealth();
+            }
+
+            this.updateCIStats();
+            this.renderWorkflowStatusTable();
+            this.renderComponentCIStatus();
+            this.renderRecentRuns();
+            this.renderBranchHealthChart();
+            this.updateCITrendCharts();
+        } catch (error) {
+            console.error('Error loading CI/CD health data:', error);
+            this.showCIError('Failed to load CI/CD health data. Please try again.');
+        } finally {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+
+    generateMockCIHealthData() {
+        const workflows = [
+            { name: 'Konveyor e2e CI shared workflow', id: 59293862, branch: 'main' },
+            { name: 'Run Konveyor nightly main branch tests', id: 60001312, branch: 'main' },
+            { name: 'Konveyor e2e CI via Operator Bundle', id: 75321830, branch: 'main' },
+            { name: 'Konveyor CI repo testing', id: 147762287, branch: 'main' },
+            { name: 'Run Konveyor release-0.7 nightly tests', id: 160083009, branch: 'release-0.7' },
+            { name: 'Run Konveyor release-0.8 nightly tests', id: 191123204, branch: 'release-0.8' }
+        ];
+
+        workflows.forEach(workflow => {
+            const totalRuns = Math.floor(Math.random() * 20 + 10); // 10-30 runs in 7 days
+            const successRuns = Math.floor(totalRuns * (Math.random() * 0.3 + 0.65)); // 65-95% success
+            const successRate = (successRuns / totalRuns) * 100;
+
+            // Generate recent runs
+            const runs = [];
+            for (let i = 0; i < Math.min(10, totalRuns); i++) {
+                const hoursAgo = i * 12 + Math.random() * 12; // Runs spread over last 5 days
+                const duration = Math.random() * 900000 + 300000; // 5-20 minutes
+                const status = Math.random() < (successRate / 100) ? 'success' : 'failure';
+
+                runs.push({
+                    id: workflow.id + i,
+                    name: workflow.name,
+                    branch: workflow.branch,
+                    status: status,
+                    conclusion: status,
+                    created_at: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
+                    updated_at: new Date(Date.now() - hoursAgo * 60 * 60 * 1000 + duration).toISOString(),
+                    duration: duration,
+                    triggeredBy: ['github-actions[bot]', 'dependabot[bot]', 'renovate[bot]'][Math.floor(Math.random() * 3)]
+                });
+            }
+
+            const avgDuration = runs.reduce((sum, r) => sum + r.duration, 0) / runs.length;
+            const lastRun = runs[0];
+
+            this.ciHealthData.push({
+                workflowId: workflow.id,
+                name: workflow.name,
+                branch: workflow.branch,
+                status: lastRun.status,
+                lastRun: lastRun.created_at,
+                duration: avgDuration,
+                successRate: successRate,
+                totalRuns: totalRuns,
+                runs: runs
+            });
+        });
+
+        console.log('Generated mock CI/CD health data for', this.ciHealthData.length, 'workflows');
+    }
+
+    async fetchCIHealth() {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+        }
+
+        try {
+            const org = 'konveyor';
+            const repo = 'ci';
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+            // Fetch all workflows
+            const workflowsResponse = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/actions/workflows`,
+                { headers }
+            );
+
+            if (!workflowsResponse.ok) {
+                console.error('Failed to fetch workflows');
+                return;
+            }
+
+            const workflowsData = await workflowsResponse.json();
+            const workflows = workflowsData.workflows.filter(w => w.state === 'active');
+
+            // Fetch runs for each workflow
+            for (const workflow of workflows) {
+                const runsResponse = await fetch(
+                    `${baseUrl}/repos/${org}/${repo}/actions/workflows/${workflow.id}/runs?per_page=50&created=>${sevenDaysAgo}`,
+                    { headers }
+                );
+
+                if (runsResponse.ok) {
+                    const runsData = await runsResponse.json();
+                    const runs = runsData.workflow_runs;
+
+                    if (runs.length === 0) continue;
+
+                    const successRuns = runs.filter(r => r.conclusion === 'success').length;
+                    const successRate = (successRuns / runs.length) * 100;
+
+                    const durations = runs
+                        .filter(r => r.updated_at && r.created_at)
+                        .map(r => new Date(r.updated_at) - new Date(r.created_at));
+
+                    const avgDuration = durations.length > 0
+                        ? durations.reduce((sum, d) => sum + d, 0) / durations.length
+                        : 0;
+
+                    const lastRun = runs[0];
+                    const branch = lastRun.head_branch || 'main';
+
+                    this.ciHealthData.push({
+                        workflowId: workflow.id,
+                        name: workflow.name,
+                        branch: branch,
+                        status: lastRun.conclusion || lastRun.status,
+                        lastRun: lastRun.created_at,
+                        duration: avgDuration,
+                        successRate: successRate,
+                        totalRuns: runs.length,
+                        runs: runs.slice(0, 10).map(r => ({
+                            id: r.id,
+                            name: workflow.name,
+                            branch: r.head_branch || 'main',
+                            status: r.status,
+                            conclusion: r.conclusion || 'in_progress',
+                            created_at: r.created_at,
+                            updated_at: r.updated_at,
+                            duration: r.updated_at && r.created_at
+                                ? new Date(r.updated_at) - new Date(r.created_at)
+                                : 0,
+                            triggeredBy: r.triggering_actor?.login || 'unknown'
+                        }))
+                    });
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            console.log('Fetched CI/CD health data for', this.ciHealthData.length, 'workflows');
+        } catch (error) {
+            console.error('Error fetching CI health data:', error);
+        }
+    }
+
+    updateCIStats() {
+        // Calculate overall stats
+        let totalRuns = 0;
+        let totalSuccessRuns = 0;
+        let totalDuration = 0;
+        let nightlyWorkflows = 0;
+        let nightlySuccessRuns = 0;
+        let nightlyTotalRuns = 0;
+
+        this.ciHealthData.forEach(workflow => {
+            totalRuns += workflow.totalRuns;
+            totalSuccessRuns += Math.floor((workflow.successRate / 100) * workflow.totalRuns);
+            totalDuration += workflow.duration;
+
+            if (workflow.name.toLowerCase().includes('nightly')) {
+                nightlyWorkflows++;
+                nightlyTotalRuns += workflow.totalRuns;
+                nightlySuccessRuns += Math.floor((workflow.successRate / 100) * workflow.totalRuns);
+            }
+        });
+
+        const overallSuccessRate = totalRuns > 0 ? (totalSuccessRuns / totalRuns) * 100 : 0;
+        const avgDuration = this.ciHealthData.length > 0 ? totalDuration / this.ciHealthData.length : 0;
+        const nightlySuccessRate = nightlyTotalRuns > 0 ? (nightlySuccessRuns / nightlyTotalRuns) * 100 : 0;
+
+        document.getElementById('ci-success-rate').textContent = `${overallSuccessRate.toFixed(1)}%`;
+        document.getElementById('ci-avg-duration').textContent = this.formatDuration(avgDuration);
+        document.getElementById('ci-nightly-success').textContent = `${nightlySuccessRate.toFixed(1)}%`;
+        document.getElementById('ci-total-runs').textContent = totalRuns;
+    }
+
+    renderWorkflowStatusTable() {
+        const tbody = document.getElementById('workflow-status-body');
+
+        if (this.ciHealthData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No CI/CD workflow data available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = this.ciHealthData.map(workflow => {
+            const statusClass = workflow.status === 'success' ? 'badge-issue' :
+                               workflow.status === 'failure' ? 'badge-failure' : '';
+            const statusText = workflow.status === 'success' ? '✓ Success' :
+                              workflow.status === 'failure' ? '✗ Failed' : '⟳ Running';
+
+            return `
+                <tr>
+                    <td>${workflow.name}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>${this.formatDate(new Date(workflow.lastRun))}</td>
+                    <td>${this.formatDuration(workflow.duration)}</td>
+                    <td>
+                        <span class="badge ${workflow.successRate >= 80 ? 'badge-issue' : workflow.successRate >= 60 ? 'badge-pr' : 'badge-failure'}">
+                            ${workflow.successRate.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td>${workflow.totalRuns}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderRecentRuns() {
+        const tbody = document.getElementById('recent-runs-body');
+
+        // Collect all runs from all workflows
+        const allRuns = [];
+        this.ciHealthData.forEach(workflow => {
+            if (workflow.runs) {
+                allRuns.push(...workflow.runs);
+            }
+        });
+
+        // Sort by created_at (most recent first)
+        allRuns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Take top 20
+        const recentRuns = allRuns.slice(0, 20);
+
+        if (recentRuns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No recent runs found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = recentRuns.map(run => {
+            const statusClass = run.conclusion === 'success' ? 'badge-issue' :
+                               run.conclusion === 'failure' ? 'badge-failure' : '';
+            const statusText = run.conclusion === 'success' ? '✓' :
+                              run.conclusion === 'failure' ? '✗' : '⟳';
+
+            return `
+                <tr>
+                    <td title="${run.name}">${this.truncate(run.name, 40)}</td>
+                    <td>${run.branch}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText} ${run.conclusion || run.status}
+                        </span>
+                    </td>
+                    <td>${this.formatDate(new Date(run.created_at))}</td>
+                    <td>${this.formatDuration(run.duration)}</td>
+                    <td>${run.triggeredBy}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderBranchHealthChart() {
+        const ctx = document.getElementById('branch-health-chart');
+        if (!ctx) return;
+
+        if (this.charts.branchHealth) {
+            this.charts.branchHealth.destroy();
+        }
+
+        // Group workflows by branch
+        const branchData = {};
+        this.ciHealthData.forEach(workflow => {
+            if (!branchData[workflow.branch]) {
+                branchData[workflow.branch] = {
+                    totalRuns: 0,
+                    successRuns: 0,
+                    workflows: 0
+                };
+            }
+            branchData[workflow.branch].totalRuns += workflow.totalRuns;
+            branchData[workflow.branch].successRuns += Math.floor((workflow.successRate / 100) * workflow.totalRuns);
+            branchData[workflow.branch].workflows++;
+        });
+
+        const branches = Object.keys(branchData);
+        const successRates = branches.map(branch => {
+            const data = branchData[branch];
+            return data.totalRuns > 0 ? (data.successRuns / data.totalRuns) * 100 : 0;
+        });
+
+        this.charts.branchHealth = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: branches,
+                datasets: [{
+                    label: 'Success Rate (%)',
+                    data: successRates,
+                    backgroundColor: successRates.map(rate =>
+                        rate >= 80 ? '#73bf69' : rate >= 60 ? '#ff9830' : '#e02f44'
+                    ),
+                    borderColor: '#1a1d23',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'CI Success Rate by Branch (Last 7 Days)',
+                        color: '#d8d9da',
+                        font: { size: 14, weight: 'normal' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9fa3a7' },
+                        grid: { color: '#2d3138' }
+                    },
+                    y: {
+                        ticks: { color: '#9fa3a7' },
+                        grid: { color: '#2d3138' },
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    updateCITrendCharts() {
+        // For now, trends will only show if historical data is available
+        // This would require collecting CI metrics over time similar to other metrics
+        // Placeholder for future implementation
+        console.log('CI trend charts require historical data collection');
+    }
+
+    sortCIMetrics(field) {
+        if (this.ciCurrentSort.field === field) {
+            this.ciCurrentSort.ascending = !this.ciCurrentSort.ascending;
+        } else {
+            this.ciCurrentSort.field = field;
+            this.ciCurrentSort.ascending = true;
+        }
+
+        this.ciHealthData.sort((a, b) => {
+            let aVal = a[field];
+            let bVal = b[field];
+
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) return this.ciCurrentSort.ascending ? -1 : 1;
+            if (aVal > bVal) return this.ciCurrentSort.ascending ? 1 : -1;
+            return 0;
+        });
+
+        this.renderWorkflowStatusTable();
+    }
+
+    showCIError(message) {
+        const tbody = document.getElementById('workflow-status-body');
+        tbody.innerHTML = `<tr><td colspan="6" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+    }
+
+    // Component CI Methods
+    generateMockComponentCIData() {
+        DASHBOARD_CONFIG.repositories.forEach(({ org, repo }) => {
+            const workflowCount = Math.floor(Math.random() * 5 + 1); // 1-5 workflows per repo
+            const totalRuns = Math.floor(Math.random() * 30 + 10); // 10-40 runs total
+            const successRuns = Math.floor(totalRuns * (Math.random() * 0.3 + 0.65)); // 65-95% success
+            const successRate = (successRuns / totalRuns) * 100;
+
+            const lastStatus = Math.random() < (successRate / 100) ? 'success' : 'failure';
+            const hoursAgo = Math.random() * 48; // Last run within 48 hours
+
+            this.componentCIData.push({
+                org,
+                repo,
+                status: lastStatus,
+                branch: 'main',
+                lastRun: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
+                successRate: successRate,
+                totalWorkflows: workflowCount,
+                totalRuns: totalRuns
+            });
+        });
+
+        console.log('Generated mock component CI data for', this.componentCIData.length, 'components');
+    }
+
+    async fetchComponentCIHealth() {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+        }
+
+        try {
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+            for (const { org, repo } of DASHBOARD_CONFIG.repositories) {
+                try {
+                    // Fetch workflows for this repo
+                    const workflowsResponse = await fetch(
+                        `${baseUrl}/repos/${org}/${repo}/actions/workflows`,
+                        { headers }
+                    );
+
+                    if (!workflowsResponse.ok) {
+                        console.log(`No workflows found for ${org}/${repo}`);
+                        continue;
+                    }
+
+                    const workflowsData = await workflowsResponse.json();
+                    const activeWorkflows = workflowsData.workflows?.filter(w => w.state === 'active') || [];
+
+                    if (activeWorkflows.length === 0) {
+                        continue;
+                    }
+
+                    // Fetch runs across all workflows for this repo
+                    const runsResponse = await fetch(
+                        `${baseUrl}/repos/${org}/${repo}/actions/runs?per_page=50&created=>${sevenDaysAgo}`,
+                        { headers }
+                    );
+
+                    if (!runsResponse.ok) {
+                        continue;
+                    }
+
+                    const runsData = await runsResponse.json();
+                    const runs = runsData.workflow_runs || [];
+
+                    if (runs.length === 0) {
+                        continue;
+                    }
+
+                    const successRuns = runs.filter(r => r.conclusion === 'success').length;
+                    const successRate = (successRuns / runs.length) * 100;
+                    const lastRun = runs[0];
+
+                    this.componentCIData.push({
+                        org,
+                        repo,
+                        status: lastRun.conclusion || lastRun.status,
+                        branch: lastRun.head_branch || 'main',
+                        lastRun: lastRun.created_at,
+                        successRate: successRate,
+                        totalWorkflows: activeWorkflows.length,
+                        totalRuns: runs.length
+                    });
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (error) {
+                    console.error(`Error fetching CI for ${org}/${repo}:`, error);
+                }
+            }
+
+            console.log('Fetched component CI data for', this.componentCIData.length, 'components');
+        } catch (error) {
+            console.error('Error fetching component CI health:', error);
+        }
+    }
+
+    renderComponentCIStatus() {
+        const tbody = document.getElementById('component-ci-body');
+
+        if (this.componentCIData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No component CI data available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = this.componentCIData.map(component => {
+            const statusClass = component.status === 'success' ? 'badge-issue' :
+                               component.status === 'failure' ? 'badge-failure' : '';
+            const statusText = component.status === 'success' ? '✓ Success' :
+                              component.status === 'failure' ? '✗ Failed' :
+                              component.status === 'in_progress' ? '⟳ Running' : component.status;
+
+            return `
+                <tr>
+                    <td><strong>${component.repo}</strong></td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>${component.branch}</td>
+                    <td>${this.formatDate(new Date(component.lastRun))}</td>
+                    <td>
+                        <span class="badge ${component.successRate >= 80 ? 'badge-issue' : component.successRate >= 60 ? 'badge-pr' : 'badge-failure'}">
+                            ${component.successRate.toFixed(1)}%
+                        </span>
+                    </td>
+                    <td>${component.totalWorkflows}</td>
+                    <td>${component.totalRuns}</td>
+                </tr>
+            `;
+        }).join('');
     }
 }
 

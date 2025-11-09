@@ -134,15 +134,65 @@ Monitor maintainer workload and prevent burnout:
 - Response concentration trends
 - Helps track maintainer sustainability
 
+### CI/CD Health Tab
+
+Monitor build and test health from the konveyor/ci repository:
+
+**CI/CD Health Metrics Cards:**
+- **Success Rate (7d)** - Overall workflow success rate in the last 7 days
+- **Avg Build Duration** - Average time for workflows to complete
+- **Nightly Test Success** - Success rate specifically for nightly test workflows
+- **Total Runs (7d)** - Total number of workflow runs in the last 7 days
+
+**Workflow Status Table:**
+- Real-time status of all active workflows from konveyor/ci repository
+- Last run time and current status
+- Average duration per workflow
+- 7-day success rate per workflow
+- Total runs count
+- Color-coded status badges (green = success, red = failure)
+
+**Component CI Status Table:**
+- CI health for each component repository (analyzer-lsp, kai, tackle2-hub, etc.)
+- Latest workflow status per component
+- Branch being tested
+- Last run timestamp
+- 7-day success rate with color coding (green ≥80%, blue 60-80%, red <60%)
+- Number of active workflows per component
+- Total runs in last 7 days
+- Helps identify which components have CI issues
+
+**Branch Health Comparison:**
+- Bar chart comparing CI success rates across branches
+- Compares main, release-0.7, release-0.8, and other active branches
+- Color-coded bars: green (≥80%), orange (60-80%), red (<60%)
+- Helps identify which branches have CI stability issues
+
+**Recent Workflow Runs:**
+- Last 20 workflow runs across all workflows
+- Shows workflow name, branch, status, start time, duration
+- Triggered by information (user or bot)
+- Sortable table for easy analysis
+
+**Build Success Trends** (when historical data available):
+- Success rate trends over time
+- Build duration trends
+- Helps track CI health improvements or degradation
+
 ## Implementation Status
 
 **Current Status:**
 - ✅ **Overview Tab**: Fully functional with live GitHub API data
-- ⚠️ **PR Health Tab**: Currently using representative mock data for demonstration
-- ⚠️ **Issue Health Tab**: Currently using representative mock data for demonstration
-- ⚠️ **Maintainer Health Tab**: Currently using representative mock data for demonstration
+- ✅ **PR Health Tab**: Live GitHub API data (auto-enabled on GitHub Pages)
+- ✅ **Issue Health Tab**: Live GitHub API data (auto-enabled on GitHub Pages)
+- ✅ **Maintainer Health Tab**: Live GitHub API data (auto-enabled on GitHub Pages)
+- ✅ **CI/CD Health Tab**: Live GitHub API data from konveyor/ci (auto-enabled on GitHub Pages)
 
-The mock data provides realistic patterns to demonstrate the dashboard's capabilities. Future updates will connect all tabs to live GitHub API data.
+**Development vs Production:**
+- **Local Development**: Uses mock data for PR Health, Issue Health, Maintainer Health, and CI/CD Health tabs to speed up development and avoid API rate limits
+- **GitHub Pages (Production)**: Automatically switches to live GitHub API data for all tabs
+- The dashboard auto-detects the environment and adjusts accordingly (see `useMockData` in `config.js`)
+- To override: manually set `DASHBOARD_CONFIG.useMockData` to `true` (always mock) or `false` (always live)
 
 ## Setup
 

@@ -31,6 +31,7 @@
                 <button class="tab-btn" data-tab="pr-health">PR Health</button>
                 <button class="tab-btn" data-tab="issue-health">Issue Health</button>
                 <button class="tab-btn" data-tab="maintainer-health">Maintainer Health</button>
+                <button class="tab-btn" data-tab="ci-health">CI/CD Health</button>
             </div>
 
             <!-- Overview Tab -->
@@ -514,6 +515,161 @@
                 </div>
             </div>
             <!-- End Maintainer Health Tab -->
+
+            <!-- CI/CD Health Tab -->
+            <div id="ci-health-tab" class="tab-content">
+                <!-- CI/CD Health Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-success-rate">-</div>
+                            <div class="stat-label">Success Rate (7d)</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-avg-duration">-</div>
+                            <div class="stat-label">Avg Build Duration</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌙</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-nightly-success">-</div>
+                            <div class="stat-label">Nightly Test Success</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-total-runs">-</div>
+                            <div class="stat-label">Total Runs (7d)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Status Table -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Workflow Status</h2>
+                        <div id="ci-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="workflow-status-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="name">Workflow</th>
+                                    <th class="sortable" data-sort="status">Status</th>
+                                    <th class="sortable" data-sort="lastRun">Last Run</th>
+                                    <th class="sortable" data-sort="duration">Duration</th>
+                                    <th class="sortable" data-sort="successRate">Success Rate (7d)</th>
+                                    <th class="sortable" data-sort="totalRuns">Runs (7d)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workflow-status-body">
+                                <tr>
+                                    <td colspan="6" class="no-data">Loading workflow status...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Component CI Status -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Component CI Status</h2>
+                        <div class="header-actions">
+                            <span class="stat-label">CI health for each component repository</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="component-ci-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="repo">Component</th>
+                                    <th class="sortable" data-sort="status">Latest Status</th>
+                                    <th class="sortable" data-sort="branch">Branch</th>
+                                    <th class="sortable" data-sort="lastRun">Last Run</th>
+                                    <th class="sortable" data-sort="successRate">Success Rate (7d)</th>
+                                    <th class="sortable" data-sort="totalWorkflows">Workflows</th>
+                                    <th class="sortable" data-sort="totalRuns">Total Runs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="component-ci-body">
+                                <tr>
+                                    <td colspan="7" class="no-data">Loading component CI status...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Build Success Trends -->
+                <div class="trends-panel" id="ci-trends-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>Build Success Trends</h2>
+                        <div class="header-actions">
+                            <select id="ci-trend-period" class="filter-select">
+                                <option value="7">Last 7 days</option>
+                                <option value="14">Last 14 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="trends-content">
+                        <div class="chart-container">
+                            <canvas id="ci-success-trend-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="ci-duration-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Health Comparison -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Branch Health Comparison</h2>
+                    </div>
+                    <div class="chart-container" style="padding: 2rem; height: 400px;">
+                        <canvas id="branch-health-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Workflow Runs -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Recent Workflow Runs</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="recent-runs-table">
+                            <thead>
+                                <tr>
+                                    <th>Workflow</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Triggered By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-runs-body">
+                                <tr>
+                                    <td colspan="6" class="no-data">Loading recent runs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End CI/CD Health Tab -->
         </div>
     </div>
 

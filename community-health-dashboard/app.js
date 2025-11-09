@@ -614,8 +614,20 @@ class CommunityHealthDashboard {
             return;
         }
 
-        tbody.innerHTML = activities.map(activity => `
-            <tr>
+        // Build set of all contributors (90d) to identify non-contributors
+        const allContributors = new Set();
+        this.repoHealthData.forEach(repo => {
+            if (repo.contributorsList) {
+                repo.contributorsList.forEach(username => allContributors.add(username));
+            }
+        });
+
+        tbody.innerHTML = activities.map(activity => {
+            const isNonContributor = !allContributors.has(activity.author);
+            const highlightClass = isNonContributor ? ' highlight-non-contributor' : '';
+
+            return `
+            <tr class="${highlightClass}">
                 <td>
                     <span class="badge ${activity.type === 'issue' ? 'badge-issue' : 'badge-pr'}">
                         ${activity.type === 'issue' ? 'Issue' : 'PR'}
@@ -627,7 +639,10 @@ class CommunityHealthDashboard {
                         ${this.truncate(activity.title, 60)}
                     </a>
                 </td>
-                <td>${activity.author}</td>
+                <td>
+                    ${activity.author}
+                    ${isNonContributor ? '<span class="badge badge-new-contributor" title="Not in 90-day contributor list">New?</span>' : ''}
+                </td>
                 <td>${this.formatDate(activity.created)}</td>
                 <td>
                     <span class="badge ${activity.state === 'open' ? 'badge-pr' : 'badge-issue'}">
@@ -635,7 +650,8 @@ class CommunityHealthDashboard {
                     </span>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderActivityHeatmap() {

@@ -165,26 +165,45 @@ jobs:
               let prResponseCount = 0;
 
               if (issues && Array.isArray(issues)) {
-                // Sample only 3 issues per repo to avoid rate limits
-                // With 9 repos, this is ~27 comment fetches instead of 90+
-                // This provides representative data while staying well within API limits
-                for (const issue of issues.slice(0, 3)) {
+                // Sample only 10 issues per repo to get better data
+                // Filter for responses that happened in the last 30 days
+                const sampledIssues = issues.slice(0, 10);
+
+                for (const issue of sampledIssues) {
+                  // Fetch up to 100 comments to find first human response
                   const comments = await httpsRequest({
                     ...baseOptions,
-                    path: `/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=1`
+                    path: `/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=100`
                   });
 
                   if (comments && comments.length > 0) {
-                    const createdAt = new Date(issue.created_at);
-                    const firstResponseAt = new Date(comments[0].created_at);
-                    const responseTime = firstResponseAt - createdAt;
+                    // Filter out bot comments to find first HUMAN response
+                    const firstHumanComment = comments.find(comment => {
+                      const username = comment.user?.login || '';
+                      const isBot = username.endsWith('[bot]') ||
+                                    username.includes('bot') ||
+                                    username === 'github-actions' ||
+                                    username === 'dependabot' ||
+                                    username === 'renovate';
+                      return !isBot;
+                    });
 
-                    if (issue.pull_request) {
-                      avgPRResponseMs += responseTime;
-                      prResponseCount++;
-                    } else {
-                      avgIssueResponseMs += responseTime;
-                      issueResponseCount++;
+                    if (firstHumanComment) {
+                      const firstResponseAt = new Date(firstHumanComment.created_at);
+
+                      // Only count if the RESPONSE happened in the last 30 days
+                      if (firstResponseAt >= responseTimePeriod) {
+                        const createdAt = new Date(issue.created_at);
+                        const responseTime = firstResponseAt - createdAt;
+
+                        if (issue.pull_request) {
+                          avgPRResponseMs += responseTime;
+                          prResponseCount++;
+                        } else {
+                          avgIssueResponseMs += responseTime;
+                          issueResponseCount++;
+                        }
+                      }
                     }
                   }
 

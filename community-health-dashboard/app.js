@@ -265,28 +265,20 @@ class CommunityHealthDashboard {
             if (issuesResponse.ok) {
                 const issues = await issuesResponse.json();
 
-                console.log(`[${org}/${repo}] Total issues from API:`, issues.length);
-
                 // Sample up to 10 issues per repo to get representative data
                 // We measure recent RESPONSE activity, not responses to recent issues
                 const sampledIssues = issues.slice(0, 10);
 
-                console.log(`[${org}/${repo}] Sampling ${sampledIssues.length} issues`);
-                console.log(`[${org}/${repo}] Response time period:`, responseTimePeriod.toISOString());
-
                 // Calculate response times for responses that happened recently
                 for (const issue of sampledIssues) {
-                    console.log(`[${org}/${repo}] Checking issue #${issue.number} created:`, issue.created_at);
-                    const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
-                    if (firstComment) {
-                        const firstResponseAt = new Date(firstComment.created_at);
+                    const firstHumanComment = await this.getFirstHumanComment(org, repo, issue.number, headers);
+                    if (firstHumanComment) {
+                        const firstResponseAt = new Date(firstHumanComment.created_at);
 
                         // Only count if the RESPONSE happened in the last 30 days
                         if (firstResponseAt >= responseTimePeriod) {
                             const createdAt = new Date(issue.created_at);
                             const responseTimeMs = firstResponseAt - createdAt;
-
-                            console.log(`[${org}/${repo}] Issue #${issue.number} response time:`, responseTimeMs, 'ms (', this.formatDuration(responseTimeMs), ')');
 
                             if (issue.pull_request) {
                                 avgPRResponseMs += responseTimeMs;
@@ -295,11 +287,7 @@ class CommunityHealthDashboard {
                                 avgIssueResponseMs += responseTimeMs;
                                 issueCount++;
                             }
-                        } else {
-                            console.log(`[${org}/${repo}] Issue #${issue.number} first response was outside period (${firstComment.created_at})`);
                         }
-                    } else {
-                        console.log(`[${org}/${repo}] Issue #${issue.number} has no comments`);
                     }
                 }
 
@@ -399,6 +387,36 @@ class CommunityHealthDashboard {
             if (response.ok) {
                 const comments = await response.json();
                 return comments.length > 0 ? comments[0] : null;
+            }
+        } catch (error) {
+            console.error(`Error fetching comments for issue #${issueNumber}:`, error);
+        }
+        return null;
+    }
+
+    async getFirstHumanComment(org, repo, issueNumber, headers) {
+        try {
+            // Fetch more comments to find the first human one (fetch up to 100)
+            const response = await fetch(
+                `https://api.github.com/repos/${org}/${repo}/issues/${issueNumber}/comments?per_page=100`,
+                { headers }
+            );
+
+            if (response.ok) {
+                const comments = await response.json();
+
+                // Filter out bot comments - look for [bot] suffix or known bot patterns
+                const humanComment = comments.find(comment => {
+                    const username = comment.user?.login || '';
+                    const isBot = username.endsWith('[bot]') ||
+                                  username.includes('bot') ||
+                                  username === 'github-actions' ||
+                                  username === 'dependabot' ||
+                                  username === 'renovate';
+                    return !isBot;
+                });
+
+                return humanComment || null;
             }
         } catch (error) {
             console.error(`Error fetching comments for issue #${issueNumber}:`, error);

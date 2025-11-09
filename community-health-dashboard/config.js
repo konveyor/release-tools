@@ -35,12 +35,9 @@ const DASHBOARD_CONFIG = {
     // Mock data configuration
     // Auto-detects environment: uses mock data locally, live data on GitHub Pages
     // To override: set useMockData to true (always mock) or false (always live)
-    useMockData: (() => {
-        // Check if running on GitHub Pages (production)
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        // Use live data on GitHub Pages, mock data locally
-        return !isGitHubPages;
-    })()
+    // Use live data everywhere (for development/testing with real GitHub API)
+    // Set to true to use mock data instead
+    useMockData: false
 };
 
 // Helper: Set GitHub token via browser console

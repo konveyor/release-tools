@@ -9,6 +9,7 @@ class CommunityHealthDashboard {
         this.componentCIData = [];
         this.recentActivity = [];
         this.historicalData = [];
+        this.activityTimestamps = []; // For heatmap
         this.currentSort = { field: 'repo', ascending: true };
         this.prCurrentSort = { field: 'repo', ascending: true };
         this.issueCurrentSort = { field: 'repo', ascending: true };
@@ -174,6 +175,15 @@ class CommunityHealthDashboard {
         }
     }
 
+    isBot(username) {
+        if (!username) return true;
+        return username.endsWith('[bot]') ||
+               username.includes('bot') ||
+               username === 'github-actions' ||
+               username === 'dependabot' ||
+               username === 'renovate';
+    }
+
     async loadData() {
         const loadingIndicator = document.getElementById('loading-indicator');
         loadingIndicator.style.display = 'flex';
@@ -181,6 +191,7 @@ class CommunityHealthDashboard {
         try {
             this.repoHealthData = [];
             this.recentActivity = [];
+            this.activityTimestamps = [];
 
             // Fetch data from all configured repositories
             const promises = DASHBOARD_CONFIG.repositories.map(repo =>
@@ -234,12 +245,18 @@ class CommunityHealthDashboard {
                 const commits = await commitsResponse.json();
                 commits.forEach(commit => {
                     if (commit.author && commit.author.login) {
-                        contributors.add(commit.author.login);
-                        allContributors.add(commit.author.login);
+                        const username = commit.author.login;
+                        contributors.add(username);
+                        allContributors.add(username);
 
                         const commitDate = new Date(commit.commit.author.date);
                         if (commitDate >= newContribPeriod) {
-                            newContributors.add(commit.author.login);
+                            newContributors.add(username);
+                        }
+
+                        // Track activity timestamp for heatmap (exclude bots)
+                        if (!this.isBot(username)) {
+                            this.activityTimestamps.push(commitDate);
                         }
                     }
                 });
@@ -265,28 +282,20 @@ class CommunityHealthDashboard {
             if (issuesResponse.ok) {
                 const issues = await issuesResponse.json();
 
-                console.log(`[${org}/${repo}] Total issues from API:`, issues.length);
-
                 // Sample up to 10 issues per repo to get representative data
                 // We measure recent RESPONSE activity, not responses to recent issues
                 const sampledIssues = issues.slice(0, 10);
 
-                console.log(`[${org}/${repo}] Sampling ${sampledIssues.length} issues`);
-                console.log(`[${org}/${repo}] Response time period:`, responseTimePeriod.toISOString());
-
                 // Calculate response times for responses that happened recently
                 for (const issue of sampledIssues) {
-                    console.log(`[${org}/${repo}] Checking issue #${issue.number} created:`, issue.created_at);
-                    const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
-                    if (firstComment) {
-                        const firstResponseAt = new Date(firstComment.created_at);
+                    const firstHumanComment = await this.getFirstHumanComment(org, repo, issue.number, headers);
+                    if (firstHumanComment) {
+                        const firstResponseAt = new Date(firstHumanComment.created_at);
 
                         // Only count if the RESPONSE happened in the last 30 days
                         if (firstResponseAt >= responseTimePeriod) {
                             const createdAt = new Date(issue.created_at);
                             const responseTimeMs = firstResponseAt - createdAt;
-
-                            console.log(`[${org}/${repo}] Issue #${issue.number} response time:`, responseTimeMs, 'ms (', this.formatDuration(responseTimeMs), ')');
 
                             if (issue.pull_request) {
                                 avgPRResponseMs += responseTimeMs;
@@ -295,11 +304,7 @@ class CommunityHealthDashboard {
                                 avgIssueResponseMs += responseTimeMs;
                                 issueCount++;
                             }
-                        } else {
-                            console.log(`[${org}/${repo}] Issue #${issue.number} first response was outside period (${firstComment.created_at})`);
                         }
-                    } else {
-                        console.log(`[${org}/${repo}] Issue #${issue.number} has no comments`);
                     }
                 }
 
@@ -324,7 +329,7 @@ class CommunityHealthDashboard {
 
             // Fetch PR merge rate
             const prsResponse = await fetch(
-                `${baseUrl}/repos/${org}/${repo}/pulls?state=all&per_page=100`,
+                `${baseUrl}/repos/${org}/${repo}/pulls?state=all&per_page=100&sort=updated&direction=desc`,
                 { headers }
             );
 
@@ -333,9 +338,10 @@ class CommunityHealthDashboard {
 
             if (prsResponse.ok) {
                 const prs = await prsResponse.json();
+                // Filter to PRs that concluded (closed or merged) in last 30 days
                 const recentPRs = prs.filter(pr => {
-                    const createdAt = new Date(pr.created_at);
-                    return createdAt >= responseTimePeriod;
+                    const closedDate = pr.closed_at || pr.merged_at;
+                    return closedDate && new Date(closedDate) >= responseTimePeriod;
                 });
 
                 totalPRs = recentPRs.length;
@@ -369,18 +375,26 @@ class CommunityHealthDashboard {
             if (recentIssuesResponse.ok) {
                 const recentIssues = await recentIssuesResponse.json();
                 recentIssues.forEach(issue => {
+                    const author = issue.user.login;
+                    const createdAt = new Date(issue.created_at);
+
                     this.recentActivity.push({
                         type: issue.pull_request ? 'pr' : 'issue',
                         repo: repoFullName,
                         repoName: repo,
                         title: issue.title,
                         number: issue.number,
-                        author: issue.user.login,
-                        created: new Date(issue.created_at),
+                        author: author,
+                        created: createdAt,
                         updated: new Date(issue.updated_at),
                         state: issue.state,
                         url: issue.html_url
                     });
+
+                    // Track activity timestamp for heatmap (exclude bots)
+                    if (!this.isBot(author)) {
+                        this.activityTimestamps.push(createdAt);
+                    }
                 });
             }
 
@@ -399,6 +413,31 @@ class CommunityHealthDashboard {
             if (response.ok) {
                 const comments = await response.json();
                 return comments.length > 0 ? comments[0] : null;
+            }
+        } catch (error) {
+            console.error(`Error fetching comments for issue #${issueNumber}:`, error);
+        }
+        return null;
+    }
+
+    async getFirstHumanComment(org, repo, issueNumber, headers) {
+        try {
+            // Fetch more comments to find the first human one (fetch up to 100)
+            const response = await fetch(
+                `https://api.github.com/repos/${org}/${repo}/issues/${issueNumber}/comments?per_page=100`,
+                { headers }
+            );
+
+            if (response.ok) {
+                const comments = await response.json();
+
+                // Filter out bot comments
+                const humanComment = comments.find(comment => {
+                    const username = comment.user?.login || '';
+                    return !this.isBot(username);
+                });
+
+                return humanComment || null;
             }
         } catch (error) {
             console.error(`Error fetching comments for issue #${issueNumber}:`, error);
@@ -526,7 +565,7 @@ class CommunityHealthDashboard {
                 <td>${this.formatDuration(repo.avgIssueResponse)}</td>
                 <td>${this.formatDuration(repo.avgPRResponse)}</td>
                 <td>
-                    <span class="badge ${repo.prMergeRate >= 70 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.prMergeRate >= 70 ? 'badge-issue' : repo.prMergeRate >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.prMergeRate.toFixed(1)}%
                     </span>
                 </td>
@@ -583,7 +622,7 @@ class CommunityHealthDashboard {
         const container = document.getElementById('activity-heatmap');
         if (!container) return;
 
-        const activityData = this.generateMockActivityData();
+        const activityData = this.generateActivityData();
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         let html = '';
@@ -610,39 +649,19 @@ class CommunityHealthDashboard {
         container.innerHTML = html;
     }
 
-    generateMockActivityData() {
-        // Generate realistic activity patterns: higher during weekdays and business hours
-        const data = [];
+    generateActivityData() {
+        // Process real activity timestamps into a 7x24 grid (day of week x hour in UTC)
+        const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
 
-        for (let day = 0; day < 7; day++) {
-            const dayData = [];
-            const isWeekend = day === 0 || day === 6; // Sunday or Saturday
+        // Count activity for each timestamp
+        this.activityTimestamps.forEach(timestamp => {
+            const date = new Date(timestamp);
+            const dayOfWeek = date.getUTCDay(); // 0 = Sunday, 6 = Saturday
+            const hour = date.getUTCHours(); // 0-23 in UTC
+            grid[dayOfWeek][hour]++;
+        });
 
-            for (let hour = 0; hour < 24; hour++) {
-                let baseActivity;
-
-                // Business hours (9-17) have more activity
-                if (hour >= 9 && hour <= 17) {
-                    baseActivity = isWeekend ? 5 : 15;
-                } else if (hour >= 6 && hour <= 22) {
-                    // Extended hours still have some activity
-                    baseActivity = isWeekend ? 3 : 8;
-                } else {
-                    // Night hours have minimal activity
-                    baseActivity = isWeekend ? 1 : 3;
-                }
-
-                // Add some randomness
-                const randomVariation = Math.random() * 5;
-                const activity = Math.floor(baseActivity + randomVariation);
-
-                dayData.push(activity);
-            }
-
-            data.push(dayData);
-        }
-
-        return data;
+        return grid;
     }
 
     getActivityLevel(activity) {
@@ -1035,10 +1054,10 @@ class CommunityHealthDashboard {
 
             const allPRs = await prsResponse.json();
 
-            // Filter to PRs from last 30 days
+            // Filter to PRs that concluded (closed or merged) in last 30 days
             const recentPRs = allPRs.filter(pr => {
-                const createdAt = new Date(pr.created_at);
-                return createdAt >= thirtyDaysAgo;
+                const closedDate = pr.closed_at || pr.merged_at;
+                return closedDate && new Date(closedDate) >= thirtyDaysAgo;
             });
 
             let totalReviewTimeMs = 0;
@@ -1166,7 +1185,7 @@ class CommunityHealthDashboard {
             <tr>
                 <td><a href="https://github.com/${repo.repoFullName}" target="_blank">${repo.repo}</a></td>
                 <td>
-                    <span class="badge ${repo.mergeRate >= 70 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.mergeRate >= 70 ? 'badge-issue' : repo.mergeRate >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.mergeRate.toFixed(1)}%
                     </span>
                 </td>
@@ -1432,6 +1451,162 @@ class CommunityHealthDashboard {
         console.log('Generated mock issue health data for', this.issueHealthData.length, 'repositories');
     }
 
+    async fetchIssueHealth(org, repo) {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+        }
+
+        try {
+            const repoFullName = `${org}/${repo}`;
+            const now = new Date();
+            const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+            // Fetch issues from last 90 days (both open and closed)
+            const issuesResponse = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/issues?state=all&since=${ninetyDaysAgo.toISOString()}&per_page=100`,
+                { headers }
+            );
+
+            if (!issuesResponse.ok) {
+                console.error(`Failed to fetch issues for ${org}/${repo}`);
+                return;
+            }
+
+            const allIssues = await issuesResponse.json();
+            // Filter out PRs (issues API returns both issues and PRs)
+            const issues = allIssues.filter(issue => !issue.pull_request);
+
+            if (issues.length === 0) {
+                console.log(`No issues found for ${org}/${repo}`);
+                return;
+            }
+
+            // Calculate closure rate
+            const closedIssues = issues.filter(issue => issue.state === 'closed').length;
+            const closureRate = (closedIssues / issues.length) * 100;
+
+            // Calculate avg time to close for closed issues
+            let totalTimeToClose = 0;
+            let closedCount = 0;
+
+            issues.forEach(issue => {
+                if (issue.closed_at) {
+                    const createdAt = new Date(issue.created_at);
+                    const closedAt = new Date(issue.closed_at);
+                    totalTimeToClose += (closedAt - createdAt);
+                    closedCount++;
+                }
+            });
+
+            const avgTimeToClose = closedCount > 0 ? totalTimeToClose / closedCount : 0;
+
+            // Calculate response times and coverage (sample to avoid rate limits)
+            const sampleSize = Math.min(20, issues.length);
+            const sampledIssues = issues.slice(0, sampleSize);
+
+            let totalResponseTime = 0;
+            let responseCount = 0;
+            let issuesWithResponse = 0;
+            let communityResponses = 0;
+            let maintainerResponses = 0;
+            let totalComments = 0;
+
+            for (const issue of sampledIssues) {
+                // Fetch comments for this issue
+                const commentsResponse = await fetch(
+                    `${baseUrl}/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=100`,
+                    { headers }
+                );
+
+                if (commentsResponse.ok) {
+                    const comments = await commentsResponse.json();
+                    totalComments += comments.length;
+
+                    if (comments.length > 0) {
+                        issuesWithResponse++;
+
+                        // Find first human comment
+                        const firstHumanComment = comments.find(comment => {
+                            const username = comment.user?.login || '';
+                            return !this.isBot(username);
+                        });
+
+                        if (firstHumanComment) {
+                            const createdAt = new Date(issue.created_at);
+                            const responseAt = new Date(firstHumanComment.created_at);
+                            const responseTime = responseAt - createdAt;
+
+                            // Only count if response happened in last 30 days
+                            if (responseAt >= thirtyDaysAgo) {
+                                totalResponseTime += responseTime;
+                                responseCount++;
+                            }
+
+                            // Check if responder is a maintainer (has write access)
+                            // For simplicity, we'll check if author_association is OWNER, MEMBER, or COLLABORATOR
+                            const association = firstHumanComment.author_association;
+                            if (association === 'OWNER' || association === 'MEMBER' || association === 'COLLABORATOR') {
+                                maintainerResponses++;
+                            } else {
+                                communityResponses++;
+                            }
+                        }
+                    }
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const avgTimeToFirstResponse = responseCount > 0 ? totalResponseTime / responseCount : 0;
+            const responseCoverage = sampleSize > 0 ? (issuesWithResponse / sampleSize) * 100 : 0;
+            const totalHumanResponses = communityResponses + maintainerResponses;
+            const communityResponseRate = totalHumanResponses > 0 ? (communityResponses / totalHumanResponses) * 100 : 0;
+            const avgCommentsPerIssue = sampleSize > 0 ? totalComments / sampleSize : 0;
+
+            // Get open issues and calculate age distribution
+            const openIssues = issues.filter(issue => issue.state === 'open');
+            const issueAgeDistribution = {
+                '0-7d': 0,
+                '7-30d': 0,
+                '30-90d': 0,
+                '90d+': 0
+            };
+
+            openIssues.forEach(issue => {
+                const age = now - new Date(issue.created_at);
+                const days = age / (1000 * 60 * 60 * 24);
+
+                if (days <= 7) issueAgeDistribution['0-7d']++;
+                else if (days <= 30) issueAgeDistribution['7-30d']++;
+                else if (days <= 90) issueAgeDistribution['30-90d']++;
+                else issueAgeDistribution['90d+']++;
+            });
+
+            this.issueHealthData.push({
+                org,
+                repo,
+                repoFullName,
+                closureRate,
+                avgTimeToClose,
+                avgTimeToFirstResponse,
+                responseCoverage,
+                communityResponseRate,
+                avgCommentsPerIssue,
+                openIssues: openIssues.length,
+                issueAgeDistribution
+            });
+
+            console.log(`✓ Fetched issue health for ${org}/${repo}`);
+        } catch (error) {
+            console.error(`Error fetching issue health for ${org}/${repo}:`, error);
+        }
+    }
+
     updateIssueStats() {
         let totalClosureRate = 0;
         let totalTimeToClose = 0;
@@ -1476,7 +1651,7 @@ class CommunityHealthDashboard {
                 <td>${this.formatDuration(repo.avgTimeToClose)}</td>
                 <td>${this.formatDuration(repo.avgTimeToFirstResponse)}</td>
                 <td>
-                    <span class="badge ${repo.responseCoverage >= 80 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.responseCoverage >= 70 ? 'badge-issue' : repo.responseCoverage >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.responseCoverage.toFixed(1)}%
                     </span>
                 </td>
@@ -1741,6 +1916,32 @@ class CommunityHealthDashboard {
                     this.fetchMaintainerHealth(repo.org, repo.repo)
                 );
                 await Promise.all(promises);
+
+                // Finalize maintainer data after all repos are fetched
+                this.maintainerHealthData.forEach(maintainer => {
+                    // Calculate average response time from array
+                    if (maintainer.responseTimes && maintainer.responseTimes.length > 0) {
+                        maintainer.avgResponseTime = maintainer.responseTimes.reduce((sum, t) => sum + t, 0) / maintainer.responseTimes.length;
+                    } else {
+                        maintainer.avgResponseTime = 0;
+                    }
+
+                    // Calculate repo count from Set
+                    maintainer.repoCount = maintainer.repos ? maintainer.repos.size : 0;
+
+                    // Clean up temporary data structures
+                    delete maintainer.responseTimes;
+                    delete maintainer.repos;
+                });
+
+                // Sort by response count (descending)
+                this.maintainerHealthData.sort((a, b) => b.responseCount - a.responseCount);
+
+                // Calculate response share
+                const totalResponses = this.maintainerHealthData.reduce((sum, m) => sum + m.responseCount, 0);
+                this.maintainerHealthData.forEach(maintainer => {
+                    maintainer.responseShare = totalResponses > 0 ? (maintainer.responseCount / totalResponses) * 100 : 0;
+                });
             }
 
             this.updateMaintainerStats();
@@ -1803,6 +2004,127 @@ class CommunityHealthDashboard {
         });
 
         console.log('Generated mock maintainer health data for', this.maintainerHealthData.length, 'maintainers');
+    }
+
+    async fetchMaintainerHealth(org, repo) {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+        }
+
+        try {
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+            // Fetch recent issues (both issues and PRs)
+            const issuesResponse = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/issues?state=all&since=${thirtyDaysAgo.toISOString()}&per_page=100`,
+                { headers }
+            );
+
+            if (!issuesResponse.ok) {
+                console.error(`Failed to fetch issues for ${org}/${repo}`);
+                return;
+            }
+
+            const allItems = await issuesResponse.json();
+
+            // Sample to avoid rate limits
+            const sampleSize = Math.min(20, allItems.length);
+            const sampledItems = allItems.slice(0, sampleSize);
+
+            // Track maintainer activity
+            const maintainerActivity = new Map(); // username -> {issueResponses, prResponses, responseTimes, repos}
+
+            for (const item of sampledItems) {
+                const commentsResponse = await fetch(
+                    `${baseUrl}/repos/${org}/${repo}/issues/${item.number}/comments?per_page=100`,
+                    { headers }
+                );
+
+                if (commentsResponse.ok) {
+                    const comments = await commentsResponse.json();
+
+                    // Find first human comment
+                    const firstHumanComment = comments.find(comment => {
+                        const username = comment.user?.login || '';
+                        return !this.isBot(username);
+                    });
+
+                    if (firstHumanComment) {
+                        const responder = firstHumanComment.user.login;
+
+                        // Double-check responder is not a bot
+                        if (this.isBot(responder)) {
+                            continue; // Skip this bot responder
+                        }
+
+                        const responseAt = new Date(firstHumanComment.created_at);
+
+                        // Only count responses in last 30 days
+                        if (responseAt >= thirtyDaysAgo) {
+                            if (!maintainerActivity.has(responder)) {
+                                maintainerActivity.set(responder, {
+                                    issueResponses: 0,
+                                    prResponses: 0,
+                                    responseTimes: [],
+                                    repos: new Set()
+                                });
+                            }
+
+                            const activity = maintainerActivity.get(responder);
+                            const responseTime = responseAt - new Date(item.created_at);
+
+                            if (item.pull_request) {
+                                activity.prResponses++;
+                            } else {
+                                activity.issueResponses++;
+                            }
+
+                            activity.responseTimes.push(responseTime);
+                            activity.repos.add(repo);
+                        }
+                    }
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Store maintainer data (will be aggregated across all repos)
+            maintainerActivity.forEach((activity, username) => {
+                // Check if we already have this maintainer from another repo
+                const existing = this.maintainerHealthData.find(m => m.username === username);
+
+                if (existing) {
+                    // Merge data
+                    existing.issueResponses += activity.issueResponses;
+                    existing.prResponses += activity.prResponses;
+                    existing.responseCount += (activity.issueResponses + activity.prResponses);
+                    existing.responseTimes.push(...activity.responseTimes);
+                    activity.repos.forEach(r => existing.repos.add(r));
+                } else {
+                    // New maintainer
+                    this.maintainerHealthData.push({
+                        username,
+                        responseCount: activity.issueResponses + activity.prResponses,
+                        issueResponses: activity.issueResponses,
+                        prResponses: activity.prResponses,
+                        responseTimes: activity.responseTimes,
+                        repos: activity.repos,
+                        avgResponseTime: 0, // Will calculate after all repos
+                        repoCount: 0, // Will calculate after all repos
+                        responseShare: 0 // Will calculate after all repos
+                    });
+                }
+            });
+
+            console.log(`✓ Fetched maintainer health for ${org}/${repo}`);
+        } catch (error) {
+            console.error(`Error fetching maintainer health for ${org}/${repo}:`, error);
+        }
     }
 
     updateMaintainerStats() {

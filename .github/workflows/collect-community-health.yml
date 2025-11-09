@@ -139,18 +139,19 @@ jobs:
                 path: `/repos/${org}/${repo}`
               });
 
-              const openIssues = repoInfo ? repoInfo.open_issues_count : 0;
+              // Use repository object's open_issues_count (includes both issues and PRs)
+              const totalOpen = repoInfo ? repoInfo.open_issues_count : 0;
 
-              // Fetch open PRs
-              const prs = await httpsRequest({
+              // Get accurate open PRs count using search API
+              const openPRsSearch = await httpsRequest({
                 ...baseOptions,
-                path: `/repos/${org}/${repo}/pulls?state=open&per_page=100`
+                path: `/search/issues?q=repo:${org}/${repo}+type:pr+state:open&per_page=1`
               });
 
-              const openPRs = prs ? prs.length : 0;
+              const openPRs = openPRsSearch ? openPRsSearch.total_count : 0;
 
-              // Calculate actual open issues (total open issues - open PRs)
-              const actualOpenIssues = Math.max(0, openIssues - openPRs);
+              // Calculate actual open issues (repository's total - open PRs)
+              const actualOpenIssues = Math.max(0, totalOpen - openPRs);
 
               // Fetch recent issues for response time (limited sample)
               const issues = await httpsRequest({

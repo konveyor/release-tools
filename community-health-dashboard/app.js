@@ -293,7 +293,9 @@ class CommunityHealthDashboard {
                 repo,
                 repoFullName,
                 contributors: contributors.size,
+                contributorsList: Array.from(contributors), // Store usernames for deduplication
                 newContributors: actualNewContributors,
+                newContributorsList: Array.from(newContributors), // Store usernames for deduplication
                 avgIssueResponse,
                 avgPRResponse,
                 prMergeRate,
@@ -348,14 +350,21 @@ class CommunityHealthDashboard {
     }
 
     updateStats() {
-        // Calculate overall stats
-        const totalContributors = this.repoHealthData.reduce((sum, repo) =>
-            sum + repo.contributors, 0
-        );
+        // Deduplicate contributors across all repos
+        const allContributors = new Set();
+        const allNewContributors = new Set();
 
-        const totalNewContributors = this.repoHealthData.reduce((sum, repo) =>
-            sum + repo.newContributors, 0
-        );
+        this.repoHealthData.forEach(repo => {
+            if (repo.contributorsList) {
+                repo.contributorsList.forEach(username => allContributors.add(username));
+            }
+            if (repo.newContributorsList) {
+                repo.newContributorsList.forEach(username => allNewContributors.add(username));
+            }
+        });
+
+        const totalContributors = allContributors.size;
+        const totalNewContributors = allNewContributors.size;
 
         // Calculate weighted average response time
         let totalIssueResponseMs = 0;

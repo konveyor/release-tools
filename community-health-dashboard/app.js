@@ -265,32 +265,42 @@ class CommunityHealthDashboard {
             if (issuesResponse.ok) {
                 const issues = await issuesResponse.json();
 
-                for (const issue of issues) {
-                    if (issue.pull_request) {
-                        // It's a PR
-                        if (issue.state === 'open') openPRs++;
+                // Sample only 3 issues per repo to avoid rate limits and get representative data
+                // Filter to only include issues created within the response time period
+                const recentIssues = issues
+                    .filter(issue => {
+                        const createdAt = new Date(issue.created_at);
+                        return createdAt >= responseTimePeriod;
+                    })
+                    .slice(0, 3);
 
-                        // Get PR details for response time
-                        const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
-                        if (firstComment) {
-                            const createdAt = new Date(issue.created_at);
-                            const firstResponseAt = new Date(firstComment.created_at);
+                // Calculate response times from sampled recent issues
+                for (const issue of recentIssues) {
+                    const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
+                    if (firstComment) {
+                        const createdAt = new Date(issue.created_at);
+                        const firstResponseAt = new Date(firstComment.created_at);
+
+                        if (issue.pull_request) {
                             avgPRResponseMs += (firstResponseAt - createdAt);
                             prCount++;
-                        }
-                    } else {
-                        // It's an issue
-                        if (issue.state === 'open') openIssues++;
-
-                        const firstComment = await this.getFirstComment(org, repo, issue.number, headers);
-                        if (firstComment) {
-                            const createdAt = new Date(issue.created_at);
-                            const firstResponseAt = new Date(firstComment.created_at);
+                        } else {
                             avgIssueResponseMs += (firstResponseAt - createdAt);
                             issueCount++;
                         }
                     }
                 }
+
+                // Count all open issues/PRs from full list
+                issues.forEach(issue => {
+                    if (issue.state === 'open') {
+                        if (issue.pull_request) {
+                            openPRs++;
+                        } else {
+                            openIssues++;
+                        }
+                    }
+                });
             }
 
             // Calculate averages

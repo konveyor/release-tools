@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konveyor - Community Health Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <img src="konveyor-logo.svg" alt="Konveyor" class="logo">
+                    <h1>Community Health</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn btn-primary">
+                        <span class="icon">↻</span> Refresh
+                    </button>
+                    <span id="last-updated" class="last-updated"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="overview">Overview</button>
+                <button class="tab-btn" data-tab="pr-health">PR Health</button>
+                <button class="tab-btn" data-tab="issue-health">Issue Health</button>
+                <button class="tab-btn" data-tab="maintainer-health">Maintainer Health</button>
+                <button class="tab-btn" data-tab="ci-health">CI/CD Health</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="overview-tab" class="tab-content active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-contributors">-</div>
+                        <div class="stat-label">Total Contributors (90d)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✨</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="new-contributors">-</div>
+                        <div class="stat-label">New Contributors (30d)</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avg-response-time">-</div>
+                        <div class="stat-label">Avg Response Time</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="pr-merge-rate">-</div>
+                        <div class="stat-label">PR Merge Rate (30d)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends Charts -->
+            <div class="trends-panel" id="trends-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Historical Trends</h2>
+                    <div class="header-actions">
+                        <select id="trend-period" class="filter-select">
+                            <option value="30">Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90" selected>Last 90 days</option>
+                            <option value="180">Last 6 months</option>
+                            <option value="365">Last year</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="contributors-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="activity-chart"></canvas>
+                    </div>
+                </div>
+                <div class="trends-content">
+                    <div class="chart-container">
+                        <canvas id="response-time-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="merge-rate-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Heatmap -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Activity Heatmap</h2>
+                    <div class="header-actions">
+                        <span class="stat-label" style="margin-right: 1rem;">Activity by Day & Hour (UTC)</span>
+                    </div>
+                </div>
+                <div class="heatmap-container">
+                    <div class="heatmap-legend">
+                        <span class="legend-label">Less</span>
+                        <div class="legend-color" style="background-color: #0e4429;"></div>
+                        <div class="legend-color" style="background-color: #006d32;"></div>
+                        <div class="legend-color" style="background-color: #26a641;"></div>
+                        <div class="legend-color" style="background-color: #39d353;"></div>
+                        <span class="legend-label">More</span>
+                    </div>
+                    <div id="activity-heatmap" class="heatmap-grid"></div>
+                </div>
+            </div>
+
+            <!-- Repository Breakdown -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Repository Breakdown</h2>
+                    <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                        <span class="spinner"></span> Loading...
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="repo-health-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="repo">Repository</th>
+                                <th class="sortable" data-sort="contributors">Contributors</th>
+                                <th class="sortable" data-sort="newContributors">New Contributors</th>
+                                <th class="sortable" data-sort="avgIssueResponse">Avg Issue Response</th>
+                                <th class="sortable" data-sort="avgPRResponse">Avg PR Response</th>
+                                <th class="sortable" data-sort="prMergeRate">PR Merge Rate</th>
+                                <th class="sortable" data-sort="openIssues">Open Issues</th>
+                                <th class="sortable" data-sort="openPRs">Open PRs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="8" class="no-data">Loading repository health data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Recent Activity</h2>
+                    <div class="header-actions">
+                        <select id="activity-filter" class="filter-select">
+                            <option value="all">All Repositories</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Repository</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-body">
+                            <tr>
+                                <td colspan="6" class="no-data">Loading recent activity...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+            <!-- End Overview Tab -->
+
+            <!-- PR Health Tab -->
+            <div id="pr-health-tab" class="tab-content">
+                <!-- PR Health Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="pr-merge-rate-detail">-</div>
+                            <div class="stat-label">PR Merge Rate (30d)</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👀</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avg-time-to-review">-</div>
+                            <div class="stat-label">Avg Time to First Review</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🚀</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avg-time-to-merge">-</div>
+                            <div class="stat-label">Avg Time to Merge</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avg-pr-revisions">-</div>
+                            <div class="stat-label">Avg PR Revisions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PR Size Distribution Chart -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>PR Size Distribution</h2>
+                    </div>
+                    <div class="chart-container" style="padding: 2rem; height: 400px;">
+                        <canvas id="pr-size-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- PR Health Trends -->
+                <div class="trends-panel" id="pr-trends-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>PR Health Trends</h2>
+                        <div class="header-actions">
+                            <select id="pr-trend-period" class="filter-select">
+                                <option value="30">Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90" selected>Last 90 days</option>
+                                <option value="180">Last 6 months</option>
+                                <option value="365">Last year</option>
+                                <option value="all">All time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="trends-content">
+                        <div class="chart-container">
+                            <canvas id="review-time-trend-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="merge-time-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PR Details Table -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Repository PR Metrics</h2>
+                        <div id="pr-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="pr-metrics-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="repo">Repository</th>
+                                    <th class="sortable" data-sort="mergeRate">Merge Rate</th>
+                                    <th class="sortable" data-sort="avgReviewTime">Avg Review Time</th>
+                                    <th class="sortable" data-sort="avgMergeTime">Avg Merge Time</th>
+                                    <th class="sortable" data-sort="avgRevisions">Avg Revisions</th>
+                                    <th class="sortable" data-sort="totalPRs">Total PRs (30d)</th>
+                                    <th class="sortable" data-sort="openPRs">Open PRs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pr-metrics-body">
+                                <tr>
+                                    <td colspan="7" class="no-data">Loading PR metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End PR Health Tab -->
+
+            <!-- Issue Health Tab -->
+            <div id="issue-health-tab" class="tab-content">
+                <!-- Issue Health Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="issue-closure-rate">-</div>
+                            <div class="stat-label">Issue Closure Rate</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avg-time-to-close">-</div>
+                            <div class="stat-label">Avg Time to Close</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="response-coverage">-</div>
+                            <div class="stat-label">Response Coverage</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="community-response-rate">-</div>
+                            <div class="stat-label">Community Response Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="trends-content">
+                    <!-- Issue Age Distribution Chart -->
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Issue Age Distribution</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="issue-age-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Response Distribution Chart -->
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Response Distribution</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="response-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Issue Health Trends -->
+                <div class="trends-panel" id="issue-trends-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>Issue Health Trends</h2>
+                        <div class="header-actions">
+                            <select id="issue-trend-period" class="filter-select">
+                                <option value="30">Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90" selected>Last 90 days</option>
+                                <option value="180">Last 6 months</option>
+                                <option value="365">Last year</option>
+                                <option value="all">All time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="trends-content">
+                        <div class="chart-container">
+                            <canvas id="closure-rate-trend-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="response-time-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Issue Metrics Table -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Repository Issue Metrics</h2>
+                        <div id="issue-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="issue-metrics-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="repo">Repository</th>
+                                    <th class="sortable" data-sort="closureRate">Closure Rate</th>
+                                    <th class="sortable" data-sort="avgTimeToClose">Avg Time to Close</th>
+                                    <th class="sortable" data-sort="avgTimeToFirstResponse">Avg First Response</th>
+                                    <th class="sortable" data-sort="responseCoverage">Response Coverage</th>
+                                    <th class="sortable" data-sort="avgCommentsPerIssue">Avg Comments</th>
+                                    <th class="sortable" data-sort="openIssues">Open Issues</th>
+                                </tr>
+                            </thead>
+                            <tbody id="issue-metrics-body">
+                                <tr>
+                                    <td colspan="7" class="no-data">Loading issue metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End Issue Health Tab -->
+
+            <!-- Maintainer Health Tab -->
+            <div id="maintainer-health-tab" class="tab-content">
+                <!-- Maintainer Health Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👨‍💻</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="active-maintainers">-</div>
+                            <div class="stat-label">Active Maintainers (30d)</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="response-load">-</div>
+                            <div class="stat-label">Avg Response Load</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="response-concentration">-</div>
+                            <div class="stat-label">Response Concentration</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="burnout-indicator">-</div>
+                            <div class="stat-label">Burnout Risk</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="trends-content">
+                    <!-- Response Concentration Chart -->
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Response Concentration</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="maintainer-concentration-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Bus Factor Chart -->
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Contributor Distribution</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="bus-factor-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintainer Health Trends -->
+                <div class="trends-panel" id="maintainer-trends-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>Maintainer Health Trends</h2>
+                        <div class="header-actions">
+                            <select id="maintainer-trend-period" class="filter-select">
+                                <option value="30">Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90" selected>Last 90 days</option>
+                                <option value="180">Last 6 months</option>
+                                <option value="365">Last year</option>
+                                <option value="all">All time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="trends-content">
+                        <div class="chart-container">
+                            <canvas id="maintainer-count-trend-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="maintainer-response-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintainer Metrics Table -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Top Maintainers</h2>
+                        <div id="maintainer-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="maintainer-metrics-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="username">Maintainer</th>
+                                    <th class="sortable" data-sort="responseCount">Responses</th>
+                                    <th class="sortable" data-sort="issueResponses">Issue Responses</th>
+                                    <th class="sortable" data-sort="prResponses">PR Reviews</th>
+                                    <th class="sortable" data-sort="avgResponseTime">Avg Response Time</th>
+                                    <th class="sortable" data-sort="repoCount">Repos Active</th>
+                                    <th class="sortable" data-sort="responseShare">Response Share</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintainer-metrics-body">
+                                <tr>
+                                    <td colspan="7" class="no-data">Loading maintainer metrics...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End Maintainer Health Tab -->
+
+            <!-- CI/CD Health Tab -->
+            <div id="ci-health-tab" class="tab-content">
+                <!-- CI/CD Health Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-success-rate">-</div>
+                            <div class="stat-label">Success Rate (7d)</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-avg-duration">-</div>
+                            <div class="stat-label">Avg Build Duration</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌙</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-nightly-success">-</div>
+                            <div class="stat-label">Nightly Test Success</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ci-total-runs">-</div>
+                            <div class="stat-label">Total Runs (7d)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Status Table -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Workflow Status</h2>
+                        <div id="ci-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="workflow-status-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="name">Workflow</th>
+                                    <th class="sortable" data-sort="status">Status</th>
+                                    <th class="sortable" data-sort="lastRun">Last Run</th>
+                                    <th class="sortable" data-sort="duration">Duration</th>
+                                    <th class="sortable" data-sort="successRate">Success Rate (7d)</th>
+                                    <th class="sortable" data-sort="totalRuns">Runs (7d)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workflow-status-body">
+                                <tr>
+                                    <td colspan="6" class="no-data">Loading workflow status...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Component CI Status -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Component CI Status</h2>
+                        <div class="header-actions">
+                            <span class="stat-label">CI health for each component repository</span>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="component-ci-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="repo">Component</th>
+                                    <th class="sortable" data-sort="status">Latest Status</th>
+                                    <th class="sortable" data-sort="branch">Branch</th>
+                                    <th class="sortable" data-sort="lastRun">Last Run</th>
+                                    <th class="sortable" data-sort="successRate">Success Rate (7d)</th>
+                                    <th class="sortable" data-sort="totalWorkflows">Workflows</th>
+                                    <th class="sortable" data-sort="totalRuns">Total Runs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="component-ci-body">
+                                <tr>
+                                    <td colspan="7" class="no-data">Loading component CI status...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Build Success Trends -->
+                <div class="trends-panel" id="ci-trends-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2>Build Success Trends</h2>
+                        <div class="header-actions">
+                            <select id="ci-trend-period" class="filter-select">
+                                <option value="7">Last 7 days</option>
+                                <option value="14">Last 14 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="60">Last 60 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="trends-content">
+                        <div class="chart-container">
+                            <canvas id="ci-success-trend-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="ci-duration-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Health Comparison -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Branch Health Comparison</h2>
+                    </div>
+                    <div class="chart-container" style="padding: 2rem; height: 400px;">
+                        <canvas id="branch-health-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Workflow Runs -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Recent Workflow Runs</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="recent-runs-table">
+                            <thead>
+                                <tr>
+                                    <th>Workflow</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Triggered By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-runs-body">
+                                <tr>
+                                    <td colspan="6" class="no-data">Loading recent runs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End CI/CD Health Tab -->
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Make dashboard accessible globally for pagination
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            dashboard = new CommunityHealthDashboard();
+        });
+    </script>
+</body>
+</html>

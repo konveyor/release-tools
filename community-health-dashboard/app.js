@@ -1451,6 +1451,167 @@ class CommunityHealthDashboard {
         console.log('Generated mock issue health data for', this.issueHealthData.length, 'repositories');
     }
 
+    async fetchIssueHealth(org, repo) {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+        }
+
+        try {
+            const repoFullName = `${org}/${repo}`;
+            const now = new Date();
+            const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+            // Fetch issues from last 90 days (both open and closed)
+            const issuesResponse = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/issues?state=all&since=${ninetyDaysAgo.toISOString()}&per_page=100`,
+                { headers }
+            );
+
+            if (!issuesResponse.ok) {
+                console.error(`Failed to fetch issues for ${org}/${repo}`);
+                return;
+            }
+
+            const allIssues = await issuesResponse.json();
+            // Filter out PRs (issues API returns both issues and PRs)
+            const issues = allIssues.filter(issue => !issue.pull_request);
+
+            if (issues.length === 0) {
+                console.log(`No issues found for ${org}/${repo}`);
+                return;
+            }
+
+            // Calculate closure rate
+            const closedIssues = issues.filter(issue => issue.state === 'closed').length;
+            const closureRate = (closedIssues / issues.length) * 100;
+
+            // Calculate avg time to close for closed issues
+            let totalTimeToClose = 0;
+            let closedCount = 0;
+
+            issues.forEach(issue => {
+                if (issue.closed_at) {
+                    const createdAt = new Date(issue.created_at);
+                    const closedAt = new Date(issue.closed_at);
+                    totalTimeToClose += (closedAt - createdAt);
+                    closedCount++;
+                }
+            });
+
+            const avgTimeToClose = closedCount > 0 ? totalTimeToClose / closedCount : 0;
+
+            // Calculate response times and coverage (sample to avoid rate limits)
+            const sampleSize = Math.min(20, issues.length);
+            const sampledIssues = issues.slice(0, sampleSize);
+
+            let totalResponseTime = 0;
+            let responseCount = 0;
+            let issuesWithResponse = 0;
+            let communityResponses = 0;
+            let maintainerResponses = 0;
+            let totalComments = 0;
+
+            for (const issue of sampledIssues) {
+                // Fetch comments for this issue
+                const commentsResponse = await fetch(
+                    `${baseUrl}/repos/${org}/${repo}/issues/${issue.number}/comments?per_page=100`,
+                    { headers }
+                );
+
+                if (commentsResponse.ok) {
+                    const comments = await commentsResponse.json();
+                    totalComments += comments.length;
+
+                    if (comments.length > 0) {
+                        issuesWithResponse++;
+
+                        // Find first human comment
+                        const firstHumanComment = comments.find(comment => {
+                            const username = comment.user?.login || '';
+                            const isBot = username.endsWith('[bot]') ||
+                                        username.includes('bot') ||
+                                        username === 'github-actions' ||
+                                        username === 'dependabot' ||
+                                        username === 'renovate';
+                            return !isBot;
+                        });
+
+                        if (firstHumanComment) {
+                            const createdAt = new Date(issue.created_at);
+                            const responseAt = new Date(firstHumanComment.created_at);
+                            const responseTime = responseAt - createdAt;
+
+                            // Only count if response happened in last 30 days
+                            if (responseAt >= thirtyDaysAgo) {
+                                totalResponseTime += responseTime;
+                                responseCount++;
+                            }
+
+                            // Check if responder is a maintainer (has write access)
+                            // For simplicity, we'll check if author_association is OWNER, MEMBER, or COLLABORATOR
+                            const association = firstHumanComment.author_association;
+                            if (association === 'OWNER' || association === 'MEMBER' || association === 'COLLABORATOR') {
+                                maintainerResponses++;
+                            } else {
+                                communityResponses++;
+                            }
+                        }
+                    }
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const avgTimeToFirstResponse = responseCount > 0 ? totalResponseTime / responseCount : 0;
+            const responseCoverage = sampleSize > 0 ? (issuesWithResponse / sampleSize) * 100 : 0;
+            const totalHumanResponses = communityResponses + maintainerResponses;
+            const communityResponseRate = totalHumanResponses > 0 ? (communityResponses / totalHumanResponses) * 100 : 0;
+            const avgCommentsPerIssue = sampleSize > 0 ? totalComments / sampleSize : 0;
+
+            // Get open issues and calculate age distribution
+            const openIssues = issues.filter(issue => issue.state === 'open');
+            const issueAgeDistribution = {
+                '0-7d': 0,
+                '7-30d': 0,
+                '30-90d': 0,
+                '90d+': 0
+            };
+
+            openIssues.forEach(issue => {
+                const age = now - new Date(issue.created_at);
+                const days = age / (1000 * 60 * 60 * 24);
+
+                if (days <= 7) issueAgeDistribution['0-7d']++;
+                else if (days <= 30) issueAgeDistribution['7-30d']++;
+                else if (days <= 90) issueAgeDistribution['30-90d']++;
+                else issueAgeDistribution['90d+']++;
+            });
+
+            this.issueHealthData.push({
+                org,
+                repo,
+                repoFullName,
+                closureRate,
+                avgTimeToClose,
+                avgTimeToFirstResponse,
+                responseCoverage,
+                communityResponseRate,
+                avgCommentsPerIssue,
+                openIssues: openIssues.length,
+                issueAgeDistribution
+            });
+
+            console.log(`✓ Fetched issue health for ${org}/${repo}`);
+        } catch (error) {
+            console.error(`Error fetching issue health for ${org}/${repo}:`, error);
+        }
+    }
+
     updateIssueStats() {
         let totalClosureRate = 0;
         let totalTimeToClose = 0;
@@ -1495,7 +1656,7 @@ class CommunityHealthDashboard {
                 <td>${this.formatDuration(repo.avgTimeToClose)}</td>
                 <td>${this.formatDuration(repo.avgTimeToFirstResponse)}</td>
                 <td>
-                    <span class="badge ${repo.responseCoverage >= 80 ? 'badge-issue' : 'badge-pr'}">
+                    <span class="badge ${repo.responseCoverage >= 70 ? 'badge-issue' : repo.responseCoverage >= 50 ? 'badge-pr' : 'badge-failure'}">
                         ${repo.responseCoverage.toFixed(1)}%
                     </span>
                 </td>

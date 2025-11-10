@@ -42,6 +42,7 @@ class CommunityHealthDashboard {
 
     init() {
         this.setupEventListeners();
+        this.checkGitHubToken();
         this.loadData();
         this.loadHistoricalData();
     }
@@ -143,6 +144,47 @@ class CommunityHealthDashboard {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     this.hideContributorsModal();
+                }
+            });
+        }
+
+        // Token setup modal handlers
+        const closeTokenModal = document.getElementById('close-token-modal');
+        if (closeTokenModal) {
+            closeTokenModal.addEventListener('click', () => {
+                this.hideTokenSetupModal();
+            });
+        }
+
+        const tokenModal = document.getElementById('token-setup-modal');
+        if (tokenModal) {
+            tokenModal.addEventListener('click', (e) => {
+                if (e.target === tokenModal) {
+                    this.hideTokenSetupModal();
+                }
+            });
+        }
+
+        const saveTokenBtn = document.getElementById('save-token-btn');
+        if (saveTokenBtn) {
+            saveTokenBtn.addEventListener('click', () => {
+                this.saveGitHubToken();
+            });
+        }
+
+        const skipTokenBtn = document.getElementById('skip-token-btn');
+        if (skipTokenBtn) {
+            skipTokenBtn.addEventListener('click', () => {
+                this.hideTokenSetupModal();
+            });
+        }
+
+        // Allow Enter key to save token
+        const tokenInput = document.getElementById('github-token-input');
+        if (tokenInput) {
+            tokenInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.saveGitHubToken();
                 }
             });
         }
@@ -3536,6 +3578,72 @@ class CommunityHealthDashboard {
         });
 
         return contributors;
+    }
+
+    // GitHub Token Management Methods
+    checkGitHubToken() {
+        // Check if token exists in localStorage
+        const token = localStorage.getItem('github_token');
+
+        // Also check if user has previously dismissed the prompt (store for 30 days)
+        const dismissedUntil = localStorage.getItem('token_prompt_dismissed_until');
+        const now = Date.now();
+
+        if (!token && (!dismissedUntil || now > parseInt(dismissedUntil))) {
+            // Show token setup modal after a brief delay to let dashboard load
+            setTimeout(() => {
+                this.showTokenSetupModal();
+            }, 1000);
+        }
+    }
+
+    showTokenSetupModal() {
+        const modal = document.getElementById('token-setup-modal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    hideTokenSetupModal() {
+        const modal = document.getElementById('token-setup-modal');
+        if (modal) {
+            modal.classList.remove('active');
+
+            // Remember that user dismissed this prompt for 30 days
+            const thirtyDaysFromNow = Date.now() + (30 * 24 * 60 * 60 * 1000);
+            localStorage.setItem('token_prompt_dismissed_until', thirtyDaysFromNow.toString());
+        }
+    }
+
+    saveGitHubToken() {
+        const input = document.getElementById('github-token-input');
+        if (!input) return;
+
+        const token = input.value.trim();
+
+        if (!token) {
+            alert('Please enter a GitHub token');
+            return;
+        }
+
+        // Basic validation - GitHub tokens start with ghp_, github_pat_, or gho_
+        if (!token.startsWith('ghp_') && !token.startsWith('github_pat_') && !token.startsWith('gho_')) {
+            const confirm = window.confirm('This doesn\'t look like a valid GitHub token. They usually start with ghp_, github_pat_, or gho_. Save anyway?');
+            if (!confirm) return;
+        }
+
+        // Save to localStorage
+        localStorage.setItem('github_token', token);
+
+        // Hide modal
+        this.hideTokenSetupModal();
+
+        // Clear the dismissed flag since user set up the token
+        localStorage.removeItem('token_prompt_dismissed_until');
+
+        // Reload the page to use the new token
+        alert('Token saved! The dashboard will reload to use your new token.');
+        window.location.reload();
     }
 }
 

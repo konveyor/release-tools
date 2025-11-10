@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Konveyor - Community Health Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=30">
+    <link rel="stylesheet" href="styles.css?v=31">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -847,8 +847,50 @@
         </div>
     </div>
 
-    <script src="config.js?v=30"></script>
-    <script src="app.js?v=30"></script>
+    <!-- GitHub Token Setup Modal -->
+    <div id="token-setup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>GitHub Token Setup</h2>
+                <button class="modal-close" id="close-token-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="token-setup-info">
+                    <p class="token-setup-message">
+                        No GitHub token detected. While the dashboard works without authentication,
+                        you may hit rate limits (60 requests/hour). A token increases this to 5,000 requests/hour.
+                    </p>
+
+                    <div class="token-setup-steps">
+                        <h3>Setup Steps:</h3>
+                        <ol>
+                            <li>Go to <a href="https://github.com/settings/tokens/new" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
+                            <li>Click "Generate new token (classic)"</li>
+                            <li>Give it a name like "Community Health Dashboard"</li>
+                            <li>Select scope: <code>public_repo</code> (for public repositories)</li>
+                            <li>Click "Generate token" and copy the token</li>
+                            <li>Paste it below and click "Save"</li>
+                        </ol>
+                    </div>
+
+                    <div class="token-input-group">
+                        <label for="github-token-input">GitHub Personal Access Token:</label>
+                        <input type="password" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx" class="token-input">
+                        <div class="token-buttons">
+                            <button id="save-token-btn" class="btn btn-primary">Save Token</button>
+                            <button id="skip-token-btn" class="btn">Skip for Now</button>
+                        </div>
+                        <p class="token-note">
+                            Note: Your token is stored locally in your browser and never sent to any server.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js?v=31"></script>
+    <script src="app.js?v=31"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

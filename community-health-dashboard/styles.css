@@ -771,6 +771,86 @@ a:hover {
     color: var(--text-secondary);
 }
 
+/* Token Setup Modal */
+.token-setup-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.token-setup-message {
+    background-color: var(--bg-tertiary);
+    border-left: 4px solid var(--accent-orange);
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 0;
+}
+
+.token-setup-steps h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.token-setup-steps ol {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.token-setup-steps li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.token-setup-steps a {
+    color: var(--accent-blue);
+}
+
+.token-setup-steps code {
+    background-color: var(--bg-tertiary);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-size: 0.875em;
+}
+
+.token-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.token-input-group label {
+    font-weight: 500;
+}
+
+.token-input {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.75rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: 'Courier New', monospace;
+    width: 100%;
+}
+
+.token-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.token-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.token-note {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0;
+}
+
 .stat-card.clickable {
     cursor: pointer;
 }

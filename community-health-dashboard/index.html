@@ -191,28 +191,28 @@
             <div id="pr-health-tab" class="tab-content">
                 <!-- PR Health Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" title="Percentage of pull requests that were merged (vs closed without merging) in the last 30 days">
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <div class="stat-value" id="pr-merge-rate-detail">-</div>
                             <div class="stat-label">PR Merge Rate (30d)</div>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" title="Average time from when a PR is opened until it receives its first review (bot reviews excluded)">
                         <div class="stat-icon">👀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-review">-</div>
                             <div class="stat-label">Avg Time to First Review</div>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" title="Average time from when a PR is opened until it is merged">
                         <div class="stat-icon">🚀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-merge">-</div>
                             <div class="stat-label">Avg Time to Merge</div>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" title="Average number of commits per pull request, indicating iteration cycles">
                         <div class="stat-icon">🔄</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-pr-revisions">-</div>
@@ -694,8 +694,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=13"></script>
-    <script src="app.js?v=13"></script>
+    <script src="config.js?v=14"></script>
+    <script src="app.js?v=14"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

@@ -371,6 +371,22 @@ tbody tr:hover {
     color: var(--accent-red);
 }
 
+.badge-new-contributor {
+    background-color: rgba(255, 152, 48, 0.15);
+    color: var(--accent-orange);
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+}
+
+.highlight-non-contributor {
+    background-color: rgba(255, 152, 48, 0.05);
+    border-left: 2px solid var(--accent-orange);
+}
+
+.highlight-non-contributor:hover {
+    background-color: rgba(255, 152, 48, 0.1);
+}
+
 .label-badge {
     display: inline-block;
     padding: 0.25rem 0.5rem;

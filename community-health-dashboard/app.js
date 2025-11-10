@@ -3530,7 +3530,12 @@ class CommunityHealthDashboard {
             </a>
         ` : '';
 
-        const severityClass = action.severity === 'critical' ? 'critical' : 'warning';
+        const severityClassMap = {
+            critical: 'critical',
+            warning: 'warning',
+            info: 'healthy'
+        };
+        const severityClass = severityClassMap[action.severity] || 'neutral';
 
         return `
             <div class="action-card">

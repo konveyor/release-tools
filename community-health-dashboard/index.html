@@ -38,32 +38,52 @@
             <div id="overview-tab" class="tab-content active">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                <div class="stat-card clickable" id="total-contributors-card" title="Unique contributors who committed code in the last 90 days across all repositories. Click to view details.">
+                <div class="stat-card clickable" id="total-contributors-card">
                     <div class="stat-icon">👥</div>
                     <div class="stat-content">
                         <div class="stat-value" id="total-contributors">-</div>
-                        <div class="stat-label">Total Contributors (90d)</div>
+                        <div class="stat-label">
+                            Total Contributors (90d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Unique contributors who committed code in the last 90 days across all repositories. Click card to view details.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card clickable" id="new-contributors-card" title="Contributors who made their first commit in the last 30 days. Click to view details.">
+                <div class="stat-card clickable" id="new-contributors-card">
                     <div class="stat-icon">✨</div>
                     <div class="stat-content">
                         <div class="stat-value" id="new-contributors">-</div>
-                        <div class="stat-label">New Contributors (30d)</div>
+                        <div class="stat-label">
+                            New Contributors (30d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Contributors who made their first commit in the last 30 days. Click card to view details.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card" title="Average time from when an issue/PR is created until the first human response (bot comments excluded)">
+                <div class="stat-card">
                     <div class="stat-icon">⚡</div>
                     <div class="stat-content">
                         <div class="stat-value" id="avg-response-time">-</div>
-                        <div class="stat-label">Avg Response Time</div>
+                        <div class="stat-label">
+                            Avg Response Time
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Average time from when an issue/PR is created until the first human response (bot comments excluded).</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card" title="Percentage of pull requests that were merged (vs closed without merging) in the last 30 days">
+                <div class="stat-card">
                     <div class="stat-icon">✅</div>
                     <div class="stat-content">
                         <div class="stat-value" id="pr-merge-rate">-</div>
-                        <div class="stat-label">PR Merge Rate (30d)</div>
+                        <div class="stat-label">
+                            PR Merge Rate (30d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Percentage of pull requests that were merged (vs closed without merging) in the last 30 days.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -191,32 +211,52 @@
             <div id="pr-health-tab" class="tab-content">
                 <!-- PR Health Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card" title="Percentage of pull requests that were merged (vs closed without merging) in the last 30 days">
+                    <div class="stat-card">
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <div class="stat-value" id="pr-merge-rate-detail">-</div>
-                            <div class="stat-label">PR Merge Rate (30d)</div>
+                            <div class="stat-label">
+                                PR Merge Rate (30d)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of pull requests that were merged (vs closed without merging) in the last 30 days.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card" title="Average time from when a PR is opened until it receives its first review (bot reviews excluded)">
+                    <div class="stat-card">
                         <div class="stat-icon">👀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-review">-</div>
-                            <div class="stat-label">Avg Time to First Review</div>
+                            <div class="stat-label">
+                                Avg Time to First Review
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time from when a PR is opened until it receives its first review (bot reviews excluded).</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card" title="Average time from when a PR is opened until it is merged">
+                    <div class="stat-card">
                         <div class="stat-icon">🚀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-merge">-</div>
-                            <div class="stat-label">Avg Time to Merge</div>
+                            <div class="stat-label">
+                                Avg Time to Merge
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time from when a PR is opened until it is merged.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card" title="Average number of commits per pull request, indicating iteration cycles">
+                    <div class="stat-card">
                         <div class="stat-icon">🔄</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-pr-revisions">-</div>
-                            <div class="stat-label">Avg PR Revisions</div>
+                            <div class="stat-label">
+                                Avg PR Revisions
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average number of commits per pull request, indicating iteration cycles.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -694,8 +734,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=14"></script>
-    <script src="app.js?v=14"></script>
+    <script src="config.js?v=15"></script>
+    <script src="app.js?v=15"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

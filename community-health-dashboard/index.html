@@ -38,28 +38,28 @@
             <div id="overview-tab" class="tab-content active">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                <div class="stat-card clickable" id="total-contributors-card" title="Click to view contributor details">
+                <div class="stat-card clickable" id="total-contributors-card" title="Unique contributors who committed code in the last 90 days across all repositories. Click to view details.">
                     <div class="stat-icon">👥</div>
                     <div class="stat-content">
                         <div class="stat-value" id="total-contributors">-</div>
                         <div class="stat-label">Total Contributors (90d)</div>
                     </div>
                 </div>
-                <div class="stat-card clickable" id="new-contributors-card" title="Click to view contributor details">
+                <div class="stat-card clickable" id="new-contributors-card" title="Contributors who made their first commit in the last 30 days. Click to view details.">
                     <div class="stat-icon">✨</div>
                     <div class="stat-content">
                         <div class="stat-value" id="new-contributors">-</div>
                         <div class="stat-label">New Contributors (30d)</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" title="Average time from when an issue/PR is created until the first human response (bot comments excluded)">
                     <div class="stat-icon">⚡</div>
                     <div class="stat-content">
                         <div class="stat-value" id="avg-response-time">-</div>
                         <div class="stat-label">Avg Response Time</div>
                     </div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" title="Percentage of pull requests that were merged (vs closed without merging) in the last 30 days">
                     <div class="stat-icon">✅</div>
                     <div class="stat-content">
                         <div class="stat-value" id="pr-merge-rate">-</div>
@@ -694,8 +694,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=12"></script>
-    <script src="app.js?v=12"></script>
+    <script src="config.js?v=13"></script>
+    <script src="app.js?v=13"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

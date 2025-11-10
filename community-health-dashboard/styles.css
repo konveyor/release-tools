@@ -188,6 +188,7 @@ body {
     align-items: center;
     gap: 1rem;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .stat-card:hover {

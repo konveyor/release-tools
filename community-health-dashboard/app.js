@@ -42,6 +42,7 @@ class CommunityHealthDashboard {
 
     init() {
         this.setupEventListeners();
+        this.checkGitHubToken();
         this.loadData();
         this.loadHistoricalData();
     }
@@ -146,6 +147,47 @@ class CommunityHealthDashboard {
                 }
             });
         }
+
+        // Token setup modal handlers
+        const closeTokenModal = document.getElementById('close-token-modal');
+        if (closeTokenModal) {
+            closeTokenModal.addEventListener('click', () => {
+                this.hideTokenSetupModal();
+            });
+        }
+
+        const tokenModal = document.getElementById('token-setup-modal');
+        if (tokenModal) {
+            tokenModal.addEventListener('click', (e) => {
+                if (e.target === tokenModal) {
+                    this.hideTokenSetupModal();
+                }
+            });
+        }
+
+        const saveTokenBtn = document.getElementById('save-token-btn');
+        if (saveTokenBtn) {
+            saveTokenBtn.addEventListener('click', () => {
+                this.saveGitHubToken();
+            });
+        }
+
+        const skipTokenBtn = document.getElementById('skip-token-btn');
+        if (skipTokenBtn) {
+            skipTokenBtn.addEventListener('click', () => {
+                this.hideTokenSetupModal();
+            });
+        }
+
+        // Allow Enter key to save token
+        const tokenInput = document.getElementById('github-token-input');
+        if (tokenInput) {
+            tokenInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.saveGitHubToken();
+                }
+            });
+        }
     }
 
     switchTab(tabName) {
@@ -164,7 +206,9 @@ class CommunityHealthDashboard {
         document.getElementById(`${tabName}-tab`).classList.add('active');
 
         // Load data for tabs if needed
-        if (tabName === 'pr-health' && this.prHealthData.length === 0) {
+        if (tabName === 'actions') {
+            this.loadActionsData();
+        } else if (tabName === 'pr-health' && this.prHealthData.length === 0) {
             this.loadPRHealthData();
         } else if (tabName === 'issue-health' && this.issueHealthData.length === 0) {
             this.loadIssueHealthData();
@@ -1207,6 +1251,12 @@ class CommunityHealthDashboard {
         document.getElementById('avg-time-to-review').textContent = this.formatDuration(avgReviewTime);
         document.getElementById('avg-time-to-merge').textContent = this.formatDuration(avgMergeTime);
         document.getElementById('avg-pr-revisions').textContent = avgRevisions.toFixed(1);
+
+        // Update health bars
+        this.updateHealthBar('pr-merge-rate-bar', avgMergeRate, 'percentage', { healthy: 80, warning: 60 });
+        this.updateHealthBar('avg-time-to-review-bar', avgReviewTime, 'duration', { healthy: 24*60*60*1000, warning: 3*24*60*60*1000 }); // 1 day, 3 days
+        this.updateHealthBar('avg-time-to-merge-bar', avgMergeTime, 'duration', { healthy: 7*24*60*60*1000, warning: 14*24*60*60*1000 }); // 7 days, 14 days
+        // For revisions, we could consider as neutral - no clear "good" threshold
     }
 
     renderPRMetricsTable() {
@@ -1666,6 +1716,62 @@ class CommunityHealthDashboard {
         document.getElementById('avg-time-to-close').textContent = this.formatDuration(avgTimeToClose);
         document.getElementById('response-coverage').textContent = `${avgResponseCoverage.toFixed(1)}%`;
         document.getElementById('community-response-rate').textContent = `${avgCommunityResponseRate.toFixed(1)}%`;
+
+        // Update health bars
+        this.updateHealthBar('issue-closure-rate-bar', avgClosureRate, 'percentage', { healthy: 70, warning: 50 });
+        this.updateHealthBar('avg-time-to-close-bar', avgTimeToClose, 'duration', { healthy: 14*24*60*60*1000, warning: 30*24*60*60*1000 });
+        this.updateHealthBar('response-coverage-bar', avgResponseCoverage, 'percentage', { healthy: 80, warning: 60 });
+        this.updateHealthBar('community-response-rate-bar', avgCommunityResponseRate, 'percentage', { healthy: 30, warning: 15 });
+    }
+
+    updateHealthBar(barId, value, type, thresholds) {
+        const bar = document.getElementById(barId);
+        if (!bar) return;
+
+        // Remove existing health classes
+        bar.classList.remove('healthy', 'warning', 'critical', 'neutral');
+
+        let healthClass = 'neutral';
+
+        if (type === 'percentage') {
+            // Higher is better
+            if (value >= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value >= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'duration' || type === 'count-inverse') {
+            // Lower is better
+            if (value <= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value <= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'percentage-inverse') {
+            // For metrics where lower percentage is better (like concentration)
+            if (value <= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value <= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'count') {
+            // Higher count is better (like number of maintainers)
+            if (value >= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value >= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        }
+
+        bar.classList.add(healthClass);
     }
 
     renderIssueMetricsTable() {
@@ -2196,6 +2302,24 @@ class CommunityHealthDashboard {
             burnoutElement.style.color = 'var(--accent-orange)';
         } else {
             burnoutElement.style.color = 'var(--accent-green)';
+        }
+
+        // Update health bars
+        this.updateHealthBar('active-maintainers-bar', activeMaintainers, 'count', { healthy: 5, warning: 3 }); // More maintainers is better
+        this.updateHealthBar('response-load-bar', avgResponseLoad, 'count-inverse', { healthy: 50, warning: 100 }); // Lower load is better
+        this.updateHealthBar('response-concentration-bar', concentration, 'percentage-inverse', { healthy: 50, warning: 70 }); // Lower concentration is better
+
+        // For burnout, use text-based values
+        const burnoutBar = document.getElementById('burnout-indicator-bar');
+        if (burnoutBar) {
+            burnoutBar.classList.remove('healthy', 'warning', 'critical', 'neutral');
+            if (burnoutRisk === 'Low') {
+                burnoutBar.classList.add('healthy');
+            } else if (burnoutRisk === 'Medium') {
+                burnoutBar.classList.add('warning');
+            } else {
+                burnoutBar.classList.add('critical');
+            }
         }
     }
 
@@ -3049,6 +3173,389 @@ class CommunityHealthDashboard {
         }
     }
 
+    async loadActionsData() {
+        console.log('Loading actions data...');
+        try {
+            // Wait for all other tabs to load first
+            await Promise.all([
+                this.issueHealthData.length === 0 ? this.loadIssueHealthData() : Promise.resolve(),
+                this.prHealthData.length === 0 ? this.loadPRHealthData() : Promise.resolve(),
+                this.maintainerHealthData.length === 0 ? this.loadMaintainerHealthData() : Promise.resolve()
+            ]);
+
+            console.log('Data loaded, generating actions...');
+            console.log('Issue health data:', this.issueHealthData.length);
+            console.log('PR health data:', this.prHealthData.length);
+            console.log('Maintainer health data:', this.maintainerHealthData.length);
+
+            this.renderActions();
+        } catch (error) {
+            console.error('Error loading actions data:', error);
+            const actionsLoading = document.getElementById('actions-loading');
+            if (actionsLoading) {
+                actionsLoading.innerHTML = '<p style="color: var(--accent-red);">Error loading actions. Please refresh the page.</p>';
+            }
+        }
+    }
+
+    generateActions() {
+        console.log('Generating actions...');
+        const actions = {
+            critical: [],
+            highPriority: [],
+            improvements: []
+        };
+
+        // Return early if no data loaded
+        if (this.issueHealthData.length === 0 && this.prHealthData.length === 0 && this.maintainerHealthData.length === 0) {
+            console.log('No health data available yet');
+            return actions;
+        }
+
+        // Calculate current metrics with safe defaults
+        const issueClosureRate = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.closureRate || 0), 0) / this.issueHealthData.length
+            : 0;
+        const avgTimeToClose = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.avgTimeToClose || 0), 0) / this.issueHealthData.length
+            : 0;
+        const responseCoverage = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.responseCoverage || 0), 0) / this.issueHealthData.length
+            : 0;
+        const communityResponseRate = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.communityResponseRate || 0), 0) / this.issueHealthData.length
+            : 0;
+
+        const prMergeRate = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.mergeRate || 0), 0) / this.prHealthData.length
+            : 0;
+        const avgReviewTime = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.avgReviewTime || 0), 0) / this.prHealthData.length
+            : 0;
+        const avgMergeTime = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.avgMergeTime || 0), 0) / this.prHealthData.length
+            : 0;
+
+        const activeMaintainers = this.maintainerHealthData.length;
+        const totalResponses = this.maintainerHealthData.reduce((sum, m) => sum + (m.responseCount || 0), 0);
+        const avgResponseLoad = activeMaintainers > 0 ? Math.floor(totalResponses / activeMaintainers) : 0;
+        const top20Count = Math.ceil(activeMaintainers * 0.2);
+        const top20Responses = this.maintainerHealthData.slice(0, top20Count).reduce((sum, m) => sum + (m.responseCount || 0), 0);
+        const concentration = totalResponses > 0 ? (top20Responses / totalResponses) * 100 : 0;
+
+        console.log('Calculated metrics:', { avgTimeToClose, responseCoverage, prMergeRate, concentration, activeMaintainers });
+
+        // Get first repo for links (or use org if available)
+        const firstRepo = DASHBOARD_CONFIG.repositories && DASHBOARD_CONFIG.repositories.length > 0 ? DASHBOARD_CONFIG.repositories[0] : null;
+        const orgName = firstRepo ? firstRepo.org : null;
+
+        // Issue close time (CRITICAL if > 30 days)
+        const avgTimeToCloseDays = avgTimeToClose / (24 * 60 * 60 * 1000);
+        if (avgTimeToCloseDays > 30) {
+            actions.critical.push({
+                title: 'Reduce Issue Resolution Time',
+                current: this.formatDuration(avgTimeToClose),
+                target: '< 30 days',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Issues are taking too long to close. This can discourage contributors and make the project appear unmaintained.',
+                steps: [
+                    'Review and close stale issues that are no longer relevant',
+                    'Triage unlabeled issues and assign owners',
+                    'Set up automation to remind about old issues',
+                    'Consider adding "help wanted" labels to recruit community help'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+sort:updated-asc` : null,
+                linkText: 'View Issues on GitHub'
+            });
+        } else if (avgTimeToCloseDays > 14) {
+            actions.highPriority.push({
+                title: 'Improve Issue Response Time',
+                current: this.formatDuration(avgTimeToClose),
+                target: '< 14 days',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Issues could be resolved faster to improve contributor experience.',
+                steps: [
+                    'Review issues older than 14 days',
+                    'Prioritize issues with "good first issue" labels',
+                    'Set up weekly issue triage meetings'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+sort:updated-asc` : null,
+                linkText: 'View Issues on GitHub'
+            });
+        }
+
+        // Response coverage (CRITICAL if < 60%)
+        if (responseCoverage < 60) {
+            actions.critical.push({
+                title: 'Increase Issue Response Coverage',
+                current: `${responseCoverage.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Many issues are not receiving any response. This can frustrate contributors and harm community engagement.',
+                steps: [
+                    'Set up issue triage rotation among maintainers',
+                    'Create templates for common responses',
+                    'Respond to all new issues within 48 hours',
+                    'Use bots to acknowledge new issues automatically'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+comments:0+sort:created-asc` : null,
+                linkText: 'View Unanswered Issues'
+            });
+        } else if (responseCoverage < 80) {
+            actions.highPriority.push({
+                title: 'Improve Response Coverage',
+                current: `${responseCoverage.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Some issues are not getting responses. Aim for 80%+ coverage.',
+                steps: [
+                    'Review unanswered issues weekly',
+                    'Add labels to indicate triage status'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+comments:0` : null,
+                linkText: 'View Issues on GitHub'
+            });
+        }
+
+        // PR merge rate (CRITICAL if < 60%)
+        if (prMergeRate < 60) {
+            actions.critical.push({
+                title: 'Improve PR Merge Rate',
+                current: `${prMergeRate.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Many PRs are being closed without merging. This wastes contributor effort and discourages future contributions.',
+                steps: [
+                    'Review why PRs are being closed unmerged',
+                    'Improve contribution guidelines',
+                    'Provide feedback earlier in the PR process',
+                    'Consider breaking down large PRs'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:closed+-is:merged` : null,
+                linkText: 'View Closed Unmerged PRs'
+            });
+        } else if (prMergeRate < 80) {
+            actions.highPriority.push({
+                title: 'Increase PR Success Rate',
+                current: `${prMergeRate.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'PR merge rate could be improved.',
+                steps: [
+                    'Analyze closed unmerged PRs for patterns',
+                    'Update contribution docs with common issues'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:closed+-is:merged` : null,
+                linkText: 'View PRs on GitHub'
+            });
+        }
+
+        // Review time (WARNING if > 3 days)
+        const avgReviewDays = avgReviewTime / (24 * 60 * 60 * 1000);
+        if (avgReviewDays > 3) {
+            actions.highPriority.push({
+                title: 'Reduce PR Review Time',
+                current: this.formatDuration(avgReviewTime),
+                target: '< 1 day',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'PRs are waiting too long for initial review. Fast feedback keeps contributors engaged.',
+                steps: [
+                    'Set up PR review rotation',
+                    'Review new PRs within 24 hours',
+                    'Use GitHub notifications effectively',
+                    'Consider adding more reviewers'
+                ],
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:open+review:none+sort:created-asc` : null,
+                linkText: 'View PRs Awaiting Review'
+            });
+        }
+
+        // Maintainer concentration (CRITICAL if > 70%)
+        if (concentration > 70) {
+            actions.critical.push({
+                title: 'Reduce Response Concentration (Bus Factor)',
+                current: `${concentration.toFixed(0)}%`,
+                target: '< 50%',
+                severity: 'critical',
+                impact: 'High',
+                description: `Top 20% of maintainers handle ${concentration.toFixed(0)}% of responses. This creates bus factor risk and burnout.`,
+                steps: [
+                    'Identify and mentor new maintainers from active contributors',
+                    'Distribute review assignments more evenly',
+                    'Document processes to enable more people to help',
+                    'Consider adding co-maintainers to repositories'
+                ],
+                link: null,
+                linkText: null
+            });
+        } else if (concentration > 50) {
+            actions.highPriority.push({
+                title: 'Improve Workload Distribution',
+                current: `${concentration.toFixed(0)}%`,
+                target: '< 50%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Response load is somewhat concentrated among top maintainers.',
+                steps: [
+                    'Rotate review responsibilities',
+                    'Encourage more maintainers to participate in triage'
+                ],
+                link: null
+            });
+        }
+
+        // Low maintainer count (WARNING if < 5)
+        if (activeMaintainers < 3) {
+            actions.critical.push({
+                title: 'Recruit More Active Maintainers',
+                current: `${activeMaintainers}`,
+                target: '> 5',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Very few active maintainers. This creates sustainability risk and limits project growth.',
+                steps: [
+                    'Identify top contributors and invite them to become maintainers',
+                    'Document maintainer responsibilities and expectations',
+                    'Create a clear path from contributor to maintainer',
+                    'Recognize and celebrate maintainer contributions'
+                ],
+                link: null,
+                linkText: null
+            });
+        } else if (activeMaintainers < 5) {
+            actions.highPriority.push({
+                title: 'Grow Maintainer Team',
+                current: `${activeMaintainers}`,
+                target: '> 5',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'More maintainers would improve sustainability and response times.',
+                steps: [
+                    'Review top contributors from last 90 days',
+                    'Invite active community members to take on maintainer roles'
+                ],
+                link: null
+            });
+        }
+
+        // Community response rate improvements
+        if (communityResponseRate < 15 && communityResponseRate > 0) {
+            actions.improvements.push({
+                title: 'Foster Community Engagement',
+                current: `${communityResponseRate.toFixed(1)}%`,
+                target: '> 30%',
+                severity: 'info',
+                impact: 'Medium',
+                description: 'Encourage more community members (non-maintainers) to help answer questions and review code.',
+                steps: [
+                    'Recognize community contributions publicly',
+                    'Add "help wanted" and "good first issue" labels',
+                    'Create opportunities for community members to help',
+                    'Highlight helpful community responses in discussions'
+                ],
+                link: null,
+                linkText: null
+            });
+        }
+
+        return actions;
+    }
+
+    renderActions() {
+        const actionsLoading = document.getElementById('actions-loading');
+        const criticalSection = document.getElementById('critical-actions-section');
+        const highPrioritySection = document.getElementById('high-priority-actions-section');
+        const improvementsSection = document.getElementById('improvement-actions-section');
+        const allGoodMessage = document.getElementById('all-good-message');
+
+        const actions = this.generateActions();
+
+        // Hide loading
+        if (actionsLoading) actionsLoading.style.display = 'none';
+
+        // Render critical actions
+        if (actions.critical.length > 0) {
+            criticalSection.style.display = 'block';
+            document.getElementById('critical-actions').innerHTML = actions.critical.map(action => this.createActionCard(action)).join('');
+        } else {
+            criticalSection.style.display = 'none';
+        }
+
+        // Render high priority actions
+        if (actions.highPriority.length > 0) {
+            highPrioritySection.style.display = 'block';
+            document.getElementById('high-priority-actions').innerHTML = actions.highPriority.map(action => this.createActionCard(action)).join('');
+        } else {
+            highPrioritySection.style.display = 'none';
+        }
+
+        // Render improvements
+        if (actions.improvements.length > 0) {
+            improvementsSection.style.display = 'block';
+            document.getElementById('improvement-actions').innerHTML = actions.improvements.map(action => this.createActionCard(action)).join('');
+        } else {
+            improvementsSection.style.display = 'none';
+        }
+
+        // Show all good message if no actions
+        if (actions.critical.length === 0 && actions.highPriority.length === 0 && actions.improvements.length === 0) {
+            allGoodMessage.style.display = 'block';
+        } else {
+            allGoodMessage.style.display = 'none';
+        }
+
+        console.log('Actions rendered:', actions.critical.length, 'critical,', actions.highPriority.length, 'high priority,', actions.improvements.length, 'improvements');
+    }
+
+    createActionCard(action) {
+        const stepsHtml = action.steps ? `
+            <div class="action-steps">
+                <div class="action-steps-title">Action Steps:</div>
+                <ul>
+                    ${action.steps.map(step => `<li>${step}</li>`).join('')}
+                </ul>
+            </div>
+        ` : '';
+
+        const linkHtml = action.link ? `
+            <a href="${action.link}" target="_blank" class="action-link">
+                ${action.linkText || 'Take Action'} →
+            </a>
+        ` : '';
+
+        const severityClassMap = {
+            critical: 'critical',
+            warning: 'warning',
+            info: 'healthy'
+        };
+        const severityClass = severityClassMap[action.severity] || 'neutral';
+
+        return `
+            <div class="action-card">
+                <div class="health-bar ${severityClass}"></div>
+                <div class="action-card-header">
+                    <h4 class="action-title">${action.title}</h4>
+                    ${action.impact ? `<span class="action-impact">Impact: ${action.impact}</span>` : ''}
+                </div>
+                <div class="action-metric">
+                    <span class="metric-current ${severityClass}">${action.current}</span>
+                    <span class="metric-arrow">→</span>
+                    <span class="metric-target">${action.target}</span>
+                </div>
+                <div class="action-description">${action.description}</div>
+                ${stepsHtml}
+                ${linkHtml}
+            </div>
+        `;
+    }
+
     getContributorData(type) {
         // Create a map to track which repos each contributor has contributed to
         const contributorRepoMap = new Map();
@@ -3076,6 +3583,72 @@ class CommunityHealthDashboard {
         });
 
         return contributors;
+    }
+
+    // GitHub Token Management Methods
+    checkGitHubToken() {
+        // Check if token exists in localStorage
+        const token = localStorage.getItem('github_token');
+
+        // Also check if user has previously dismissed the prompt (store for 30 days)
+        const dismissedUntil = localStorage.getItem('token_prompt_dismissed_until');
+        const now = Date.now();
+
+        if (!token && (!dismissedUntil || now > parseInt(dismissedUntil))) {
+            // Show token setup modal after a brief delay to let dashboard load
+            setTimeout(() => {
+                this.showTokenSetupModal();
+            }, 1000);
+        }
+    }
+
+    showTokenSetupModal() {
+        const modal = document.getElementById('token-setup-modal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    hideTokenSetupModal() {
+        const modal = document.getElementById('token-setup-modal');
+        if (modal) {
+            modal.classList.remove('active');
+
+            // Remember that user dismissed this prompt for 30 days
+            const thirtyDaysFromNow = Date.now() + (30 * 24 * 60 * 60 * 1000);
+            localStorage.setItem('token_prompt_dismissed_until', thirtyDaysFromNow.toString());
+        }
+    }
+
+    saveGitHubToken() {
+        const input = document.getElementById('github-token-input');
+        if (!input) return;
+
+        const token = input.value.trim();
+
+        if (!token) {
+            alert('Please enter a GitHub token');
+            return;
+        }
+
+        // Basic validation - GitHub tokens start with ghp_, github_pat_, or gho_
+        if (!token.startsWith('ghp_') && !token.startsWith('github_pat_') && !token.startsWith('gho_')) {
+            const confirm = window.confirm('This doesn\'t look like a valid GitHub token. They usually start with ghp_, github_pat_, or gho_. Save anyway?');
+            if (!confirm) return;
+        }
+
+        // Save to localStorage
+        localStorage.setItem('github_token', token);
+
+        // Hide modal
+        this.hideTokenSetupModal();
+
+        // Clear the dismissed flag since user set up the token
+        localStorage.removeItem('token_prompt_dismissed_until');
+
+        // Reload the page to use the new token
+        alert('Token saved! The dashboard will reload to use your new token.');
+        window.location.reload();
     }
 }
 

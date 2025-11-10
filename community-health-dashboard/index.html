@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Konveyor - Community Health Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=31">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -28,6 +28,7 @@
             <!-- Tab Navigation -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="overview">Overview</button>
+                <button class="tab-btn" data-tab="actions">Top Actions</button>
                 <button class="tab-btn" data-tab="pr-health">PR Health</button>
                 <button class="tab-btn" data-tab="issue-health">Issue Health</button>
                 <button class="tab-btn" data-tab="maintainer-health">Maintainer Health</button>
@@ -38,32 +39,52 @@
             <div id="overview-tab" class="tab-content active">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                <div class="stat-card clickable" id="total-contributors-card" title="Click to view contributor details">
+                <div class="stat-card clickable" id="total-contributors-card">
                     <div class="stat-icon">👥</div>
                     <div class="stat-content">
                         <div class="stat-value" id="total-contributors">-</div>
-                        <div class="stat-label">Total Contributors (90d)</div>
+                        <div class="stat-label">
+                            Total Contributors (90d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Unique contributors who committed code in the last 90 days across all repositories. Click card to view details.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card clickable" id="new-contributors-card" title="Click to view contributor details">
+                <div class="stat-card clickable" id="new-contributors-card">
                     <div class="stat-icon">✨</div>
                     <div class="stat-content">
                         <div class="stat-value" id="new-contributors">-</div>
-                        <div class="stat-label">New Contributors (30d)</div>
+                        <div class="stat-label">
+                            New Contributors (30d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Contributors who made their first commit in the last 30 days. Click card to view details.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">⚡</div>
                     <div class="stat-content">
                         <div class="stat-value" id="avg-response-time">-</div>
-                        <div class="stat-label">Avg Response Time</div>
+                        <div class="stat-label">
+                            Avg Response Time
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Average time from when an issue/PR is created until the first human response (bot comments excluded).</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">✅</div>
                     <div class="stat-content">
                         <div class="stat-value" id="pr-merge-rate">-</div>
-                        <div class="stat-label">PR Merge Rate (30d)</div>
+                        <div class="stat-label">
+                            PR Merge Rate (30d)
+                            <span class="info-icon" tabindex="0">ⓘ
+                                <div class="info-popover">Percentage of pull requests that were merged (vs closed without merging) in the last 30 days.</div>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -187,6 +208,46 @@
             </div>
             <!-- End Overview Tab -->
 
+            <!-- Top Actions Tab -->
+            <div id="actions-tab" class="tab-content">
+                <div class="actions-header">
+                    <h2>Recommended Actions</h2>
+                    <p class="actions-subtitle">Prioritized recommendations to improve community health based on current metrics</p>
+                </div>
+
+                <!-- Critical Actions -->
+                <div class="actions-section" id="critical-actions-section" style="display: none;">
+                    <h3 class="section-title critical-title">🔴 Critical Actions</h3>
+                    <div id="critical-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- High Priority Actions -->
+                <div class="actions-section" id="high-priority-actions-section" style="display: none;">
+                    <h3 class="section-title warning-title">🟠 High Priority Actions</h3>
+                    <div id="high-priority-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- Improvement Opportunities -->
+                <div class="actions-section" id="improvement-actions-section" style="display: none;">
+                    <h3 class="section-title healthy-title">🟢 Improvement Opportunities</h3>
+                    <div id="improvement-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- All Good Message -->
+                <div id="all-good-message" class="all-good-panel" style="display: none;">
+                    <div class="all-good-icon">✅</div>
+                    <h3>Community Health Looking Good!</h3>
+                    <p>All metrics are within healthy ranges. Keep up the great work!</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="actions-loading" class="loading-state">
+                    <span class="spinner"></span>
+                    <p>Analyzing metrics and generating recommendations...</p>
+                </div>
+            </div>
+            <!-- End Top Actions Tab -->
+
             <!-- PR Health Tab -->
             <div id="pr-health-tab" class="tab-content">
                 <!-- PR Health Stats Cards -->
@@ -195,29 +256,53 @@
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <div class="stat-value" id="pr-merge-rate-detail">-</div>
-                            <div class="stat-label">PR Merge Rate (30d)</div>
+                            <div class="stat-label">
+                                PR Merge Rate (30d)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of pull requests that were merged (vs closed without merging) in the last 30 days.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="pr-merge-rate-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">👀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-review">-</div>
-                            <div class="stat-label">Avg Time to First Review</div>
+                            <div class="stat-label">
+                                Avg Time to First Review
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time from when a PR is opened until it receives its first review (bot reviews excluded).</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="avg-time-to-review-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">🚀</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-merge">-</div>
-                            <div class="stat-label">Avg Time to Merge</div>
+                            <div class="stat-label">
+                                Avg Time to Merge
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time from when a PR is opened until it is merged.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="avg-time-to-merge-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">🔄</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-pr-revisions">-</div>
-                            <div class="stat-label">Avg PR Revisions</div>
+                            <div class="stat-label">
+                                Avg PR Revisions
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average number of commits per pull request, indicating iteration cycles.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="avg-pr-revisions-bar"></div>
                     </div>
                 </div>
 
@@ -296,29 +381,53 @@
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <div class="stat-value" id="issue-closure-rate">-</div>
-                            <div class="stat-label">Issue Closure Rate</div>
+                            <div class="stat-label">
+                                Issue Closure Rate
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of issues that were closed (vs remaining open) in the last 30 days.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="issue-closure-rate-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">⏱️</div>
                         <div class="stat-content">
                             <div class="stat-value" id="avg-time-to-close">-</div>
-                            <div class="stat-label">Avg Time to Close</div>
+                            <div class="stat-label">
+                                Avg Time to Close
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time from when an issue is opened until it is closed.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="avg-time-to-close-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">💬</div>
                         <div class="stat-content">
                             <div class="stat-value" id="response-coverage">-</div>
-                            <div class="stat-label">Response Coverage</div>
+                            <div class="stat-label">
+                                Response Coverage
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of issues that received at least one human response (bot comments excluded).</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="response-coverage-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">👥</div>
                         <div class="stat-content">
                             <div class="stat-value" id="community-response-rate">-</div>
-                            <div class="stat-label">Community Response Rate</div>
+                            <div class="stat-label">
+                                Community Response Rate
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of responses from non-maintainers, indicating community engagement.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="community-response-rate-bar"></div>
                     </div>
                 </div>
 
@@ -410,29 +519,53 @@
                         <div class="stat-icon">👨‍💻</div>
                         <div class="stat-content">
                             <div class="stat-value" id="active-maintainers">-</div>
-                            <div class="stat-label">Active Maintainers (30d)</div>
+                            <div class="stat-label">
+                                Active Maintainers (30d)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Number of maintainers who responded to issues or reviewed PRs in the last 30 days.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="active-maintainers-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">📊</div>
                         <div class="stat-content">
                             <div class="stat-value" id="response-load">-</div>
-                            <div class="stat-label">Avg Response Load</div>
+                            <div class="stat-label">
+                                Avg Response Load
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average number of responses per maintainer, indicating workload distribution.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="response-load-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">⚠️</div>
                         <div class="stat-content">
                             <div class="stat-value" id="response-concentration">-</div>
-                            <div class="stat-label">Response Concentration</div>
+                            <div class="stat-label">
+                                Response Concentration
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of responses from top 3 maintainers. High concentration indicates bus factor risk.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="response-concentration-bar"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">📈</div>
                         <div class="stat-content">
                             <div class="stat-value" id="burnout-indicator">-</div>
-                            <div class="stat-label">Burnout Risk</div>
+                            <div class="stat-label">
+                                Burnout Risk
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Composite indicator based on response load and concentration. Low/Medium/High risk levels.</div>
+                                </span>
+                            </div>
                         </div>
+                        <div class="health-bar neutral" id="burnout-indicator-bar"></div>
                     </div>
                 </div>
 
@@ -524,28 +657,48 @@
                         <div class="stat-icon">✅</div>
                         <div class="stat-content">
                             <div class="stat-value" id="ci-success-rate">-</div>
-                            <div class="stat-label">Success Rate (7d)</div>
+                            <div class="stat-label">
+                                Success Rate (7d)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Percentage of CI/CD workflow runs that completed successfully in the last 7 days.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">⚡</div>
                         <div class="stat-content">
                             <div class="stat-value" id="ci-avg-duration">-</div>
-                            <div class="stat-label">Avg Build Duration</div>
+                            <div class="stat-label">
+                                Avg Build Duration
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Average time to complete CI/CD workflow runs across all repositories.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">🌙</div>
                         <div class="stat-content">
                             <div class="stat-value" id="ci-nightly-success">-</div>
-                            <div class="stat-label">Nightly Test Success</div>
+                            <div class="stat-label">
+                                Nightly Test Success
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Success rate of scheduled nightly test runs, indicating baseline code health.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon">📊</div>
                         <div class="stat-content">
                             <div class="stat-value" id="ci-total-runs">-</div>
-                            <div class="stat-label">Total Runs (7d)</div>
+                            <div class="stat-label">
+                                Total Runs (7d)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Total number of CI/CD workflow runs across all repositories in the last 7 days.</div>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -694,8 +847,50 @@
         </div>
     </div>
 
-    <script src="config.js?v=12"></script>
-    <script src="app.js?v=12"></script>
+    <!-- GitHub Token Setup Modal -->
+    <div id="token-setup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>GitHub Token Setup</h2>
+                <button class="modal-close" id="close-token-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="token-setup-info">
+                    <p class="token-setup-message">
+                        No GitHub token detected. While the dashboard works without authentication,
+                        you may hit rate limits (60 requests/hour). A token increases this to 5,000 requests/hour.
+                    </p>
+
+                    <div class="token-setup-steps">
+                        <h3>Setup Steps:</h3>
+                        <ol>
+                            <li>Go to <a href="https://github.com/settings/tokens/new" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
+                            <li>Click "Generate new token (classic)"</li>
+                            <li>Give it a name like "Community Health Dashboard"</li>
+                            <li>Select scope: <code>public_repo</code> (for public repositories)</li>
+                            <li>Click "Generate token" and copy the token</li>
+                            <li>Paste it below and click "Save"</li>
+                        </ol>
+                    </div>
+
+                    <div class="token-input-group">
+                        <label for="github-token-input">GitHub Personal Access Token:</label>
+                        <input type="password" id="github-token-input" placeholder="ghp_xxxxxxxxxxxx" class="token-input">
+                        <div class="token-buttons">
+                            <button id="save-token-btn" class="btn btn-primary">Save Token</button>
+                            <button id="skip-token-btn" class="btn">Skip for Now</button>
+                        </div>
+                        <p class="token-note">
+                            Note: Your token is stored locally in your browser and never sent to any server.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js?v=32"></script>
+    <script src="app.js?v=32"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

@@ -28,6 +28,7 @@
             <!-- Tab Navigation -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="overview">Overview</button>
+                <button class="tab-btn" data-tab="actions">Top Actions</button>
                 <button class="tab-btn" data-tab="pr-health">PR Health</button>
                 <button class="tab-btn" data-tab="issue-health">Issue Health</button>
                 <button class="tab-btn" data-tab="maintainer-health">Maintainer Health</button>
@@ -206,6 +207,46 @@
             </div>
             </div>
             <!-- End Overview Tab -->
+
+            <!-- Top Actions Tab -->
+            <div id="actions-tab" class="tab-content">
+                <div class="actions-header">
+                    <h2>Recommended Actions</h2>
+                    <p class="actions-subtitle">Prioritized recommendations to improve community health based on current metrics</p>
+                </div>
+
+                <!-- Critical Actions -->
+                <div class="actions-section" id="critical-actions-section" style="display: none;">
+                    <h3 class="section-title critical-title">🔴 Critical Actions</h3>
+                    <div id="critical-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- High Priority Actions -->
+                <div class="actions-section" id="high-priority-actions-section" style="display: none;">
+                    <h3 class="section-title warning-title">🟠 High Priority Actions</h3>
+                    <div id="high-priority-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- Improvement Opportunities -->
+                <div class="actions-section" id="improvement-actions-section" style="display: none;">
+                    <h3 class="section-title healthy-title">🟢 Improvement Opportunities</h3>
+                    <div id="improvement-actions" class="actions-grid"></div>
+                </div>
+
+                <!-- All Good Message -->
+                <div id="all-good-message" class="all-good-panel" style="display: none;">
+                    <div class="all-good-icon">✅</div>
+                    <h3>Community Health Looking Good!</h3>
+                    <p>All metrics are within healthy ranges. Keep up the great work!</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="actions-loading" class="loading-state">
+                    <span class="spinner"></span>
+                    <p>Analyzing metrics and generating recommendations...</p>
+                </div>
+            </div>
+            <!-- End Top Actions Tab -->
 
             <!-- PR Health Tab -->
             <div id="pr-health-tab" class="tab-content">
@@ -806,8 +847,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=19"></script>
-    <script src="app.js?v=19"></script>
+    <script src="config.js?v=20"></script>
+    <script src="app.js?v=20"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

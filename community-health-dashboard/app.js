@@ -164,7 +164,9 @@ class CommunityHealthDashboard {
         document.getElementById(`${tabName}-tab`).classList.add('active');
 
         // Load data for tabs if needed
-        if (tabName === 'pr-health' && this.prHealthData.length === 0) {
+        if (tabName === 'actions') {
+            this.loadActionsData();
+        } else if (tabName === 'pr-health' && this.prHealthData.length === 0) {
             this.loadPRHealthData();
         } else if (tabName === 'issue-health' && this.issueHealthData.length === 0) {
             this.loadIssueHealthData();
@@ -3127,6 +3129,338 @@ class CommunityHealthDashboard {
         if (modal) {
             modal.classList.remove('active');
         }
+    }
+
+    async loadActionsData() {
+        // Wait for all other tabs to load first
+        await Promise.all([
+            this.issueHealthData.length === 0 ? this.loadIssueHealthData() : Promise.resolve(),
+            this.prHealthData.length === 0 ? this.loadPRHealthData() : Promise.resolve(),
+            this.maintainerHealthData.length === 0 ? this.loadMaintainerHealthData() : Promise.resolve()
+        ]);
+
+        this.renderActions();
+    }
+
+    generateActions() {
+        const actions = {
+            critical: [],
+            highPriority: [],
+            improvements: []
+        };
+
+        // Calculate current metrics
+        const issueClosureRate = this.issueHealthData.reduce((sum, r) => sum + r.closureRate, 0) / (this.issueHealthData.length || 1);
+        const avgTimeToClose = this.issueHealthData.reduce((sum, r) => sum + r.avgTimeToClose, 0) / (this.issueHealthData.length || 1);
+        const responseCoverage = this.issueHealthData.reduce((sum, r) => sum + r.responseCoverage, 0) / (this.issueHealthData.length || 1);
+        const communityResponseRate = this.issueHealthData.reduce((sum, r) => sum + r.communityResponseRate, 0) / (this.issueHealthData.length || 1);
+
+        const prMergeRate = this.prHealthData.reduce((sum, r) => sum + r.mergeRate, 0) / (this.prHealthData.length || 1);
+        const avgReviewTime = this.prHealthData.reduce((sum, r) => sum + r.avgReviewTime, 0) / (this.prHealthData.length || 1);
+        const avgMergeTime = this.prHealthData.reduce((sum, r) => sum + r.avgMergeTime, 0) / (this.prHealthData.length || 1);
+
+        const activeMaintainers = this.maintainerHealthData.length;
+        const totalResponses = this.maintainerHealthData.reduce((sum, m) => sum + m.responseCount, 0);
+        const avgResponseLoad = activeMaintainers > 0 ? Math.floor(totalResponses / activeMaintainers) : 0;
+        const top20Count = Math.ceil(activeMaintainers * 0.2);
+        const top20Responses = this.maintainerHealthData.slice(0, top20Count).reduce((sum, m) => sum + m.responseCount, 0);
+        const concentration = totalResponses > 0 ? (top20Responses / totalResponses) * 100 : 0;
+
+        // Issue close time (CRITICAL if > 30 days)
+        const avgTimeToCloseDays = avgTimeToClose / (24 * 60 * 60 * 1000);
+        if (avgTimeToCloseDays > 30) {
+            actions.critical.push({
+                title: 'Reduce Issue Resolution Time',
+                current: this.formatDuration(avgTimeToClose),
+                target: '< 30 days',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Issues are taking too long to close. This can discourage contributors and make the project appear unmaintained.',
+                steps: [
+                    'Review and close stale issues that are no longer relevant',
+                    'Triage unlabeled issues and assign owners',
+                    'Set up automation to remind about old issues',
+                    'Consider adding "help wanted" labels to recruit community help'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-asc`,
+                linkText: 'View Oldest Issues'
+            });
+        } else if (avgTimeToCloseDays > 14) {
+            actions.highPriority.push({
+                title: 'Improve Issue Response Time',
+                current: this.formatDuration(avgTimeToClose),
+                target: '< 14 days',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Issues could be resolved faster to improve contributor experience.',
+                steps: [
+                    'Review issues older than 14 days',
+                    'Prioritize issues with "good first issue" labels',
+                    'Set up weekly issue triage meetings'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-asc`
+            });
+        }
+
+        // Response coverage (CRITICAL if < 60%)
+        if (responseCoverage < 60) {
+            actions.critical.push({
+                title: 'Increase Issue Response Coverage',
+                current: `${responseCoverage.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Many issues are not receiving any response. This can frustrate contributors and harm community engagement.',
+                steps: [
+                    'Set up issue triage rotation among maintainers',
+                    'Create templates for common responses',
+                    'Respond to all new issues within 48 hours',
+                    'Use bots to acknowledge new issues automatically'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/issues?q=is%3Aissue+is%3Aopen+comments%3A0+sort%3Acreated-asc`,
+                linkText: 'View Unanswered Issues'
+            });
+        } else if (responseCoverage < 80) {
+            actions.highPriority.push({
+                title: 'Improve Response Coverage',
+                current: `${responseCoverage.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Some issues are not getting responses. Aim for 80%+ coverage.',
+                steps: [
+                    'Review unanswered issues weekly',
+                    'Add labels to indicate triage status'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/issues?q=is%3Aissue+is%3Aopen+comments%3A0`
+            });
+        }
+
+        // PR merge rate (CRITICAL if < 60%)
+        if (prMergeRate < 60) {
+            actions.critical.push({
+                title: 'Improve PR Merge Rate',
+                current: `${prMergeRate.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Many PRs are being closed without merging. This wastes contributor effort and discourages future contributions.',
+                steps: [
+                    'Review why PRs are being closed unmerged',
+                    'Improve contribution guidelines',
+                    'Provide feedback earlier in the PR process',
+                    'Consider breaking down large PRs'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged`,
+                linkText: 'View Closed Unmerged PRs'
+            });
+        } else if (prMergeRate < 80) {
+            actions.highPriority.push({
+                title: 'Increase PR Success Rate',
+                current: `${prMergeRate.toFixed(1)}%`,
+                target: '> 80%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'PR merge rate could be improved.',
+                steps: [
+                    'Analyze closed unmerged PRs for patterns',
+                    'Update contribution docs with common issues'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/pulls?q=is%3Apr+is%3Aclosed+-is%3Amerged`
+            });
+        }
+
+        // Review time (WARNING if > 3 days)
+        const avgReviewDays = avgReviewTime / (24 * 60 * 60 * 1000);
+        if (avgReviewDays > 3) {
+            actions.highPriority.push({
+                title: 'Reduce PR Review Time',
+                current: this.formatDuration(avgReviewTime),
+                target: '< 1 day',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'PRs are waiting too long for initial review. Fast feedback keeps contributors engaged.',
+                steps: [
+                    'Set up PR review rotation',
+                    'Review new PRs within 24 hours',
+                    'Use GitHub notifications effectively',
+                    'Consider adding more reviewers'
+                ],
+                link: `https://github.com/${this.config.org}/${this.config.repos[0]}/pulls?q=is%3Apr+is%3Aopen+review%3Anone+sort%3Acreated-asc`,
+                linkText: 'View PRs Awaiting Review'
+            });
+        }
+
+        // Maintainer concentration (CRITICAL if > 70%)
+        if (concentration > 70) {
+            actions.critical.push({
+                title: 'Reduce Response Concentration (Bus Factor)',
+                current: `${concentration.toFixed(0)}%`,
+                target: '< 50%',
+                severity: 'critical',
+                impact: 'High',
+                description: `Top 20% of maintainers handle ${concentration.toFixed(0)}% of responses. This creates bus factor risk and burnout.`,
+                steps: [
+                    'Identify and mentor new maintainers from active contributors',
+                    'Distribute review assignments more evenly',
+                    'Document processes to enable more people to help',
+                    'Consider adding co-maintainers to repositories'
+                ],
+                link: null,
+                linkText: null
+            });
+        } else if (concentration > 50) {
+            actions.highPriority.push({
+                title: 'Improve Workload Distribution',
+                current: `${concentration.toFixed(0)}%`,
+                target: '< 50%',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'Response load is somewhat concentrated among top maintainers.',
+                steps: [
+                    'Rotate review responsibilities',
+                    'Encourage more maintainers to participate in triage'
+                ],
+                link: null
+            });
+        }
+
+        // Low maintainer count (WARNING if < 5)
+        if (activeMaintainers < 3) {
+            actions.critical.push({
+                title: 'Recruit More Active Maintainers',
+                current: `${activeMaintainers}`,
+                target: '> 5',
+                severity: 'critical',
+                impact: 'High',
+                description: 'Very few active maintainers. This creates sustainability risk and limits project growth.',
+                steps: [
+                    'Identify top contributors and invite them to become maintainers',
+                    'Document maintainer responsibilities and expectations',
+                    'Create a clear path from contributor to maintainer',
+                    'Recognize and celebrate maintainer contributions'
+                ],
+                link: null,
+                linkText: null
+            });
+        } else if (activeMaintainers < 5) {
+            actions.highPriority.push({
+                title: 'Grow Maintainer Team',
+                current: `${activeMaintainers}`,
+                target: '> 5',
+                severity: 'warning',
+                impact: 'Medium',
+                description: 'More maintainers would improve sustainability and response times.',
+                steps: [
+                    'Review top contributors from last 90 days',
+                    'Invite active community members to take on maintainer roles'
+                ],
+                link: null
+            });
+        }
+
+        // Community response rate improvements
+        if (communityResponseRate < 15 && communityResponseRate > 0) {
+            actions.improvements.push({
+                title: 'Foster Community Engagement',
+                current: `${communityResponseRate.toFixed(1)}%`,
+                target: '> 30%',
+                severity: 'info',
+                impact: 'Medium',
+                description: 'Encourage more community members (non-maintainers) to help answer questions and review code.',
+                steps: [
+                    'Recognize community contributions publicly',
+                    'Add "help wanted" and "good first issue" labels',
+                    'Create opportunities for community members to help',
+                    'Highlight helpful community responses in discussions'
+                ],
+                link: null,
+                linkText: null
+            });
+        }
+
+        return actions;
+    }
+
+    renderActions() {
+        const actionsLoading = document.getElementById('actions-loading');
+        const criticalSection = document.getElementById('critical-actions-section');
+        const highPrioritySection = document.getElementById('high-priority-actions-section');
+        const improvementsSection = document.getElementById('improvement-actions-section');
+        const allGoodMessage = document.getElementById('all-good-message');
+
+        const actions = this.generateActions();
+
+        // Hide loading
+        if (actionsLoading) actionsLoading.style.display = 'none';
+
+        // Render critical actions
+        if (actions.critical.length > 0) {
+            criticalSection.style.display = 'block';
+            document.getElementById('critical-actions').innerHTML = actions.critical.map(action => this.createActionCard(action)).join('');
+        } else {
+            criticalSection.style.display = 'none';
+        }
+
+        // Render high priority actions
+        if (actions.highPriority.length > 0) {
+            highPrioritySection.style.display = 'block';
+            document.getElementById('high-priority-actions').innerHTML = actions.highPriority.map(action => this.createActionCard(action)).join('');
+        } else {
+            highPrioritySection.style.display = 'none';
+        }
+
+        // Render improvements
+        if (actions.improvements.length > 0) {
+            improvementsSection.style.display = 'block';
+            document.getElementById('improvement-actions').innerHTML = actions.improvements.map(action => this.createActionCard(action)).join('');
+        } else {
+            improvementsSection.style.display = 'none';
+        }
+
+        // Show all good message if no actions
+        if (actions.critical.length === 0 && actions.highPriority.length === 0 && actions.improvements.length === 0) {
+            allGoodMessage.style.display = 'block';
+        } else {
+            allGoodMessage.style.display = 'none';
+        }
+    }
+
+    createActionCard(action) {
+        const stepsHtml = action.steps ? `
+            <div class="action-steps">
+                <div class="action-steps-title">Action Steps:</div>
+                <ul>
+                    ${action.steps.map(step => `<li>${step}</li>`).join('')}
+                </ul>
+            </div>
+        ` : '';
+
+        const linkHtml = action.link ? `
+            <a href="${action.link}" target="_blank" class="action-link">
+                ${action.linkText || 'Take Action'} →
+            </a>
+        ` : '';
+
+        const severityClass = action.severity === 'critical' ? 'critical' : 'warning';
+
+        return `
+            <div class="action-card">
+                <div class="health-bar ${severityClass}"></div>
+                <div class="action-card-header">
+                    <h4 class="action-title">${action.title}</h4>
+                    ${action.impact ? `<span class="action-impact">Impact: ${action.impact}</span>` : ''}
+                </div>
+                <div class="action-metric">
+                    <span class="metric-current ${severityClass}">${action.current}</span>
+                    <span class="metric-arrow">→</span>
+                    <span class="metric-target">${action.target}</span>
+                </div>
+                <div class="action-description">${action.description}</div>
+                ${stepsHtml}
+                ${linkHtml}
+            </div>
+        `;
     }
 
     getContributorData(type) {

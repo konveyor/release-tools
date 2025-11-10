@@ -3132,39 +3132,76 @@ class CommunityHealthDashboard {
     }
 
     async loadActionsData() {
-        // Wait for all other tabs to load first
-        await Promise.all([
-            this.issueHealthData.length === 0 ? this.loadIssueHealthData() : Promise.resolve(),
-            this.prHealthData.length === 0 ? this.loadPRHealthData() : Promise.resolve(),
-            this.maintainerHealthData.length === 0 ? this.loadMaintainerHealthData() : Promise.resolve()
-        ]);
+        console.log('Loading actions data...');
+        try {
+            // Wait for all other tabs to load first
+            await Promise.all([
+                this.issueHealthData.length === 0 ? this.loadIssueHealthData() : Promise.resolve(),
+                this.prHealthData.length === 0 ? this.loadPRHealthData() : Promise.resolve(),
+                this.maintainerHealthData.length === 0 ? this.loadMaintainerHealthData() : Promise.resolve()
+            ]);
 
-        this.renderActions();
+            console.log('Data loaded, generating actions...');
+            console.log('Issue health data:', this.issueHealthData.length);
+            console.log('PR health data:', this.prHealthData.length);
+            console.log('Maintainer health data:', this.maintainerHealthData.length);
+
+            this.renderActions();
+        } catch (error) {
+            console.error('Error loading actions data:', error);
+            const actionsLoading = document.getElementById('actions-loading');
+            if (actionsLoading) {
+                actionsLoading.innerHTML = '<p style="color: var(--accent-red);">Error loading actions. Please refresh the page.</p>';
+            }
+        }
     }
 
     generateActions() {
+        console.log('Generating actions...');
         const actions = {
             critical: [],
             highPriority: [],
             improvements: []
         };
 
-        // Calculate current metrics
-        const issueClosureRate = this.issueHealthData.reduce((sum, r) => sum + r.closureRate, 0) / (this.issueHealthData.length || 1);
-        const avgTimeToClose = this.issueHealthData.reduce((sum, r) => sum + r.avgTimeToClose, 0) / (this.issueHealthData.length || 1);
-        const responseCoverage = this.issueHealthData.reduce((sum, r) => sum + r.responseCoverage, 0) / (this.issueHealthData.length || 1);
-        const communityResponseRate = this.issueHealthData.reduce((sum, r) => sum + r.communityResponseRate, 0) / (this.issueHealthData.length || 1);
+        // Return early if no data loaded
+        if (this.issueHealthData.length === 0 && this.prHealthData.length === 0 && this.maintainerHealthData.length === 0) {
+            console.log('No health data available yet');
+            return actions;
+        }
 
-        const prMergeRate = this.prHealthData.reduce((sum, r) => sum + r.mergeRate, 0) / (this.prHealthData.length || 1);
-        const avgReviewTime = this.prHealthData.reduce((sum, r) => sum + r.avgReviewTime, 0) / (this.prHealthData.length || 1);
-        const avgMergeTime = this.prHealthData.reduce((sum, r) => sum + r.avgMergeTime, 0) / (this.prHealthData.length || 1);
+        // Calculate current metrics with safe defaults
+        const issueClosureRate = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.closureRate || 0), 0) / this.issueHealthData.length
+            : 0;
+        const avgTimeToClose = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.avgTimeToClose || 0), 0) / this.issueHealthData.length
+            : 0;
+        const responseCoverage = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.responseCoverage || 0), 0) / this.issueHealthData.length
+            : 0;
+        const communityResponseRate = this.issueHealthData.length > 0
+            ? this.issueHealthData.reduce((sum, r) => sum + (r.communityResponseRate || 0), 0) / this.issueHealthData.length
+            : 0;
+
+        const prMergeRate = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.mergeRate || 0), 0) / this.prHealthData.length
+            : 0;
+        const avgReviewTime = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.avgReviewTime || 0), 0) / this.prHealthData.length
+            : 0;
+        const avgMergeTime = this.prHealthData.length > 0
+            ? this.prHealthData.reduce((sum, r) => sum + (r.avgMergeTime || 0), 0) / this.prHealthData.length
+            : 0;
 
         const activeMaintainers = this.maintainerHealthData.length;
-        const totalResponses = this.maintainerHealthData.reduce((sum, m) => sum + m.responseCount, 0);
+        const totalResponses = this.maintainerHealthData.reduce((sum, m) => sum + (m.responseCount || 0), 0);
         const avgResponseLoad = activeMaintainers > 0 ? Math.floor(totalResponses / activeMaintainers) : 0;
         const top20Count = Math.ceil(activeMaintainers * 0.2);
-        const top20Responses = this.maintainerHealthData.slice(0, top20Count).reduce((sum, m) => sum + m.responseCount, 0);
+        const top20Responses = this.maintainerHealthData.slice(0, top20Count).reduce((sum, m) => sum + (m.responseCount || 0), 0);
         const concentration = totalResponses > 0 ? (top20Responses / totalResponses) * 100 : 0;
+
+        console.log('Calculated metrics:', { avgTimeToClose, responseCoverage, prMergeRate, concentration, activeMaintainers });
 
         // Issue close time (CRITICAL if > 30 days)
         const avgTimeToCloseDays = avgTimeToClose / (24 * 60 * 60 * 1000);
@@ -3424,6 +3461,8 @@ class CommunityHealthDashboard {
         } else {
             allGoodMessage.style.display = 'none';
         }
+
+        console.log('Actions rendered:', actions.critical.length, 'critical,', actions.highPriority.length, 'high priority,', actions.improvements.length, 'improvements');
     }
 
     createActionCard(action) {

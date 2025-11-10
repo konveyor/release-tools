@@ -917,9 +917,10 @@ a:hover {
 
 .actions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 450px));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    justify-content: start;
 }
 
 .action-card {

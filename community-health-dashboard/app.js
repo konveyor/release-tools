@@ -3265,7 +3265,7 @@ class CommunityHealthDashboard {
                     'Set up automation to remind about old issues',
                     'Consider adding "help wanted" labels to recruit community help'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Aissue+is%3Aopen+sort%3Aupdated-asc` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+sort:updated-asc` : null,
                 linkText: 'View Issues on GitHub'
             });
         } else if (avgTimeToCloseDays > 14) {
@@ -3281,7 +3281,7 @@ class CommunityHealthDashboard {
                     'Prioritize issues with "good first issue" labels',
                     'Set up weekly issue triage meetings'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Aissue+is%3Aopen+sort%3Aupdated-asc` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+sort:updated-asc` : null,
                 linkText: 'View Issues on GitHub'
             });
         }
@@ -3301,7 +3301,7 @@ class CommunityHealthDashboard {
                     'Respond to all new issues within 48 hours',
                     'Use bots to acknowledge new issues automatically'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Aissue+is%3Aopen+comments%3A0+sort%3Acreated-asc` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+comments:0+sort:created-asc` : null,
                 linkText: 'View Unanswered Issues'
             });
         } else if (responseCoverage < 80) {
@@ -3316,7 +3316,7 @@ class CommunityHealthDashboard {
                     'Review unanswered issues weekly',
                     'Add labels to indicate triage status'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Aissue+is%3Aopen+comments%3A0` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:issue+is:open+comments:0` : null,
                 linkText: 'View Issues on GitHub'
             });
         }
@@ -3336,7 +3336,7 @@ class CommunityHealthDashboard {
                     'Provide feedback earlier in the PR process',
                     'Consider breaking down large PRs'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Apr+is%3Aclosed+-is%3Amerged` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:closed+-is:merged` : null,
                 linkText: 'View Closed Unmerged PRs'
             });
         } else if (prMergeRate < 80) {
@@ -3351,7 +3351,7 @@ class CommunityHealthDashboard {
                     'Analyze closed unmerged PRs for patterns',
                     'Update contribution docs with common issues'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Apr+is%3Aclosed+-is%3Amerged` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:closed+-is:merged` : null,
                 linkText: 'View PRs on GitHub'
             });
         }
@@ -3372,7 +3372,7 @@ class CommunityHealthDashboard {
                     'Use GitHub notifications effectively',
                     'Consider adding more reviewers'
                 ],
-                link: orgName ? `https://github.com/${orgName}?q=is%3Apr+is%3Aopen+review%3Anone+sort%3Acreated-asc` : null,
+                link: orgName ? `https://github.com/search?q=org:${orgName}+is:pr+is:open+review:none+sort:created-asc` : null,
                 linkText: 'View PRs Awaiting Review'
             });
         }

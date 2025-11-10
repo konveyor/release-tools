@@ -3423,6 +3423,28 @@ class CommunityHealthDashboard {
             });
         }
 
+        // TEMP: Add test cards to demonstrate grid layout
+        actions.critical.push({
+            title: 'TEST: Grid Layout Demo Card 2',
+            current: 'Test',
+            target: 'Demo',
+            severity: 'critical',
+            impact: 'High',
+            description: 'This is a temporary test card to demonstrate the 3-column grid layout.',
+            steps: ['This is test step 1', 'This is test step 2'],
+            link: null
+        });
+        actions.critical.push({
+            title: 'TEST: Grid Layout Demo Card 3',
+            current: 'Test',
+            target: 'Demo',
+            severity: 'critical',
+            impact: 'High',
+            description: 'This is another temporary test card to show cards displaying side-by-side.',
+            steps: ['Test step A', 'Test step B'],
+            link: null
+        });
+
         return actions;
     }
 

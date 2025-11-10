@@ -1207,6 +1207,12 @@ class CommunityHealthDashboard {
         document.getElementById('avg-time-to-review').textContent = this.formatDuration(avgReviewTime);
         document.getElementById('avg-time-to-merge').textContent = this.formatDuration(avgMergeTime);
         document.getElementById('avg-pr-revisions').textContent = avgRevisions.toFixed(1);
+
+        // Update health bars
+        this.updateHealthBar('pr-merge-rate-bar', avgMergeRate, 'percentage', { healthy: 80, warning: 60 });
+        this.updateHealthBar('avg-time-to-review-bar', avgReviewTime, 'duration', { healthy: 24*60*60*1000, warning: 3*24*60*60*1000 }); // 1 day, 3 days
+        this.updateHealthBar('avg-time-to-merge-bar', avgMergeTime, 'duration', { healthy: 7*24*60*60*1000, warning: 14*24*60*60*1000 }); // 7 days, 14 days
+        // For revisions, we could consider as neutral - no clear "good" threshold
     }
 
     renderPRMetricsTable() {
@@ -1666,6 +1672,62 @@ class CommunityHealthDashboard {
         document.getElementById('avg-time-to-close').textContent = this.formatDuration(avgTimeToClose);
         document.getElementById('response-coverage').textContent = `${avgResponseCoverage.toFixed(1)}%`;
         document.getElementById('community-response-rate').textContent = `${avgCommunityResponseRate.toFixed(1)}%`;
+
+        // Update health bars
+        this.updateHealthBar('issue-closure-rate-bar', avgClosureRate, 'percentage', { healthy: 70, warning: 50 });
+        this.updateHealthBar('avg-time-to-close-bar', avgTimeToClose, 'duration', { healthy: 14*24*60*60*1000, warning: 30*24*60*60*1000 });
+        this.updateHealthBar('response-coverage-bar', avgResponseCoverage, 'percentage', { healthy: 80, warning: 60 });
+        this.updateHealthBar('community-response-rate-bar', avgCommunityResponseRate, 'percentage', { healthy: 30, warning: 15 });
+    }
+
+    updateHealthBar(barId, value, type, thresholds) {
+        const bar = document.getElementById(barId);
+        if (!bar) return;
+
+        // Remove existing health classes
+        bar.classList.remove('healthy', 'warning', 'critical', 'neutral');
+
+        let healthClass = 'neutral';
+
+        if (type === 'percentage') {
+            // Higher is better
+            if (value >= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value >= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'duration' || type === 'count-inverse') {
+            // Lower is better
+            if (value <= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value <= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'percentage-inverse') {
+            // For metrics where lower percentage is better (like concentration)
+            if (value <= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value <= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        } else if (type === 'count') {
+            // Higher count is better (like number of maintainers)
+            if (value >= thresholds.healthy) {
+                healthClass = 'healthy';
+            } else if (value >= thresholds.warning) {
+                healthClass = 'warning';
+            } else {
+                healthClass = 'critical';
+            }
+        }
+
+        bar.classList.add(healthClass);
     }
 
     renderIssueMetricsTable() {
@@ -2196,6 +2258,24 @@ class CommunityHealthDashboard {
             burnoutElement.style.color = 'var(--accent-orange)';
         } else {
             burnoutElement.style.color = 'var(--accent-green)';
+        }
+
+        // Update health bars
+        this.updateHealthBar('active-maintainers-bar', activeMaintainers, 'count', { healthy: 5, warning: 3 }); // More maintainers is better
+        this.updateHealthBar('response-load-bar', avgResponseLoad, 'count-inverse', { healthy: 50, warning: 100 }); // Lower load is better
+        this.updateHealthBar('response-concentration-bar', concentration, 'percentage-inverse', { healthy: 50, warning: 70 }); // Lower concentration is better
+
+        // For burnout, use text-based values
+        const burnoutBar = document.getElementById('burnout-indicator-bar');
+        if (burnoutBar) {
+            burnoutBar.classList.remove('healthy', 'warning', 'critical', 'neutral');
+            if (burnoutRisk === 'Low') {
+                burnoutBar.classList.add('healthy');
+            } else if (burnoutRisk === 'Medium') {
+                burnoutBar.classList.add('warning');
+            } else {
+                burnoutBar.classList.add('critical');
+            }
         }
     }
 

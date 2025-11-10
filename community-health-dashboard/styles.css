@@ -916,21 +916,22 @@ a:hover {
 }
 
 .actions-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 1.5rem;
     margin-bottom: 2rem;
+    outline: 2px dashed rgba(51, 181, 229, 0.3); /* Debug: shows grid container */
 }
 
 @media (max-width: 1400px) {
     .actions-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
 @media (max-width: 900px) {
     .actions-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 

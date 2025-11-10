@@ -916,12 +916,22 @@ a:hover {
 }
 
 .actions-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr 1fr !important;
-    gap: 1.5rem !important;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
     margin-bottom: 2rem;
-    outline: 2px dashed rgba(51, 181, 229, 0.3); /* Debug: shows grid container */
-    background: rgba(51, 181, 229, 0.05); /* Debug: grid background */
+}
+
+@media (max-width: 1200px) {
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .action-card {
@@ -931,8 +941,6 @@ a:hover {
     padding: 1.5rem;
     position: relative;
     transition: all 0.2s;
-    outline: 2px solid rgba(255, 152, 48, 0.5); /* Debug: shows each card boundary */
-    min-width: 0; /* Prevents grid blowout */
 }
 
 .action-card:hover {

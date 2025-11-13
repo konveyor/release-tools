@@ -131,6 +131,14 @@ class CommunityHealthDashboard {
             });
         }
 
+        // Maintainer cards click handlers
+        const activeMaintainersCard = document.getElementById('active-maintainers-card');
+        if (activeMaintainersCard) {
+            activeMaintainersCard.addEventListener('click', () => {
+                this.showMaintainersModal();
+            });
+        }
+
         // Modal close handlers
         const closeModal = document.getElementById('close-modal');
         if (closeModal) {
@@ -2045,6 +2053,7 @@ class CommunityHealthDashboard {
         loadingIndicator.style.display = 'flex';
 
         try {
+            // Clear existing data to avoid duplicates from multiple calls
             this.maintainerHealthData = [];
 
             // Use mock data for local development, live data on GitHub Pages
@@ -2070,10 +2079,6 @@ class CommunityHealthDashboard {
 
                     // Calculate repo count from Set
                     maintainer.repoCount = maintainer.repos ? maintainer.repos.size : 0;
-
-                    // Clean up temporary data structures
-                    delete maintainer.responseTimes;
-                    delete maintainer.repos;
                 });
 
                 // Sort by response count (descending)
@@ -2181,10 +2186,14 @@ class CommunityHealthDashboard {
             const maintainerActivity = new Map(); // username -> {issueResponses, prResponses, responseTimes, repos}
 
             for (const item of sampledItems) {
+                // Fetch issue comments
                 const commentsResponse = await fetch(
                     `${baseUrl}/repos/${org}/${repo}/issues/${item.number}/comments?per_page=100`,
                     { headers }
                 );
+
+                let firstResponse = null;
+                let firstResponseTime = null;
 
                 if (commentsResponse.ok) {
                     const comments = await commentsResponse.json();
@@ -2196,19 +2205,50 @@ class CommunityHealthDashboard {
                     });
 
                     if (firstHumanComment) {
-                        const responder = firstHumanComment.user.login;
+                        firstResponse = firstHumanComment.user.login;
+                        firstResponseTime = new Date(firstHumanComment.created_at);
+                    }
+                }
 
-                        // Double-check responder is not a bot
-                        if (this.isBot(responder)) {
-                            continue; // Skip this bot responder
+                // For PRs, also check PR reviews
+                if (item.pull_request) {
+                    const reviewsResponse = await fetch(
+                        `${baseUrl}/repos/${org}/${repo}/pulls/${item.number}/reviews?per_page=100`,
+                        { headers }
+                    );
+
+                    if (reviewsResponse.ok) {
+                        const reviews = await reviewsResponse.json();
+
+                        // Find first human review
+                        const firstHumanReview = reviews.find(review => {
+                            const username = review.user?.login || '';
+                            return !this.isBot(username);
+                        });
+
+                        if (firstHumanReview) {
+                            const reviewTime = new Date(firstHumanReview.submitted_at);
+                            // Use whichever came first (comment or review)
+                            if (!firstResponseTime || reviewTime < firstResponseTime) {
+                                firstResponse = firstHumanReview.user.login;
+                                firstResponseTime = reviewTime;
+                            }
                         }
+                    }
+                }
 
-                        const responseAt = new Date(firstHumanComment.created_at);
+                // Process the first response
+                if (firstResponse && firstResponseTime) {
+                    // Double-check responder is not a bot
+                    if (!this.isBot(firstResponse)) {
+                        const itemCreatedAt = new Date(item.created_at);
 
-                        // Only count responses in last 30 days
-                        if (responseAt >= thirtyDaysAgo) {
-                            if (!maintainerActivity.has(responder)) {
-                                maintainerActivity.set(responder, {
+                        // Only count responses if:
+                        // 1. The response was in the last 30 days
+                        // 2. The item was created in the last 30 days (to avoid skewing with old issues)
+                        if (firstResponseTime >= thirtyDaysAgo && itemCreatedAt >= thirtyDaysAgo) {
+                            if (!maintainerActivity.has(firstResponse)) {
+                                maintainerActivity.set(firstResponse, {
                                     issueResponses: 0,
                                     prResponses: 0,
                                     responseTimes: [],
@@ -2216,8 +2256,8 @@ class CommunityHealthDashboard {
                                 });
                             }
 
-                            const activity = maintainerActivity.get(responder);
-                            const responseTime = responseAt - new Date(item.created_at);
+                            const activity = maintainerActivity.get(firstResponse);
+                            const responseTime = firstResponseTime - itemCreatedAt;
 
                             if (item.pull_request) {
                                 activity.prResponses++;
@@ -2225,7 +2265,9 @@ class CommunityHealthDashboard {
                                 activity.issueResponses++;
                             }
 
-                            activity.responseTimes.push(responseTime);
+                            if (responseTime >= 0) {
+                                activity.responseTimes.push(responseTime);
+                            }
                             activity.repos.add(repo);
                         }
                     }
@@ -2245,8 +2287,16 @@ class CommunityHealthDashboard {
                     existing.issueResponses += activity.issueResponses;
                     existing.prResponses += activity.prResponses;
                     existing.responseCount += (activity.issueResponses + activity.prResponses);
-                    existing.responseTimes.push(...activity.responseTimes);
-                    activity.repos.forEach(r => existing.repos.add(r));
+
+                    // Only merge response times if the array still exists (not yet finalized)
+                    if (existing.responseTimes && Array.isArray(existing.responseTimes)) {
+                        existing.responseTimes.push(...activity.responseTimes);
+                    }
+
+                    // Only merge repos if the Set still exists (not yet finalized)
+                    if (existing.repos && existing.repos instanceof Set) {
+                        activity.repos.forEach(r => existing.repos.add(r));
+                    }
                 } else {
                     // New maintainer
                     this.maintainerHealthData.push({
@@ -2760,6 +2810,17 @@ class CommunityHealthDashboard {
     }
 
     updateCIStats() {
+        // Deduplicate workflows by name before calculating stats
+        const uniqueWorkflows = [];
+        const seenNames = new Set();
+
+        for (const workflow of this.ciHealthData) {
+            if (!seenNames.has(workflow.name)) {
+                seenNames.add(workflow.name);
+                uniqueWorkflows.push(workflow);
+            }
+        }
+
         // Calculate overall stats
         let totalRuns = 0;
         let totalSuccessRuns = 0;
@@ -2768,7 +2829,7 @@ class CommunityHealthDashboard {
         let nightlySuccessRuns = 0;
         let nightlyTotalRuns = 0;
 
-        this.ciHealthData.forEach(workflow => {
+        uniqueWorkflows.forEach(workflow => {
             totalRuns += workflow.totalRuns;
             totalSuccessRuns += Math.floor((workflow.successRate / 100) * workflow.totalRuns);
             totalDuration += workflow.duration;
@@ -2781,13 +2842,164 @@ class CommunityHealthDashboard {
         });
 
         const overallSuccessRate = totalRuns > 0 ? (totalSuccessRuns / totalRuns) * 100 : 0;
-        const avgDuration = this.ciHealthData.length > 0 ? totalDuration / this.ciHealthData.length : 0;
+        const avgDuration = uniqueWorkflows.length > 0 ? totalDuration / uniqueWorkflows.length : 0;
         const nightlySuccessRate = nightlyTotalRuns > 0 ? (nightlySuccessRuns / nightlyTotalRuns) * 100 : 0;
 
         document.getElementById('ci-success-rate').textContent = `${overallSuccessRate.toFixed(1)}%`;
         document.getElementById('ci-avg-duration').textContent = this.formatDuration(avgDuration);
         document.getElementById('ci-nightly-success').textContent = `${nightlySuccessRate.toFixed(1)}%`;
         document.getElementById('ci-total-runs').textContent = totalRuns;
+    }
+
+    getWorkflowDisplayName(workflowName) {
+        // Transform workflow names to be more concise and descriptive
+        const nameMap = {
+            'Run Konveyor nightly main branch tests': 'Nightly: Main Branch',
+            'Run Konveyor release-0.7 nightly tests': 'Nightly: Release 0.7',
+            'Run Konveyor release-0.8 nightly tests': 'Nightly: Release 0.8',
+            'Konveyor e2e CI via Operator Bundle shared workflow': 'E2E: Operator Bundle',
+            'Konveyor CI repo testing for PRs and pushes to main': 'CI Repo: PR & Main Testing',
+            '.github/workflows/new-nightly.yaml': 'New Nightly (Experimental)'
+        };
+
+        // Return mapped name if exists, otherwise return original
+        return nameMap[workflowName] || workflowName;
+    }
+
+    getWorkflowDetails(workflowName) {
+        // Provide detailed information about each workflow
+        const details = {
+            'Run Konveyor nightly main branch tests': {
+                description: 'End-to-end integration tests for the main development branch',
+                purpose: 'Validates the latest code changes across all Konveyor components',
+                schedule: 'Runs nightly on a scheduled basis',
+                coverage: 'Full e2e testing including installation, migration, and core features',
+                branch: 'main'
+            },
+            'Run Konveyor release-0.7 nightly tests': {
+                description: 'Regression tests for the 0.7 release branch',
+                purpose: 'Ensures stability and no regressions in the release-0.7 branch',
+                schedule: 'Runs nightly on a scheduled basis',
+                coverage: 'E2e testing focused on release stability and bug fixes',
+                branch: 'release-0.7'
+            },
+            'Run Konveyor release-0.8 nightly tests': {
+                description: 'Regression tests for the 0.8 release branch',
+                purpose: 'Ensures stability and no regressions in the release-0.8 branch',
+                schedule: 'Runs nightly on a scheduled basis',
+                coverage: 'E2e testing focused on release stability and bug fixes',
+                branch: 'release-0.8'
+            },
+            'Konveyor e2e CI via Operator Bundle shared workflow': {
+                description: 'End-to-end tests using Operator Bundle deployment',
+                purpose: 'Tests Konveyor installation and functionality via the Operator Bundle',
+                schedule: 'Triggered by workflow calls from component repositories',
+                coverage: 'Operator deployment, installation validation, and core functionality',
+                branch: 'main'
+            },
+            'Konveyor CI repo testing for PRs and pushes to main': {
+                description: 'CI validation for the konveyor/ci repository itself',
+                purpose: 'Tests changes to CI workflows and configurations',
+                schedule: 'Runs on pull requests and pushes to main branch',
+                coverage: 'Workflow syntax validation and test configuration changes',
+                branch: 'main'
+            },
+            '.github/workflows/new-nightly.yaml': {
+                description: 'Experimental nightly workflow (in development)',
+                purpose: 'Testing new nightly workflow configuration or features',
+                schedule: 'Experimental - may run on schedule or manually',
+                coverage: 'Varies - experimental workflow under development',
+                branch: 'varies'
+            }
+        };
+
+        return details[workflowName] || {
+            description: 'Workflow information not available',
+            purpose: 'No detailed information available for this workflow',
+            schedule: 'Unknown',
+            coverage: 'Unknown',
+            branch: 'Unknown'
+        };
+    }
+
+    showWorkflowInfoModal(workflowName, workflow) {
+        const modal = document.getElementById('contributors-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalTotalCount = document.getElementById('modal-total-count');
+        const contributorsList = document.getElementById('contributors-list');
+
+        if (!modal || !modalTitle || !modalTotalCount || !contributorsList) {
+            return;
+        }
+
+        const details = this.getWorkflowDetails(workflowName);
+        const displayName = this.getWorkflowDisplayName(workflowName);
+
+        // Update modal title
+        modalTitle.textContent = displayName;
+        modalTotalCount.textContent = '';
+
+        // Populate workflow details
+        contributorsList.innerHTML = `
+            <div style="padding: 1rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Full Name</h3>
+                    <p style="color: var(--text-primary); font-family: monospace; font-size: 0.9rem;">${workflowName}</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Description</h3>
+                    <p style="color: var(--text-primary);">${details.description}</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Purpose</h3>
+                    <p style="color: var(--text-primary);">${details.purpose}</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Schedule</h3>
+                    <p style="color: var(--text-primary);">${details.schedule}</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Coverage</h3>
+                    <p style="color: var(--text-primary);">${details.coverage}</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 0.5rem;">Branch</h3>
+                    <p style="color: var(--text-primary);">${details.branch}</p>
+                </div>
+
+                ${workflow ? `
+                    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <h3 style="color: var(--accent-blue); margin-bottom: 1rem;">Current Status</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">Last Run</div>
+                                <div style="color: var(--text-primary); font-weight: 500;">${this.formatDate(new Date(workflow.lastRun))}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">Status</div>
+                                <div style="color: var(--text-primary); font-weight: 500;">${workflow.status === 'success' ? '✓ Success' : workflow.status === 'failure' ? '✗ Failed' : '⟳ Running'}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">Success Rate (7d)</div>
+                                <div style="color: var(--text-primary); font-weight: 500;">${workflow.successRate.toFixed(1)}%</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Runs (7d)</div>
+                                <div style="color: var(--text-primary); font-weight: 500;">${workflow.totalRuns}</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // Show modal
+        modal.classList.add('active');
     }
 
     renderWorkflowStatusTable() {
@@ -2798,7 +3010,18 @@ class CommunityHealthDashboard {
             return;
         }
 
-        tbody.innerHTML = this.ciHealthData.map(workflow => {
+        // Deduplicate workflows by name (keep the most recent one)
+        const uniqueWorkflows = [];
+        const seenNames = new Set();
+
+        for (const workflow of this.ciHealthData) {
+            if (!seenNames.has(workflow.name)) {
+                seenNames.add(workflow.name);
+                uniqueWorkflows.push(workflow);
+            }
+        }
+
+        tbody.innerHTML = uniqueWorkflows.map(workflow => {
             const statusClass = workflow.status === 'success' ? 'badge-issue' :
                                workflow.status === 'failure' ? 'badge-failure' : '';
             const statusText = workflow.status === 'success' ? '✓ Success' :
@@ -2806,7 +3029,15 @@ class CommunityHealthDashboard {
 
             return `
                 <tr>
-                    <td>${workflow.name}</td>
+                    <td>
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span>${this.getWorkflowDisplayName(workflow.name)}</span>
+                            <span class="workflow-info-icon"
+                                  onclick="dashboard.showWorkflowInfoModal('${workflow.name.replace(/'/g, "\\'")}', dashboard.ciHealthData.find(w => w.name === '${workflow.name.replace(/'/g, "\\'")}'))"
+                                  style="cursor: pointer; color: var(--accent-blue); font-size: 0.9rem;"
+                                  title="View workflow details">ⓘ</span>
+                        </span>
+                    </td>
                     <td>
                         <span class="badge ${statusClass}">
                             ${statusText}
@@ -2853,9 +3084,18 @@ class CommunityHealthDashboard {
             const statusText = run.conclusion === 'success' ? '✓' :
                               run.conclusion === 'failure' ? '✗' : '⟳';
 
+            const displayName = this.getWorkflowDisplayName(run.name);
             return `
                 <tr>
-                    <td title="${run.name}">${this.truncate(run.name, 40)}</td>
+                    <td>
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span>${displayName}</span>
+                            <span class="workflow-info-icon"
+                                  onclick="dashboard.showWorkflowInfoModal('${run.name.replace(/'/g, "\\'")}', null)"
+                                  style="cursor: pointer; color: var(--accent-blue); font-size: 0.9rem;"
+                                  title="View workflow details">ⓘ</span>
+                        </span>
+                    </td>
                     <td>${run.branch}</td>
                     <td>
                         <span class="badge ${statusClass}">
@@ -3171,6 +3411,46 @@ class CommunityHealthDashboard {
         if (modal) {
             modal.classList.remove('active');
         }
+    }
+
+    showMaintainersModal() {
+        const modal = document.getElementById('contributors-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalTotalCount = document.getElementById('modal-total-count');
+        const contributorsList = document.getElementById('contributors-list');
+
+        if (!modal || !modalTitle || !modalTotalCount || !contributorsList) {
+            return;
+        }
+
+        // Update modal title and count
+        modalTitle.textContent = 'Active Maintainers (30d)';
+        modalTotalCount.textContent = this.maintainerHealthData.length;
+
+        // Populate maintainers list
+        if (this.maintainerHealthData.length === 0) {
+            contributorsList.innerHTML = '<p class="no-data">No maintainer data available</p>';
+        } else {
+            contributorsList.innerHTML = this.maintainerHealthData
+                .sort((a, b) => b.responseCount - a.responseCount)
+                .map(maintainer => `
+                    <div class="contributor-item">
+                        <a href="https://github.com/${maintainer.username}"
+                           target="_blank"
+                           class="contributor-name">
+                            ${maintainer.username}
+                        </a>
+                        <div class="contributor-repos">
+                            ${maintainer.responseCount} responses (${maintainer.issueResponses} issues, ${maintainer.prResponses} PRs) •
+                            ${maintainer.repoCount} repo${maintainer.repoCount > 1 ? 's' : ''} •
+                            ${this.formatDuration(maintainer.avgResponseTime)} avg response time
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        // Show modal
+        modal.classList.add('active');
     }
 
     async loadActionsData() {

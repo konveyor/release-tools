@@ -1212,3 +1212,18 @@ a:hover {
         flex-wrap: wrap;
     }
 }
+
+/* Workflow Info Icon */
+.workflow-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.workflow-info-icon:hover {
+    opacity: 1;
+    transform: scale(1.2);
+    text-shadow: 0 0 8px var(--accent-blue);
+}

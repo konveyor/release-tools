@@ -14,6 +14,7 @@ const DASHBOARD_CONFIG = {
     // Add repositories as you deploy the stale workflow to them
     repositories: [
         { org: 'konveyor', repo: 'analyzer-lsp' },
+        { org: 'konveyor', repo: 'community' },
         { org: 'konveyor', repo: 'editor-extensions' },
         { org: 'konveyor', repo: 'enhancements' },
         { org: 'konveyor', repo: 'java-analyzer-bundle' },

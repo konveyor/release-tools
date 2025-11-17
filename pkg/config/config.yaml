@@ -53,6 +53,8 @@ repos:
     repo: tackle-keycloak-theme
   - org: konveyor
     repo: kai
+  - org: konveyor
+    repo: c-sharp-analyzer-provider
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

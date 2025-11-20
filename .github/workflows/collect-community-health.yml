@@ -237,6 +237,39 @@ jobs:
 
               const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+              // Fetch Codecov coverage data
+              let coverage = null;
+              try {
+                const codecovResponse = await httpsRequest({
+                  hostname: 'codecov.io',
+                  path: `/github/${org}/${repo}/graph/badge.svg`,
+                  headers: {
+                    'User-Agent': 'Konveyor-Community-Health-Collector'
+                  }
+                });
+
+                if (codecovResponse) {
+                  // Look for the coverage text in SVG text elements with y="14" (the visible text)
+                  // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+                  const textMatch = codecovResponse.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+                  if (textMatch && textMatch.length > 0) {
+                    // Get the last text element (which contains the coverage percentage)
+                    const lastText = textMatch[textMatch.length - 1];
+                    const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+                    if (coverageMatch) {
+                      const value = coverageMatch[1];
+                      if (value === 'unknown') {
+                        coverage = null; // No coverage data
+                      } else {
+                        coverage = parseFloat(value);
+                      }
+                    }
+                  }
+                }
+              } catch (codecovError) {
+                // No Codecov data available - this is normal for repos without Codecov
+              }
+
               const repoData = {
                 org,
                 repo,
@@ -247,6 +280,7 @@ jobs:
                 avgIssueResponseMs,
                 avgPRResponseMs,
                 prMergeRate,
+                coverage,
                 openIssues: actualOpenIssues,
                 openPRs
               };

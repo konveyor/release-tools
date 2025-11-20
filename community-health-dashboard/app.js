@@ -422,6 +422,34 @@ class CommunityHealthDashboard {
 
             const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+            // Fetch Codecov coverage data
+            let coverage = null;
+            try {
+                const codecovUrl = `https://codecov.io/github/${org}/${repo}/graph/badge.svg`;
+                const codecovResponse = await fetch(codecovUrl);
+                if (codecovResponse.ok) {
+                    const svgText = await codecovResponse.text();
+                    // Look for the coverage text in SVG text elements with y="14" (the visible text)
+                    // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+                    const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+                    if (textMatch && textMatch.length > 0) {
+                        // Get the last text element (which contains the coverage percentage)
+                        const lastText = textMatch[textMatch.length - 1];
+                        const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+                        if (coverageMatch) {
+                            const value = coverageMatch[1];
+                            if (value === 'unknown') {
+                                coverage = null; // No coverage data
+                            } else {
+                                coverage = parseFloat(value);
+                            }
+                        }
+                    }
+                }
+            } catch (codecovError) {
+                console.log(`[${org}/${repo}] Error fetching Codecov data:`, codecovError.message);
+            }
+
             // Store repo health data
             this.repoHealthData.push({
                 org,
@@ -434,6 +462,7 @@ class CommunityHealthDashboard {
                 avgIssueResponse,
                 avgPRResponse,
                 prMergeRate,
+                coverage,
                 openIssues,
                 openPRs
             });
@@ -625,11 +654,24 @@ class CommunityHealthDashboard {
         const tbody = document.getElementById('table-body');
 
         if (this.repoHealthData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No repository health data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No repository health data available</td></tr>';
             return;
         }
 
-        tbody.innerHTML = this.repoHealthData.map(repo => `
+        tbody.innerHTML = this.repoHealthData.map(repo => {
+            let coverageCell = '<td class="no-data">N/A</td>';
+            if (repo.coverage !== null && repo.coverage !== undefined) {
+                const coverageClass = repo.coverage >= 80 ? 'badge-success' :
+                                     repo.coverage >= 50 ? 'badge-pr' :
+                                     'badge-failure';
+                coverageCell = `<td>
+                    <span class="badge ${coverageClass}">
+                        ${repo.coverage.toFixed(1)}%
+                    </span>
+                </td>`;
+            }
+
+            return `
             <tr>
                 <td><a href="https://github.com/${repo.repoFullName}" target="_blank">${repo.repo}</a></td>
                 <td>${repo.contributors}</td>
@@ -641,10 +683,11 @@ class CommunityHealthDashboard {
                         ${repo.prMergeRate.toFixed(1)}%
                     </span>
                 </td>
+                ${coverageCell}
                 <td>${repo.openIssues}</td>
                 <td>${repo.openPRs}</td>
             </tr>
-        `).join('');
+        `}).join('');
     }
 
     renderRecentActivity(filterRepo = 'all') {
@@ -806,7 +849,7 @@ class CommunityHealthDashboard {
 
     showError(message) {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `<tr><td colspan="8" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
     }
 
     async loadHistoricalData() {

@@ -24,8 +24,6 @@ repos:
   - org: konveyor
     repo: analyzer-lsp
   - org: konveyor
-    repo: windup-shim
-  - org: konveyor
     repo: tackle2-hub
   - org: konveyor
     repo: tackle2-seed

@@ -189,7 +189,15 @@ jobs:
               });
 
               if (!projectsData || !projectsData.projects) {
+                console.log(`    [Snyk] No projects data returned for ${org}/${repo}`);
                 return null;
+              }
+
+              // Debug: Log all project names for the first repo only
+              if (repo === 'kai') {
+                console.log(`    [Snyk] Found ${projectsData.projects.length} total projects in org`);
+                const githubProjects = projectsData.projects.filter(p => p.origin === 'github');
+                console.log(`    [Snyk] GitHub projects: ${githubProjects.map(p => p.name).join(', ')}`);
               }
 
               // Find matching GitHub project
@@ -199,8 +207,11 @@ jobs:
               );
 
               if (!project) {
+                console.log(`    [Snyk] No project found for ${org}/${repo}`);
                 return null; // Repo not monitored by Snyk
               }
+
+              console.log(`    [Snyk] Found project ${project.name} (${project.id})`);
 
               // 2. Get aggregated issues for this project (requires POST)
               const issuesData = await httpsRequest({

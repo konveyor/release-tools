@@ -26,6 +26,8 @@ jobs:
       - name: Collect community health metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNYK_API_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
+          SNYK_ORG_ID: ${{ secrets.SNYK_ORG_ID }}
         run: |
           # Create data directory if it doesn't exist
           mkdir -p community-health-dashboard/data/history
@@ -74,17 +76,24 @@ jobs:
           const newContribPeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
           const responseTimePeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-          function httpsRequest(options) {
+          function httpsRequest(options, returnText = false) {
             return new Promise((resolve, reject) => {
-              const req = https.get(options, (res) => {
+              const method = options.method || 'GET';
+              const reqFunc = method === 'POST' ? https.request : https.get;
+
+              const req = reqFunc(options, (res) => {
                 let body = '';
                 res.on('data', (chunk) => body += chunk);
                 res.on('end', () => {
                   if (res.statusCode === 200) {
-                    try {
-                      resolve(JSON.parse(body));
-                    } catch (err) {
-                      reject(new Error(`Failed to parse JSON: ${err.message}`));
+                    if (returnText) {
+                      resolve(body);
+                    } else {
+                      try {
+                        resolve(JSON.parse(body));
+                      } catch (err) {
+                        reject(new Error(`Failed to parse JSON: ${err.message}`));
+                      }
                     }
                   } else {
                     resolve(null);
@@ -92,10 +101,16 @@ jobs:
                 });
               }).on('error', reject);
 
+              if (method === 'POST' && options.body) {
+                req.write(options.body);
+              }
+
               req.setTimeout(10000, () => {
                 req.destroy();
                 reject(new Error('Request timeout'));
               });
+
+              req.end();
             });
           }
 
@@ -181,18 +196,20 @@ jobs:
                 return null; // Repo not monitored by Snyk
               }
 
-              // 2. Get aggregated issues for this project
+              // 2. Get aggregated issues for this project (requires POST)
               const issuesData = await httpsRequest({
                 hostname: 'api.snyk.io',
                 path: `/v1/org/${snykOrgId}/project/${project.id}/aggregated-issues`,
+                method: 'POST',
                 headers: {
                   'Authorization': `token ${snykToken}`,
                   'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({})
               });
 
               if (!issuesData || !issuesData.issues) {
-                return { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+                return null; // Return null on error/missing data instead of zero counts
               }
 
               // Count vulnerabilities by severity

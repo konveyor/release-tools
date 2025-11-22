@@ -185,10 +185,24 @@ jobs:
               return null; // Snyk not configured
             }
 
-            // Debug: Log org ID once
+            // Debug: Log org ID once and test API access
             if (repo === 'analyzer-lsp') {
-              console.log(`    [Snyk Debug] Using Org ID: ${snykOrgId.substring(0, 8)}...`);
+              console.log(`    [Snyk Debug] Full Org ID: ${snykOrgId}`);
               console.log(`    [Snyk Debug] Token starts with: ${snykToken.substring(0, 10)}...`);
+
+              // Test: Try to get organization info first
+              const orgTest = await httpsRequest({
+                hostname: 'api.snyk.io',
+                path: `/rest/orgs/${snykOrgId}`,
+                headers: {
+                  'Authorization': `token ${snykToken}`,
+                  'Accept': 'application/vnd.api+json; version=2024-10-15'
+                }
+              });
+              console.log(`    [Snyk Debug] Org test result: ${orgTest ? 'SUCCESS' : 'FAILED'}`);
+              if (orgTest && orgTest.data) {
+                console.log(`    [Snyk Debug] Org name: ${orgTest.data.attributes?.name}`);
+              }
             }
 
             try {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Konveyor - Community Health Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=31">
+    <link rel="stylesheet" href="styles.css?v=32">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -164,11 +164,12 @@
                                 <th class="sortable" data-sort="coverage">Coverage</th>
                                 <th class="sortable" data-sort="openIssues">Open Issues</th>
                                 <th class="sortable" data-sort="openPRs">Open PRs</th>
+                                <th class="sortable" data-sort="snykVulnerabilities">Security</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
                             <tr>
-                                <td colspan="9" class="no-data">Loading repository health data...</td>
+                                <td colspan="10" class="no-data">Loading repository health data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -904,8 +905,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=36"></script>
-    <script src="app.js?v=36"></script>
+    <script src="config.js?v=37"></script>
+    <script src="app.js?v=37"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

@@ -28,6 +28,10 @@ The main dashboard view showing overall community health:
 - Average PR response time
 - PR merge rate with color coding (green ≥70%, orange <70%)
 - Open issues and PRs counts
+- Security vulnerabilities (via Snyk integration)
+  - Color-coded severity badges: Critical (red), High (orange), Medium (yellow), Low (gray)
+  - Green checkmark for repos with no vulnerabilities
+  - N/A for repos not monitored by Snyk
 - Sortable columns for easy analysis
 
 **Recent Activity Feed:**
@@ -219,7 +223,36 @@ To avoid GitHub API rate limiting:
 
 The token is stored in localStorage and only used for client-side API requests.
 
-### 3. Enable Automated Data Collection
+### 3. Snyk Security Integration (Optional)
+
+To enable security vulnerability tracking in the dashboard:
+
+1. **Get your Snyk API token**:
+   - Go to <https://app.snyk.io/account>
+   - Click "Generate Token" or copy existing token
+   - Token should start with `snyk-`
+
+2. **Find your Snyk Organization ID**:
+   - Go to <https://app.snyk.io>
+   - Click Settings (gear icon)
+   - Copy the Organization ID
+
+3. **Add GitHub Secrets**:
+   - Go to your repository Settings → Secrets and variables → Actions
+   - Add two new repository secrets:
+     - `SNYK_API_TOKEN`: Your Snyk API token
+     - `SNYK_ORG_ID`: Your Snyk organization ID
+
+4. **Ensure repositories are monitored by Snyk**:
+   - Import your repositories into Snyk if not already done
+   - The workflow will only show vulnerability data for repos that Snyk is monitoring
+
+**What happens if not configured:**
+- If secrets are not set, the Security column will show "N/A" for all repositories
+- The dashboard will continue to work normally for all other metrics
+- No errors will occur - Snyk integration is completely optional
+
+### 4. Enable Automated Data Collection
 
 The GitHub Actions workflow is **already configured** and will automatically collect community health metrics daily at 3:00 AM UTC. Historical data is stored in `data/history/` for trend visualization.
 
@@ -265,6 +298,13 @@ https://[your-org].github.io/release-tools/community-health-dashboard/
 - **New Contributors (30d)**: Contributors who made their first contribution in the last 30 days. Shows community growth.
 - **Avg Response Time**: Average time until an issue or PR receives its first comment. Lower is better - shows community responsiveness.
 - **PR Merge Rate**: Percentage of PRs that eventually get merged. High rates (>70%) indicate healthy collaboration and effective contribution processes.
+- **Security (Snyk)**: Security vulnerability counts by severity level (if Snyk is configured):
+  - **Critical** (red badge): Severe vulnerabilities requiring immediate attention
+  - **High** (orange badge): High severity issues that should be addressed soon
+  - **Medium** (yellow badge): Medium severity issues to be addressed in due course
+  - **Low** (gray badge): Low severity issues with minimal risk
+  - **✓** (green): No vulnerabilities detected
+  - **N/A**: Repository not monitored by Snyk or Snyk not configured
 
 #### PR Health Metrics
 - **Avg Time to First Review**: How quickly PRs receive their first review comment. Shorter times encourage contributors.
@@ -391,6 +431,32 @@ community-health-dashboard/
 **Bus Factor**:
 - Cumulative distribution showing minimum maintainers needed for X% of work
 - Lower bus factor (fewer people doing most work) indicates higher project risk
+
+### Security Metrics (Snyk)
+
+**Vulnerability Collection**:
+- Fetched from Snyk API using `SNYK_API_TOKEN` and `SNYK_ORG_ID`
+- Queries Snyk's `/v1/org/{orgId}/projects` endpoint to find monitored GitHub repos
+- For each repo, retrieves aggregated issues from `/v1/org/{orgId}/project/{projectId}/aggregated-issues`
+- Counts vulnerabilities by severity: critical, high, medium, low
+- Returns `null` if repo is not monitored by Snyk or API credentials not configured
+
+**Display Logic**:
+- **Severity badges**: Shows count for each severity level present (e.g., "2C 3H 5M")
+- **No vulnerabilities**: Green checkmark badge if total = 0
+- **Not configured/monitored**: Shows "N/A" with consistent cell padding
+- **Error handling**: Gracefully handles API failures, shows N/A for affected repos
+
+**Data Collection Frequency**:
+- Collected daily by GitHub Actions workflow at 3:00 AM UTC
+- Stored in historical data files alongside other metrics
+- Allows tracking vulnerability trends over time
+
+**Known Limitations**:
+- Currently uses Snyk v1 API endpoints (deprecated September 2024)
+- v1 endpoints remain functional with no published sunset date
+- Migration to REST (v2) Issues API recommended for future compatibility
+- See [Snyk migration guide](https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api) for details
 
 ## API Rate Limits
 

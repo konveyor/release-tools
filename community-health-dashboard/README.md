@@ -228,12 +228,12 @@ The token is stored in localStorage and only used for client-side API requests.
 To enable security vulnerability tracking in the dashboard:
 
 1. **Get your Snyk API token**:
-   - Go to https://app.snyk.io/account
+   - Go to <https://app.snyk.io/account>
    - Click "Generate Token" or copy existing token
    - Token should start with `snyk-`
 
 2. **Find your Snyk Organization ID**:
-   - Go to https://app.snyk.io
+   - Go to <https://app.snyk.io>
    - Click Settings (gear icon)
    - Copy the Organization ID
 

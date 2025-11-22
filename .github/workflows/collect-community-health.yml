@@ -159,6 +159,12 @@ jobs:
            * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
            * Returns vulnerability counts by severity or null if unavailable.
            *
+           * TODO: Migrate to Snyk REST (v2) Issues API
+           * - Current implementation uses v1 endpoints (deprecated Sept 2024)
+           * - v1 endpoints remain functional but migration recommended
+           * - REST Issues API: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
+           * - Migration guide: https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api
+           *
            * @param {string} org - GitHub organization
            * @param {string} repo - Repository name
            * @returns {Object|null} - {critical, high, medium, low, total} or null

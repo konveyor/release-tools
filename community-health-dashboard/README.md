@@ -452,6 +452,12 @@ community-health-dashboard/
 - Stored in historical data files alongside other metrics
 - Allows tracking vulnerability trends over time
 
+**Known Limitations**:
+- Currently uses Snyk v1 API endpoints (deprecated September 2024)
+- v1 endpoints remain functional with no published sunset date
+- Migration to REST (v2) Issues API recommended for future compatibility
+- See [Snyk migration guide](https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api) for details
+
 ## API Rate Limits
 
 **Without token**: 60 requests/hour per IP

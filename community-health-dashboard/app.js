@@ -713,22 +713,25 @@ class CommunityHealthDashboard {
             }
 
             // Format security cell with Snyk vulnerability data
+            // Match Snyk's color scheme: Critical=#B83240, High=#D68000, Medium=#E89C4A, Low=#88879E
             let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
 
             if (repo.snykVulnerabilities) {
                 const { critical, high, medium, low, total } = repo.snykVulnerabilities;
 
-                // Show severity breakdown badges
+                // Show severity breakdown badges with Snyk colors and consistent sizing
                 const badges = [];
-                if (critical > 0) badges.push(`<span class="badge badge-failure">${critical}C</span>`);
-                if (high > 0) badges.push(`<span class="badge badge-pr">${high}H</span>`);
-                if (medium > 0) badges.push(`<span class="badge badge-issue">${medium}M</span>`);
-                if (low > 0) badges.push(`<span class="badge" style="background-color: #6c757d;">${low}L</span>`);
+                const badgeStyle = 'display: inline-block; min-width: 2.5rem; padding: 0.25rem 0.5rem; margin: 0.125rem; border-radius: 3px; font-weight: 600; font-size: 0.75rem; text-align: center; color: white;';
+
+                if (critical > 0) badges.push(`<span style="${badgeStyle} background-color: #B83240;">${critical} C</span>`);
+                if (high > 0) badges.push(`<span style="${badgeStyle} background-color: #D68000;">${high} H</span>`);
+                if (medium > 0) badges.push(`<span style="${badgeStyle} background-color: #E89C4A;">${medium} M</span>`);
+                if (low > 0) badges.push(`<span style="${badgeStyle} background-color: #88879E;">${low} L</span>`);
 
                 if (total === 0) {
                     securityCell = '<td style="text-align: center;"><span class="badge badge-success">✓</span></td>';
                 } else {
-                    securityCell = `<td style="text-align: center;">${badges.join(' ')}</td>`;
+                    securityCell = `<td style="text-align: center; white-space: nowrap;">${badges.join('')}</td>`;
                 }
             }
 

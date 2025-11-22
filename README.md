@@ -56,6 +56,28 @@ The deployment script can target specific repositories or all repositories in an
 
 For detailed usage instructions, see the [stale-workflow README](./stale-workflow/README.md).
 
+### Community Health Dashboard
+
+See [community-health-dashboard directory](./community-health-dashboard/)
+
+A comprehensive web-based dashboard for monitoring the health and activity of Konveyor repositories. The dashboard provides:
+
+- **Overview Metrics**: Total contributors, new contributors, response times, and PR merge rates
+- **Repository Breakdown**: Detailed metrics for each repository including coverage and Snyk security vulnerabilities
+- **PR Health**: Merge rates, review times, merge times, and PR size distribution
+- **Issue Health**: Closure rates, response coverage, and community engagement metrics
+- **Maintainer Health**: Active maintainer tracking, response load, and bus factor analysis
+- **CI/CD Health**: Workflow status, success rates, and branch health across all components
+- **Activity Heatmap**: Visual representation of contribution patterns by day and hour
+- **Historical Trends**: Charts showing metric trends over time
+- **Automated Data Collection**: Daily GitHub Actions workflow collects metrics at 3:00 AM UTC
+
+The dashboard integrates with GitHub API and Snyk API to provide comprehensive visibility into project health. Data is collected automatically and stored in historical files for trend analysis.
+
+**Live Dashboard**: [https://konveyor.github.io/release-tools/community-health-dashboard/](https://konveyor.github.io/release-tools/community-health-dashboard/)
+
+For detailed configuration and setup instructions, see the [dashboard README](./community-health-dashboard/README.md).
+
 ### Stale Issues Dashboard
 
 See [stale-dashboard directory](./stale-dashboard/)

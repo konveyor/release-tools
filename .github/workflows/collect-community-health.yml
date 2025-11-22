@@ -192,6 +192,7 @@ jobs:
             try {
               // Step 1: Get all projects for the organization using v1 API
               // Note: Using v1 API because REST API v2 returns 404 errors
+              console.log(`    [Snyk v1] Fetching projects for org: ${snykOrgId.substring(0, 8)}...`);
               const projectsData = await httpsRequest({
                 hostname: 'api.snyk.io',
                 path: `/v1/org/${snykOrgId}/projects`,
@@ -202,6 +203,7 @@ jobs:
                 },
                 body: JSON.stringify({})
               });
+              console.log(`    [Snyk v1] Projects response: ${projectsData ? `${Object.keys(projectsData).join(', ')}` : 'null'}`);
 
               if (!projectsData || !projectsData.projects) {
                 return null; // No projects found
@@ -209,12 +211,14 @@ jobs:
 
               // Step 2: Find projects matching this GitHub repo
               // Project names typically follow format: org/repo or org/repo:branch
+              console.log(`    [Snyk v1] Found ${projectsData.projects.length} total projects`);
               const matchingProjects = projectsData.projects.filter(project => {
                 const name = project.name || '';
                 // Match exact repo name or repo with branch suffix
                 return name === `${org}/${repo}` || name.startsWith(`${org}/${repo}:`);
               });
 
+              console.log(`    [Snyk v1] Matching projects for ${org}/${repo}: ${matchingProjects.length}`);
               if (matchingProjects.length === 0) {
                 return null; // No matching project found for this repo
               }

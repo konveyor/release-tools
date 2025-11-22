@@ -191,10 +191,11 @@ jobs:
               // API docs: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
               const issuesData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=1000`,
+                path: `/rest/orgs/${snykOrgId}/issues?limit=1000`,
                 headers: {
                   'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/vnd.api+json'
+                  'Content-Type': 'application/vnd.api+json',
+                  'Accept': 'application/vnd.api+json; version=2024-10-15'
                 }
               });
 

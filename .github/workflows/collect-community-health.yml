@@ -217,18 +217,32 @@ jobs:
 
               const projectIds = matchingProjects.map(p => p.id);
 
-              // Step 3: Get all issues and filter by project IDs
-              const issuesData = await httpsRequest({
-                hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=100`,
-                headers: {
-                  'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/vnd.api+json'
-                }
-              });
+              // Step 3: Get all issues with pagination (max 100 per request)
+              let allIssues = [];
+              let nextUrl = `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=100`;
 
-              if (!issuesData || !issuesData.data) {
-                return { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+              while (nextUrl) {
+                const issuesData = await httpsRequest({
+                  hostname: 'api.snyk.io',
+                  path: nextUrl,
+                  headers: {
+                    'Authorization': `token ${snykToken}`,
+                    'Content-Type': 'application/vnd.api+json'
+                  }
+                });
+
+                if (!issuesData || !issuesData.data) {
+                  break;
+                }
+
+                allIssues = allIssues.concat(issuesData.data);
+
+                // Check for next page
+                nextUrl = issuesData.links?.next || null;
+                if (nextUrl) {
+                  // Extract just the path from the full URL
+                  nextUrl = nextUrl.replace('https://api.snyk.io', '');
+                }
               }
 
               // Step 4: Filter issues by matching project IDs and count by severity
@@ -240,7 +254,7 @@ jobs:
                 total: 0
               };
 
-              issuesData.data.forEach(issue => {
+              allIssues.forEach(issue => {
                 // Check if issue belongs to one of our matching projects
                 const scanItemId = issue.relationships?.scan_item?.data?.id;
                 if (projectIds.includes(scanItemId)) {

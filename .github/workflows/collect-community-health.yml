@@ -90,8 +90,14 @@ jobs:
                       resolve(body);
                     } else {
                       try {
-                        resolve(JSON.parse(body));
+                        const parsed = JSON.parse(body);
+                        // Debug Snyk responses
+                        if (options.path && options.path.includes('snyk.io') && options.path.includes('/projects')) {
+                          console.log(`[Snyk API Success] Parsed response type: ${typeof parsed}, keys: ${parsed ? Object.keys(parsed).slice(0, 5).join(', ') : 'null'}`);
+                        }
+                        resolve(parsed);
                       } catch (err) {
+                        console.log(`[JSON Parse Error] ${err.message}, body: ${body.substring(0, 100)}`);
                         reject(new Error(`Failed to parse JSON: ${err.message}`));
                       }
                     }

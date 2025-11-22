@@ -186,11 +186,12 @@ jobs:
             }
 
             try {
-              // Use REST API v2 to get issues for this org filtered by GitHub repo
+              // Use REST API v2 to get all issues for this org
+              // Then filter by repository name
               // API docs: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
               const issuesData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&scan_item.type=project&limit=100`,
+                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=1000`,
                 headers: {
                   'Authorization': `token ${snykToken}`,
                   'Content-Type': 'application/vnd.api+json'
@@ -201,12 +202,27 @@ jobs:
                 return null;
               }
 
-              // Filter issues for this specific GitHub repo
-              // Issues are linked to projects, need to match by project attributes
+              // Get all included resources (projects)
+              const included = issuesData.included || [];
+
+              // Find projects that match our GitHub repo
+              const matchingProjects = included.filter(item => {
+                if (item.type !== 'project') return false;
+                const name = item.attributes?.name;
+                // Match exact repo name (konveyor/kai, konveyor/website, etc.)
+                return name === `${org}/${repo}`;
+              });
+
+              if (matchingProjects.length === 0) {
+                return null; // No matching project found
+              }
+
+              const projectIds = matchingProjects.map(p => p.id);
+
+              // Filter issues that belong to our matching projects
               const repoIssues = issuesData.data.filter(issue => {
-                // Check if the issue's project matches our target repo
-                const projectName = issue.relationships?.scan_item?.data?.attributes?.name;
-                return projectName && projectName.includes(`${org}/${repo}`);
+                const scanItemId = issue.relationships?.scan_item?.data?.id;
+                return projectIds.includes(scanItemId);
               });
 
               // Count vulnerabilities by severity

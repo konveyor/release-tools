@@ -96,6 +96,10 @@ jobs:
                       }
                     }
                   } else {
+                    // Log error responses for debugging
+                    if (options.path && options.path.includes('snyk.io')) {
+                      console.log(`[Snyk API Error] Status ${res.statusCode}: ${body.substring(0, 200)}`);
+                    }
                     resolve(null);
                   }
                 });
@@ -178,6 +182,12 @@ jobs:
             }
 
             try {
+              // Debug first time only
+              if (repo === 'analyzer-lsp') {
+                console.log(`    [Snyk Debug] Org ID: ${snykOrgId}`);
+                console.log(`    [Snyk Debug] Token present: ${!!snykToken}`);
+              }
+
               // 1. Get list of projects to find the matching GitHub repo
               const projectsData = await httpsRequest({
                 hostname: 'api.snyk.io',
@@ -187,6 +197,16 @@ jobs:
                   'Content-Type': 'application/json'
                 }
               });
+
+              // Debug response for first repo
+              if (repo === 'analyzer-lsp') {
+                console.log(`    [Snyk Debug] Response type: ${typeof projectsData}`);
+                console.log(`    [Snyk Debug] Response is null: ${projectsData === null}`);
+                if (projectsData) {
+                  console.log(`    [Snyk Debug] Has projects key: ${!!projectsData.projects}`);
+                  console.log(`    [Snyk Debug] Response keys: ${Object.keys(projectsData).join(', ')}`);
+                }
+              }
 
               if (!projectsData || !projectsData.projects) {
                 console.log(`    [Snyk] No projects data returned for ${org}/${repo}`);

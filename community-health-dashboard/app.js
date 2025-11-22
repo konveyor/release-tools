@@ -713,24 +713,43 @@ class CommunityHealthDashboard {
             }
 
             // Format security cell with Snyk vulnerability data
-            // Using white background with colored left border and colored text (matching Snyk UI)
+            // Two-part badge: light background number + colored severity letter
             let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
 
             if (repo.snykVulnerabilities) {
                 const { critical, high, medium, low, total } = repo.snykVulnerabilities;
 
-                // Snyk badge styling: white background with colored left border and colored text
+                // Snyk badge styling: number in light rounded box + letter in colored square
                 const badges = [];
-                const badgeBaseStyle = 'display: inline-block; min-width: 2.5rem; padding: 0.25rem 0.5rem 0.25rem 0.4rem; margin: 0.125rem; border-radius: 3px; font-weight: 600; font-size: 12px; text-align: center; font-family: Roboto, sans-serif; background-color: white;';
 
-                // Critical: white bg with red left border and red text
-                if (critical > 0) badges.push(`<span style="${badgeBaseStyle} border-left: 3px solid #9e261e; color: #9e261e;">${critical} C</span>`);
-                // High: white bg with orange left border and orange text
-                if (high > 0) badges.push(`<span style="${badgeBaseStyle} border-left: 3px solid #9b3d15; color: #9b3d15;">${high} H</span>`);
-                // Medium: white bg with brown left border and brown text
-                if (medium > 0) badges.push(`<span style="${badgeBaseStyle} border-left: 3px solid #925c1e; color: #925c1e;">${medium} M</span>`);
-                // Low: white bg with gray left border and gray text
-                if (low > 0) badges.push(`<span style="${badgeBaseStyle} border-left: 3px solid #585675; color: #585675;">${low} L</span>`);
+                // Critical: light pink number box + dark red letter box
+                if (critical > 0) {
+                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                        `<span style="background-color: #ffdad8; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${critical}</span>` +
+                        `<span style="background-color: #9e261e; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">C</span>` +
+                        `</span>`);
+                }
+                // High: light orange number box + dark orange letter box
+                if (high > 0) {
+                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                        `<span style="background-color: #ffdbcc; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${high}</span>` +
+                        `<span style="background-color: #9b3d15; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">H</span>` +
+                        `</span>`);
+                }
+                // Medium: light peach number box + brown letter box
+                if (medium > 0) {
+                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                        `<span style="background-color: #ffe8cd; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${medium}</span>` +
+                        `<span style="background-color: #925c1e; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">M</span>` +
+                        `</span>`);
+                }
+                // Low: light gray number box + dark gray letter box
+                if (low > 0) {
+                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                        `<span style="background-color: #eeeeee; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${low}</span>` +
+                        `<span style="background-color: #585675; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">L</span>` +
+                        `</span>`);
+                }
 
                 if (total === 0) {
                     securityCell = '<td style="text-align: center;"><span class="badge badge-success">✓</span></td>';

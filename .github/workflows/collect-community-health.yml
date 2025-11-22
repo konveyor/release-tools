@@ -220,18 +220,17 @@ jobs:
           }
 
           /**
-           * Fetch Snyk security vulnerability data for a repository using v1 API
+           * Fetch Snyk security vulnerability data for a repository using REST API v2
            *
-           * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
+           * Requires SNYK_API_TOKEN (service account) and SNYK_ORG_ID environment variables.
            * Returns vulnerability counts by severity or null if unavailable.
            *
-           * Note: Using Snyk v1 API endpoints as REST API v2 returns 404 errors.
-           * While v1 is deprecated, the /projects and /aggregated-issues endpoints
-           * remain functional for personal API tokens.
+           * Uses Snyk REST API v2 which requires a service account token.
+           * Personal API tokens will not work with REST API endpoints.
            *
            * API endpoints used:
-           * - /v1/org/{orgId}/projects - List all projects in organization
-           * - /v1/org/{orgId}/project/{projectId}/aggregated-issues - Get vulnerabilities
+           * - GET /rest/orgs/{orgId}/projects - List all projects in organization
+           * - GET /rest/orgs/{orgId}/issues - Get vulnerability issues
            *
            * @param {string} org - GitHub organization
            * @param {string} repo - Repository name
@@ -246,40 +245,47 @@ jobs:
             }
 
             try {
-              // Step 1: Get all projects for the organization using v1 API
-              // Note: Using v1 API because REST API v2 returns 404 errors
-              console.log(`    [Snyk v1] Fetching projects for org: ${snykOrgId.substring(0, 8)}...`);
+              // Step 1: Get all projects using REST API v2
               const projectsData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/v1/org/${snykOrgId}/projects`,
-                method: 'POST',
+                path: `/rest/orgs/${snykOrgId}/projects?version=2024-10-15&limit=1000`,
                 headers: {
-                  'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
+                  'Authorization': `token ${snykToken}`
+                }
               });
-              console.log(`    [Snyk v1] Projects response: ${projectsData ? `${Object.keys(projectsData).join(', ')}` : 'null'}`);
 
-              if (!projectsData || !projectsData.projects) {
+              if (!projectsData || !projectsData.data) {
                 return null; // No projects found
               }
 
               // Step 2: Find projects matching this GitHub repo
-              // Project names typically follow format: org/repo or org/repo:branch
-              console.log(`    [Snyk v1] Found ${projectsData.projects.length} total projects`);
-              const matchingProjects = projectsData.projects.filter(project => {
-                const name = project.name || '';
-                // Match exact repo name or repo with branch suffix
-                return name === `${org}/${repo}` || name.startsWith(`${org}/${repo}:`);
+              // Project names format: org/repo:file or org/repo:branch/file
+              const matchingProjects = projectsData.data.filter(project => {
+                const name = project.attributes?.name || '';
+                // Match projects that start with org/repo
+                return name.startsWith(`${org}/${repo}:`);
               });
 
-              console.log(`    [Snyk v1] Matching projects for ${org}/${repo}: ${matchingProjects.length}`);
               if (matchingProjects.length === 0) {
                 return null; // No matching project found for this repo
               }
 
-              // Step 3: Fetch aggregated issues for each matching project
+              const projectIds = matchingProjects.map(p => p.id);
+
+              // Step 3: Get all issues and filter by project IDs
+              const issuesData = await httpsRequest({
+                hostname: 'api.snyk.io',
+                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=1000`,
+                headers: {
+                  'Authorization': `token ${snykToken}`
+                }
+              });
+
+              if (!issuesData || !issuesData.data) {
+                return { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+              }
+
+              // Step 4: Filter issues by matching project IDs and count by severity
               const vulnerabilities = {
                 critical: 0,
                 high: 0,
@@ -288,38 +294,17 @@ jobs:
                 total: 0
               };
 
-              for (const project of matchingProjects) {
-                const issuesData = await httpsRequest({
-                  hostname: 'api.snyk.io',
-                  path: `/v1/org/${snykOrgId}/project/${project.id}/aggregated-issues`,
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `token ${snykToken}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    filters: {
-                      severities: ['critical', 'high', 'medium', 'low'],
-                      types: ['vuln'],
-                      ignored: false,
-                      patched: false
-                    }
-                  })
-                });
-
-                if (issuesData && issuesData.issues) {
-                  issuesData.issues.forEach(issue => {
-                    const severity = (issue.issueData?.severity || '').toLowerCase();
-                    if (vulnerabilities.hasOwnProperty(severity)) {
-                      vulnerabilities[severity]++;
-                      vulnerabilities.total++;
-                    }
-                  });
+              issuesData.data.forEach(issue => {
+                // Check if issue belongs to one of our matching projects
+                const scanItemId = issue.relationships?.scan_item?.data?.id;
+                if (projectIds.includes(scanItemId)) {
+                  const severity = (issue.attributes?.effective_severity_level || '').toLowerCase();
+                  if (vulnerabilities.hasOwnProperty(severity)) {
+                    vulnerabilities[severity]++;
+                    vulnerabilities.total++;
+                  }
                 }
-
-                // Small delay between API calls to avoid rate limiting
-                await new Promise(resolve => setTimeout(resolve, 100));
-              }
+              });
 
               return vulnerabilities;
             } catch (snykError) {

@@ -791,6 +791,10 @@ class CommunityHealthDashboard {
         const tbody = document.getElementById('activity-body');
 
         let activities = this.recentActivity;
+
+        // Filter out bot activity
+        activities = activities.filter(a => !this.isBot(a.author));
+
         if (filterRepo !== 'all') {
             activities = activities.filter(a => a.repoName === filterRepo);
         }

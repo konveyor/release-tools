@@ -100,6 +100,45 @@ jobs:
           }
 
           /**
+           * Parse Codecov badge SVG to extract coverage percentage
+           *
+           * NOTE: This logic is duplicated in community-health-dashboard/app.js
+           * If you update this function, please update the dashboard as well to keep them in sync.
+           *
+           * Why SVG parsing instead of API:
+           * - Codecov API v2 requires authentication (bearer token)
+           * - Badge SVG endpoint is public and doesn't require auth
+           * - Simpler implementation without token management
+           * - Badge SVGs are designed to be publicly accessible
+           *
+           * Alternative: Use Codecov API v2 if auth tokens become available:
+           * GET https://codecov.io/api/v2/github/{org}/repos/{repo}/commits
+           * Returns array of commits with totals.coverage field
+           *
+           * @param {string} svgText - The SVG text from Codecov badge
+           * @returns {number|null} - Coverage percentage (0-100) or null if unavailable
+           */
+          function parseCodecovBadge(svgText) {
+            // Look for the coverage text in SVG text elements with y="14" (the visible text)
+            // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+            const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+            if (textMatch && textMatch.length > 0) {
+              // Get the last text element (which contains the coverage percentage)
+              const lastText = textMatch[textMatch.length - 1];
+              const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+              if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                  return null; // No coverage data
+                } else {
+                  return parseFloat(value);
+                }
+              }
+            }
+            return null;
+          }
+
+          /**
            * Fetch Snyk security vulnerability data for a repository
            *
            * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
@@ -317,6 +356,24 @@ jobs:
 
               const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+              // Fetch Codecov coverage data
+              let coverage = null;
+              try {
+                const codecovResponse = await httpsRequest({
+                  hostname: 'codecov.io',
+                  path: `/github/${org}/${repo}/graph/badge.svg`,
+                  headers: {
+                    'User-Agent': 'Konveyor-Community-Health-Collector'
+                  }
+                }, true); // returnText = true
+
+                if (codecovResponse) {
+                  coverage = parseCodecovBadge(codecovResponse);
+                }
+              } catch (codecovError) {
+                // No Codecov data available - this is normal for repos without Codecov
+              }
+
               // Fetch Snyk security vulnerability data
               const snykData = await fetchSnykData(org, repo);
 
@@ -332,6 +389,7 @@ jobs:
                 prMergeRate,
                 openIssues: actualOpenIssues,
                 openPRs,
+                coverage,
                 snykVulnerabilities: snykData
               };
 

@@ -161,6 +161,7 @@
                                 <th class="sortable" data-sort="avgIssueResponse">Avg Issue Response</th>
                                 <th class="sortable" data-sort="avgPRResponse">Avg PR Response</th>
                                 <th class="sortable" data-sort="prMergeRate">PR Merge Rate</th>
+                                <th class="sortable" data-sort="coverage">Coverage</th>
                                 <th class="sortable" data-sort="openIssues">Open Issues</th>
                                 <th class="sortable" data-sort="openPRs">Open PRs</th>
                                 <th class="sortable" data-sort="snykVulnerabilities">Security</th>
@@ -168,7 +169,7 @@
                         </thead>
                         <tbody id="table-body">
                             <tr>
-                                <td colspan="9" class="no-data">Loading repository health data...</td>
+                                <td colspan="10" class="no-data">Loading repository health data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -704,6 +705,19 @@
                     </div>
                 </div>
 
+                <!-- Failing Branches Alert -->
+                <div id="failing-branches-alert" class="action-card" style="display: none; margin-bottom: 1.5rem; border-left: 4px solid var(--accent-red);">
+                    <div class="action-card-header">
+                        <h3 class="action-title" style="color: var(--accent-red); margin: 0;">⚠️ Failing Branches Detected</h3>
+                    </div>
+                    <div class="action-description" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                        The following main or release branches have failing CI status:
+                    </div>
+                    <div id="failing-branches-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
                 <!-- Workflow Status Table -->
                 <div class="table-panel">
                     <div class="panel-header">
@@ -752,11 +766,12 @@
                                     <th class="sortable" data-sort="successRate">Success Rate (7d)</th>
                                     <th class="sortable" data-sort="totalWorkflows">Workflows</th>
                                     <th class="sortable" data-sort="totalRuns">Total Runs</th>
+                                    <th>Branch CI Status</th>
                                 </tr>
                             </thead>
                             <tbody id="component-ci-body">
                                 <tr>
-                                    <td colspan="7" class="no-data">Loading component CI status...</td>
+                                    <td colspan="8" class="no-data">Loading component CI status...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -890,8 +905,8 @@
         </div>
     </div>
 
-    <script src="config.js?v=32"></script>
-    <script src="app.js?v=33"></script>
+    <script src="config.js?v=37"></script>
+    <script src="app.js?v=37"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;

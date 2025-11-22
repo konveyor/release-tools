@@ -41,14 +41,14 @@ func main() {
 
 	// Instantiate the client and get the current labels on the repo
 	client := action.GetClient()
-	opt := &github.ListOptions{
-		PerPage: 100,
-	}
 
 	updates := []Update{}
 	for _, r := range c.Repos {
 		// TODO(djzager): maybe have repo specific labels in the future
 		// repoLabels := append(defaultLabels, r.AddLabels...)
+		opt := &github.ListOptions{
+			PerPage: 100,
+		}
 		repoLabels := defaultLabels
 
 		var currentLabels []*github.Label

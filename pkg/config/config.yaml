@@ -24,8 +24,6 @@ repos:
   - org: konveyor
     repo: analyzer-lsp
   - org: konveyor
-    repo: windup-shim
-  - org: konveyor
     repo: tackle2-hub
   - org: konveyor
     repo: tackle2-seed
@@ -53,6 +51,8 @@ repos:
     repo: tackle-keycloak-theme
   - org: konveyor
     repo: kai
+  - org: konveyor
+    repo: c-sharp-analyzer-provider
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

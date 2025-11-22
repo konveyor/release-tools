@@ -7,6 +7,18 @@ on:
       - "release-*"
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      sync_labels:
+        description: 'Force sync labels (ignores file change detection)'
+        required: false
+        default: false
+        type: boolean
+      sync_milestones:
+        description: 'Force sync milestones (ignores file change detection)'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: march-build-${{ github.ref }}
@@ -37,7 +49,7 @@ jobs:
 
   milestones:
     needs: build
-    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' || github.event.inputs.sync_milestones == 'true' }}
     runs-on: ubuntu-latest
     permissions: read-all
     env:
@@ -51,22 +63,26 @@ jobs:
         with:
           application_id: ${{ vars.KONVEYOR_BOT_ID }}
           application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
-      - env:
+      - name: Milestones dry run - config.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8
-      - env:
+      - name: Milestones dry run - config-kai.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/milestones/main.go -config pkg/config/config-kai.yaml -log-level 8
-      - env:
+      - name: Milestones apply - config.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/milestones/main.go -config pkg/config/config.yaml -log-level 8 -confirm
-      - env:
+      - name: Milestones apply - config-kai.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/milestones/main.go -config pkg/config/config-kai.yaml -log-level 8 -confirm
 
   labels:
     needs: build
-    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}
+    if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.labels == 'true' || github.event.inputs.sync_labels == 'true' }}
     runs-on: ubuntu-latest
     permissions: read-all
     env:
@@ -80,15 +96,19 @@ jobs:
         with:
           application_id: ${{ vars.KONVEYOR_BOT_ID }}
           application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
-      - env:
+      - name: Labels dry run - config.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config.yaml
-      - env:
+      - name: Labels apply - config.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config.yaml -confirm
-      - env:
+      - name: Labels dry run - config-kai.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config-kai.yaml
-      - env:
+      - name: Labels apply - config-kai.yaml
+        env:
           GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         run: go run cmd/labels/main.go -config pkg/config/config-kai.yaml -confirm

@@ -47,6 +47,65 @@ class CommunityHealthDashboard {
         this.loadHistoricalData();
     }
 
+    /**
+     * Parse Codecov badge SVG to extract coverage percentage
+     *
+     * NOTE: This logic is duplicated in .github/workflows/collect-community-health.yml
+     * If you update this function, please update the workflow as well to keep them in sync.
+     *
+     * Why SVG parsing instead of API:
+     * - Codecov API v2 requires authentication (bearer token)
+     * - Badge SVG endpoint is public and doesn't require auth
+     * - Simpler implementation without token management
+     * - Badge SVGs are designed to be publicly accessible
+     *
+     * Alternative: Use Codecov API v2 if auth tokens become available:
+     * GET https://codecov.io/api/v2/github/{org}/repos/{repo}/commits
+     * Returns array of commits with totals.coverage field
+     *
+     * @param {string} svgText - The SVG text from Codecov badge
+     * @returns {number|null} - Coverage percentage (0-100) or null if unavailable
+     */
+    parseCodecovBadge(svgText) {
+        // Look for the coverage text in SVG text elements with y="14" (the visible text)
+        // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+        const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+        if (textMatch && textMatch.length > 0) {
+            // Get the last text element (which contains the coverage percentage)
+            const lastText = textMatch[textMatch.length - 1];
+            const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+            if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                    return null; // No coverage data
+                } else {
+                    return parseFloat(value);
+                }
+            }
+        }
+        return null;
+    }
+
+    parseCodecovBadge(svgText) {
+        // Look for the coverage text in SVG text elements with y="14" (the visible text)
+        // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+        const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+        if (textMatch && textMatch.length > 0) {
+            // Get the last text element (which contains the coverage percentage)
+            const lastText = textMatch[textMatch.length - 1];
+            const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+            if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                    return null; // No coverage data
+                } else {
+                    return parseFloat(value);
+                }
+            }
+        }
+        return null;
+    }
+
     setupEventListeners() {
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -422,6 +481,19 @@ class CommunityHealthDashboard {
 
             const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+            // Fetch Codecov coverage data
+            let coverage = null;
+            try {
+                const codecovUrl = `https://codecov.io/github/${org}/${repo}/graph/badge.svg`;
+                const codecovResponse = await fetch(codecovUrl);
+                if (codecovResponse.ok) {
+                    const svgText = await codecovResponse.text();
+                    coverage = this.parseCodecovBadge(svgText);
+                }
+            } catch (codecovError) {
+                console.log(`[${org}/${repo}] Error fetching Codecov data:`, codecovError.message);
+            }
+
             // Store repo health data
             this.repoHealthData.push({
                 org,
@@ -434,6 +506,7 @@ class CommunityHealthDashboard {
                 avgIssueResponse,
                 avgPRResponse,
                 prMergeRate,
+                coverage,
                 openIssues,
                 openPRs
             });
@@ -625,11 +698,20 @@ class CommunityHealthDashboard {
         const tbody = document.getElementById('table-body');
 
         if (this.repoHealthData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No repository health data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="no-data">No repository health data available</td></tr>';
             return;
         }
 
         tbody.innerHTML = this.repoHealthData.map(repo => {
+            // Format coverage cell with Codecov data
+            let coverageCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
+            if (repo.coverage !== null && repo.coverage !== undefined) {
+                const coverageClass = repo.coverage >= 80 ? 'badge-success' :
+                                     repo.coverage >= 50 ? 'badge-pr' :
+                                     'badge-failure';
+                coverageCell = `<td style="text-align: center;"><span class="badge ${coverageClass}">${repo.coverage.toFixed(1)}%</span></td>`;
+            }
+
             // Format security cell with Snyk vulnerability data
             let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
 
@@ -664,6 +746,7 @@ class CommunityHealthDashboard {
                 </td>
                 <td>${repo.openIssues}</td>
                 <td>${repo.openPRs}</td>
+                ${coverageCell}
                 ${securityCell}
             </tr>
             `;
@@ -829,7 +912,7 @@ class CommunityHealthDashboard {
 
     showError(message) {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `<tr><td colspan="8" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
     }
 
     async loadHistoricalData() {
@@ -3254,6 +3337,32 @@ class CommunityHealthDashboard {
             const lastStatus = Math.random() < (successRate / 100) ? 'success' : 'failure';
             const hoursAgo = Math.random() * 48; // Last run within 48 hours
 
+            // Generate mock branch status for main and release branches
+            const branchStatus = {};
+            const branches = ['main', 'release-0.7', 'release-0.8'];
+
+            // Randomly decide which release branches exist for this repo
+            const activeBranches = ['main'];
+            if (Math.random() > 0.5) activeBranches.push('release-0.7');
+            if (Math.random() > 0.3) activeBranches.push('release-0.8');
+
+            activeBranches.forEach(branchName => {
+                // 80% chance of success, 15% failure, 5% in_progress
+                const rand = Math.random();
+                let status;
+                if (rand < 0.80) status = 'success';
+                else if (rand < 0.95) status = 'failure';
+                else status = 'in_progress';
+
+                branchStatus[branchName] = {
+                    status: status,
+                    sha: Math.random().toString(36).substring(2, 9),
+                    runId: Math.floor(Math.random() * 1000000),
+                    htmlUrl: `https://github.com/${org}/${repo}/actions/runs/${Math.floor(Math.random() * 1000000)}`,
+                    updatedAt: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
+                };
+            });
+
             this.componentCIData.push({
                 org,
                 repo,
@@ -3262,7 +3371,8 @@ class CommunityHealthDashboard {
                 lastRun: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
                 successRate: successRate,
                 totalWorkflows: workflowCount,
-                totalRuns: totalRuns
+                totalRuns: totalRuns,
+                branchStatus: branchStatus
             });
         });
 
@@ -3321,6 +3431,9 @@ class CommunityHealthDashboard {
                     const successRate = (successRuns / runs.length) * 100;
                     const lastRun = runs[0];
 
+                    // Check branch status for main and release-* branches
+                    const branchStatus = await this.fetchBranchCIStatus(org, repo, headers);
+
                     this.componentCIData.push({
                         org,
                         repo,
@@ -3329,7 +3442,8 @@ class CommunityHealthDashboard {
                         lastRun: lastRun.created_at,
                         successRate: successRate,
                         totalWorkflows: activeWorkflows.length,
-                        totalRuns: runs.length
+                        totalRuns: runs.length,
+                        branchStatus: branchStatus // Add branch status information
                     });
 
                     // Small delay to avoid rate limiting
@@ -3345,13 +3459,149 @@ class CommunityHealthDashboard {
         }
     }
 
+    async fetchBranchCIStatus(org, repo, headers) {
+        const baseUrl = 'https://api.github.com';
+        const branchStatus = {};
+
+        try {
+            // Fetch all branches for the repository
+            const branchesResponse = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/branches?per_page=100`,
+                { headers }
+            );
+
+            if (!branchesResponse.ok) {
+                return branchStatus;
+            }
+
+            const branches = await branchesResponse.json();
+
+            // Filter for main and release-* branches
+            const targetBranches = branches.filter(branch =>
+                branch.name === 'main' || branch.name.startsWith('release-')
+            );
+
+            // For each target branch, get the latest workflow run status
+            for (const branch of targetBranches) {
+                try {
+                    // Get the latest workflow run for this branch
+                    const runsResponse = await fetch(
+                        `${baseUrl}/repos/${org}/${repo}/actions/runs?branch=${branch.name}&per_page=1`,
+                        { headers }
+                    );
+
+                    if (runsResponse.ok) {
+                        const runsData = await runsResponse.json();
+                        const runs = runsData.workflow_runs || [];
+
+                        if (runs.length > 0) {
+                            const latestRun = runs[0];
+                            branchStatus[branch.name] = {
+                                status: latestRun.conclusion || latestRun.status,
+                                sha: latestRun.head_sha,
+                                runId: latestRun.id,
+                                htmlUrl: latestRun.html_url,
+                                updatedAt: latestRun.updated_at
+                            };
+                        } else {
+                            branchStatus[branch.name] = {
+                                status: 'no_runs',
+                                sha: branch.commit.sha
+                            };
+                        }
+                    }
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (error) {
+                    console.error(`Error fetching CI status for branch ${branch.name}:`, error);
+                }
+            }
+        } catch (error) {
+            console.error(`Error fetching branches for ${org}/${repo}:`, error);
+        }
+
+        return branchStatus;
+    }
+
+    renderFailingBranchesAlert() {
+        const alertBox = document.getElementById('failing-branches-alert');
+        const failingList = document.getElementById('failing-branches-list');
+
+        if (!alertBox || !failingList) return;
+
+        // Collect all failing branches
+        const failingBranches = [];
+
+        this.componentCIData.forEach(component => {
+            if (component.branchStatus) {
+                Object.entries(component.branchStatus).forEach(([branchName, branchInfo]) => {
+                    // Only show main and release-* branches that are failing
+                    if ((branchName === 'main' || branchName.startsWith('release-')) &&
+                        branchInfo.status === 'failure') {
+                        failingBranches.push({
+                            repo: component.repo,
+                            org: component.org,
+                            branch: branchName,
+                            htmlUrl: branchInfo.htmlUrl,
+                            updatedAt: branchInfo.updatedAt
+                        });
+                    }
+                });
+            }
+        });
+
+        // Show/hide alert based on whether there are failing branches
+        if (failingBranches.length === 0) {
+            alertBox.style.display = 'none';
+        } else {
+            alertBox.style.display = 'block';
+
+            // Populate the failing branches list
+            failingList.innerHTML = failingBranches.map(item => {
+                const timeAgo = item.updatedAt ? this.formatDate(new Date(item.updatedAt)) : 'unknown';
+                const linkHtml = item.htmlUrl ?
+                    `<a href="${item.htmlUrl}" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-weight: 500;">
+                        ${item.org}/${item.repo}
+                    </a>` :
+                    `<strong>${item.org}/${item.repo}</strong>`;
+
+                return `
+                    <div style="padding: 0.75rem; background: rgba(224, 47, 68, 0.1); border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="color: var(--accent-red); font-size: 1.2rem;">✗</span>
+                            <div>
+                                <div style="font-size: 0.95rem;">
+                                    ${linkHtml}
+                                    <span style="color: var(--text-secondary);">on</span>
+                                    <span class="badge badge-failure" style="font-size: 0.85rem; padding: 0.2rem 0.4rem;">${item.branch}</span>
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+                                    Last updated: ${timeAgo}
+                                </div>
+                            </div>
+                        </div>
+                        ${item.htmlUrl ? `
+                            <a href="${item.htmlUrl}" target="_blank" class="action-link" style="font-size: 0.85rem; margin: 0;">
+                                View Run →
+                            </a>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
     renderComponentCIStatus() {
         const tbody = document.getElementById('component-ci-body');
 
         if (this.componentCIData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No component CI data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No component CI data available</td></tr>';
             return;
         }
+
+        // Render the failing branches alert
+        this.renderFailingBranchesAlert();
 
         tbody.innerHTML = this.componentCIData.map(component => {
             const statusClass = component.status === 'success' ? 'badge-issue' :
@@ -3359,6 +3609,45 @@ class CommunityHealthDashboard {
             const statusText = component.status === 'success' ? '✓ Success' :
                               component.status === 'failure' ? '✗ Failed' :
                               component.status === 'in_progress' ? '⟳ Running' : component.status;
+
+            // Generate branch status indicators
+            let branchStatusHtml = '';
+            if (component.branchStatus && Object.keys(component.branchStatus).length > 0) {
+                const branchBadges = [];
+
+                // Sort branches: main first, then release branches in reverse order
+                const sortedBranches = Object.keys(component.branchStatus).sort((a, b) => {
+                    if (a === 'main') return -1;
+                    if (b === 'main') return 1;
+                    return b.localeCompare(a);
+                });
+
+                sortedBranches.forEach(branchName => {
+                    const branchInfo = component.branchStatus[branchName];
+                    const branchStatusClass = branchInfo.status === 'success' ? 'badge-issue' :
+                                            branchInfo.status === 'failure' ? 'badge-failure' :
+                                            branchInfo.status === 'in_progress' ? 'badge-pr' : '';
+                    const branchStatusIcon = branchInfo.status === 'success' ? '✓' :
+                                            branchInfo.status === 'failure' ? '✗' :
+                                            branchInfo.status === 'in_progress' ? '⟳' : '?';
+
+                    const linkHtml = branchInfo.htmlUrl ?
+                        `<a href="${branchInfo.htmlUrl}" target="_blank" style="text-decoration: none; color: inherit;" title="View latest run for ${branchName}">
+                            <span class="badge ${branchStatusClass}" style="font-size: 0.85rem; padding: 0.2rem 0.4rem;">
+                                ${branchStatusIcon} ${branchName}
+                            </span>
+                        </a>` :
+                        `<span class="badge ${branchStatusClass}" style="font-size: 0.85rem; padding: 0.2rem 0.4rem;">
+                            ${branchStatusIcon} ${branchName}
+                        </span>`;
+
+                    branchBadges.push(linkHtml);
+                });
+
+                branchStatusHtml = branchBadges.join(' ');
+            } else {
+                branchStatusHtml = '<span style="color: var(--text-secondary); font-size: 0.85rem;">No CI data</span>';
+            }
 
             return `
                 <tr>
@@ -3377,6 +3666,7 @@ class CommunityHealthDashboard {
                     </td>
                     <td>${component.totalWorkflows}</td>
                     <td>${component.totalRuns}</td>
+                    <td style="min-width: 200px;">${branchStatusHtml}</td>
                 </tr>
             `;
         }).join('');

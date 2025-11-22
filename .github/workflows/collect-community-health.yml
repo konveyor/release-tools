@@ -164,14 +164,12 @@ jobs:
           }
 
           /**
-           * Fetch Snyk security vulnerability data for a repository
+           * Fetch Snyk security vulnerability data for a repository using REST API v2
            *
            * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
            * Returns vulnerability counts by severity or null if unavailable.
            *
-           * TODO: Migrate to Snyk REST (v2) Issues API
-           * - Current implementation uses v1 endpoints (deprecated Sept 2024)
-           * - v1 endpoints remain functional but migration recommended
+           * Uses Snyk REST API v2 (v1 was sunset in November 2024)
            * - REST Issues API: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
            * - Migration guide: https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api
            *
@@ -188,75 +186,28 @@ jobs:
             }
 
             try {
-              // Debug first time only
-              if (repo === 'analyzer-lsp') {
-                console.log(`    [Snyk Debug] Org ID: ${snykOrgId}`);
-                console.log(`    [Snyk Debug] Token present: ${!!snykToken}`);
-              }
-
-              // 1. Get list of projects to find the matching GitHub repo
-              const projectsData = await httpsRequest({
+              // Use REST API v2 to get issues for this org filtered by GitHub repo
+              // API docs: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
+              const issuesData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/v1/org/${snykOrgId}/projects`,
+                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&scan_item.type=project&limit=100`,
                 headers: {
                   'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/json'
+                  'Content-Type': 'application/vnd.api+json'
                 }
               });
 
-              // Debug response for first repo
-              if (repo === 'analyzer-lsp') {
-                console.log(`    [Snyk Debug] Response type: ${typeof projectsData}`);
-                console.log(`    [Snyk Debug] Response is null: ${projectsData === null}`);
-                if (projectsData) {
-                  console.log(`    [Snyk Debug] Has projects key: ${!!projectsData.projects}`);
-                  console.log(`    [Snyk Debug] Response keys: ${Object.keys(projectsData).join(', ')}`);
-                }
-              }
-
-              if (!projectsData || !projectsData.projects) {
-                console.log(`    [Snyk] No projects data returned for ${org}/${repo}`);
+              if (!issuesData || !issuesData.data) {
                 return null;
               }
 
-              // Debug: Log all project names for the first repo only
-              if (repo === 'kai') {
-                console.log(`    [Snyk] Found ${projectsData.projects.length} total projects in org`);
-                const githubProjects = projectsData.projects.filter(p => p.origin === 'github');
-                console.log(`    [Snyk] GitHub projects: ${githubProjects.map(p => p.name).join(', ')}`);
-              }
-
-              // Find matching GitHub project
-              const project = projectsData.projects.find(p =>
-                p.origin === 'github' &&
-                p.name === `${org}/${repo}`
-              );
-
-              if (!project) {
-                console.log(`    [Snyk] No project found for ${org}/${repo}`);
-                return null; // Repo not monitored by Snyk
-              }
-
-              console.log(`    [Snyk] Found project ${project.name} (${project.id})`);
-
-              // 2. Get aggregated issues for this project (requires POST)
-              const issuesData = await httpsRequest({
-                hostname: 'api.snyk.io',
-                path: `/v1/org/${snykOrgId}/project/${project.id}/aggregated-issues`,
-                method: 'POST',
-                headers: {
-                  'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  includeDescription: false,
-                  includeIntroducedThrough: false
-                })
+              // Filter issues for this specific GitHub repo
+              // Issues are linked to projects, need to match by project attributes
+              const repoIssues = issuesData.data.filter(issue => {
+                // Check if the issue's project matches our target repo
+                const projectName = issue.relationships?.scan_item?.data?.attributes?.name;
+                return projectName && projectName.includes(`${org}/${repo}`);
               });
-
-              if (!issuesData || !issuesData.issues) {
-                return null; // Return null on error/missing data instead of zero counts
-              }
 
               // Count vulnerabilities by severity
               const vulnerabilities = {
@@ -264,19 +215,20 @@ jobs:
                 high: 0,
                 medium: 0,
                 low: 0,
-                total: issuesData.issues.length
+                total: repoIssues.length
               };
 
-              issuesData.issues.forEach(issue => {
-                const severity = issue.issueData?.severity?.toLowerCase();
+              repoIssues.forEach(issue => {
+                const severity = issue.attributes?.effective_severity_level?.toLowerCase();
                 if (severity && vulnerabilities.hasOwnProperty(severity)) {
                   vulnerabilities[severity]++;
                 }
               });
 
-              return vulnerabilities;
+              return vulnerabilities.total > 0 || repoIssues.length === 0 ? vulnerabilities : null;
             } catch (snykError) {
               // Snyk data unavailable - this is normal for repos not in Snyk
+              console.log(`    [Snyk Error] ${snykError.message} for ${org}/${repo}`);
               return null;
             }
           }

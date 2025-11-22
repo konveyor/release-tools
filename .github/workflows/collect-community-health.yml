@@ -23,6 +23,62 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Test Snyk REST API
+        env:
+          SNYK_API_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
+          SNYK_ORG_ID: ${{ secrets.SNYK_ORG_ID }}
+        run: |
+          cat > test-snyk.js << 'EOF'
+          const https = require('https');
+          const SNYK_TOKEN = process.env.SNYK_API_TOKEN;
+          const SNYK_ORG_ID = process.env.SNYK_ORG_ID;
+
+          function httpsRequest(options) {
+            return new Promise((resolve, reject) => {
+              const req = https.request(options, (res) => {
+                let body = '';
+                res.on('data', (chunk) => body += chunk);
+                res.on('end', () => {
+                  console.log(`Status: ${res.statusCode}`);
+                  console.log(`Body: ${body.substring(0, 1000)}\n`);
+                  resolve({ status: res.statusCode, body });
+                });
+              });
+              req.on('error', reject);
+              req.setTimeout(10000, () => { req.destroy(); reject(new Error('Timeout')); });
+              req.end();
+            });
+          }
+
+          async function test() {
+            console.log('Org ID:', SNYK_ORG_ID);
+            console.log('Token prefix:', SNYK_TOKEN.substring(0, 10) + '...\n');
+
+            console.log('=== Test 1: GET /rest/orgs/{org_id} ===');
+            await httpsRequest({
+              hostname: 'api.snyk.io',
+              path: `/rest/orgs/${SNYK_ORG_ID}`,
+              headers: { 'Authorization': `token ${SNYK_TOKEN}`, 'Accept': 'application/vnd.api+json' }
+            }).catch(e => console.log('Error:', e.message));
+
+            console.log('=== Test 2: GET /rest/orgs/{org_id}/projects ===');
+            await httpsRequest({
+              hostname: 'api.snyk.io',
+              path: `/rest/orgs/${SNYK_ORG_ID}/projects?limit=5`,
+              headers: { 'Authorization': `token ${SNYK_TOKEN}`, 'Accept': 'application/vnd.api+json; version=2024-10-15' }
+            }).catch(e => console.log('Error:', e.message));
+
+            console.log('=== Test 3: GET /rest/orgs/{org_id}/issues ===');
+            await httpsRequest({
+              hostname: 'api.snyk.io',
+              path: `/rest/orgs/${SNYK_ORG_ID}/issues?limit=5`,
+              headers: { 'Authorization': `token ${SNYK_TOKEN}`, 'Accept': 'application/vnd.api+json; version=2024-10-15' }
+            }).catch(e => console.log('Error:', e.message));
+          }
+          test().catch(console.error);
+          EOF
+          node test-snyk.js
+
       - name: Collect community health metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

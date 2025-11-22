@@ -284,9 +284,22 @@ class CommunityHealthDashboard {
             this.recentActivity = [];
             this.activityTimestamps = [];
 
+            // Try to load today's pre-collected data first (includes Snyk)
+            let preCollectedData = null;
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`data/history/${today}.json`);
+                if (response.ok) {
+                    preCollectedData = await response.json();
+                    console.log('Loaded pre-collected data from', today);
+                }
+            } catch (err) {
+                console.log('Pre-collected data not available, will fetch live data');
+            }
+
             // Fetch data from all configured repositories
             const promises = DASHBOARD_CONFIG.repositories.map(repo =>
-                this.fetchRepoHealth(repo.org, repo.repo)
+                this.fetchRepoHealth(repo.org, repo.repo, preCollectedData)
             );
 
             await Promise.all(promises);
@@ -325,7 +338,13 @@ class CommunityHealthDashboard {
         }
     }
 
-    async fetchRepoHealth(org, repo) {
+    async fetchRepoHealth(org, repo, preCollectedData = null) {
+        // Check if we have pre-collected data for this repo (includes Snyk)
+        let preCollectedRepo = null;
+        if (preCollectedData) {
+            preCollectedRepo = preCollectedData.repositories.find(r => r.org === org && r.repo === repo);
+        }
+
         const baseUrl = 'https://api.github.com';
         const headers = {};
 
@@ -488,7 +507,8 @@ class CommunityHealthDashboard {
                 prMergeRate,
                 coverage,
                 openIssues,
-                openPRs
+                openPRs,
+                snykVulnerabilities: preCollectedRepo?.snykVulnerabilities || null
             });
 
             // Fetch recent activity (issues and PRs)

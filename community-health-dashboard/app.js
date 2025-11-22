@@ -49,8 +49,19 @@ class CommunityHealthDashboard {
 
     /**
      * Parse Codecov badge SVG to extract coverage percentage
+     *
      * NOTE: This logic is duplicated in .github/workflows/collect-community-health.yml
-     * If you update this function, please update the workflow as well to keep them in sync
+     * If you update this function, please update the workflow as well to keep them in sync.
+     *
+     * Why SVG parsing instead of API:
+     * - Codecov API v2 requires authentication (bearer token)
+     * - Badge SVG endpoint is public and doesn't require auth
+     * - Simpler implementation without token management
+     * - Badge SVGs are designed to be publicly accessible
+     *
+     * Alternative: Use Codecov API v2 if auth tokens become available:
+     * GET https://codecov.io/api/v2/github/{org}/repos/{repo}/commits
+     * Returns array of commits with totals.coverage field
      *
      * @param {string} svgText - The SVG text from Codecov badge
      * @returns {number|null} - Coverage percentage (0-100) or null if unavailable

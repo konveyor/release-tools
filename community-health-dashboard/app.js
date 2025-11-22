@@ -625,11 +625,32 @@ class CommunityHealthDashboard {
         const tbody = document.getElementById('table-body');
 
         if (this.repoHealthData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No repository health data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No repository health data available</td></tr>';
             return;
         }
 
-        tbody.innerHTML = this.repoHealthData.map(repo => `
+        tbody.innerHTML = this.repoHealthData.map(repo => {
+            // Format security cell with Snyk vulnerability data
+            let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
+
+            if (repo.snykVulnerabilities) {
+                const { critical, high, medium, low, total } = repo.snykVulnerabilities;
+
+                // Show severity breakdown badges
+                const badges = [];
+                if (critical > 0) badges.push(`<span class="badge badge-failure">${critical}C</span>`);
+                if (high > 0) badges.push(`<span class="badge badge-pr">${high}H</span>`);
+                if (medium > 0) badges.push(`<span class="badge badge-issue">${medium}M</span>`);
+                if (low > 0) badges.push(`<span class="badge" style="background-color: #6c757d;">${low}L</span>`);
+
+                if (total === 0) {
+                    securityCell = '<td style="text-align: center;"><span class="badge badge-success">✓</span></td>';
+                } else {
+                    securityCell = `<td style="text-align: center;">${badges.join(' ')}</td>`;
+                }
+            }
+
+            return `
             <tr>
                 <td><a href="https://github.com/${repo.repoFullName}" target="_blank">${repo.repo}</a></td>
                 <td>${repo.contributors}</td>
@@ -643,8 +664,10 @@ class CommunityHealthDashboard {
                 </td>
                 <td>${repo.openIssues}</td>
                 <td>${repo.openPRs}</td>
+                ${securityCell}
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderRecentActivity(filterRepo = 'all') {

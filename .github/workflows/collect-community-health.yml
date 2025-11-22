@@ -99,6 +99,86 @@ jobs:
             });
           }
 
+          /**
+           * Fetch Snyk security vulnerability data for a repository
+           *
+           * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
+           * Returns vulnerability counts by severity or null if unavailable.
+           *
+           * @param {string} org - GitHub organization
+           * @param {string} repo - Repository name
+           * @returns {Object|null} - {critical, high, medium, low, total} or null
+           */
+          async function fetchSnykData(org, repo) {
+            const snykOrgId = process.env.SNYK_ORG_ID;
+            const snykToken = process.env.SNYK_API_TOKEN;
+
+            if (!snykToken || !snykOrgId) {
+              return null; // Snyk not configured
+            }
+
+            try {
+              // 1. Get list of projects to find the matching GitHub repo
+              const projectsData = await httpsRequest({
+                hostname: 'api.snyk.io',
+                path: `/v1/org/${snykOrgId}/projects`,
+                headers: {
+                  'Authorization': `token ${snykToken}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (!projectsData || !projectsData.projects) {
+                return null;
+              }
+
+              // Find matching GitHub project
+              const project = projectsData.projects.find(p =>
+                p.origin === 'github' &&
+                p.name === `${org}/${repo}`
+              );
+
+              if (!project) {
+                return null; // Repo not monitored by Snyk
+              }
+
+              // 2. Get aggregated issues for this project
+              const issuesData = await httpsRequest({
+                hostname: 'api.snyk.io',
+                path: `/v1/org/${snykOrgId}/project/${project.id}/aggregated-issues`,
+                headers: {
+                  'Authorization': `token ${snykToken}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+
+              if (!issuesData || !issuesData.issues) {
+                return { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
+              }
+
+              // Count vulnerabilities by severity
+              const vulnerabilities = {
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0,
+                total: issuesData.issues.length
+              };
+
+              issuesData.issues.forEach(issue => {
+                const severity = issue.issueData?.severity?.toLowerCase();
+                if (severity && vulnerabilities.hasOwnProperty(severity)) {
+                  vulnerabilities[severity]++;
+                }
+              });
+
+              return vulnerabilities;
+            } catch (snykError) {
+              // Snyk data unavailable - this is normal for repos not in Snyk
+              return null;
+            }
+          }
+
           async function fetchRepoHealth(org, repo) {
             try {
               console.log(`  Fetching ${org}/${repo}...`);
@@ -237,6 +317,9 @@ jobs:
 
               const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+              // Fetch Snyk security vulnerability data
+              const snykData = await fetchSnykData(org, repo);
+
               const repoData = {
                 org,
                 repo,
@@ -248,7 +331,8 @@ jobs:
                 avgPRResponseMs,
                 prMergeRate,
                 openIssues: actualOpenIssues,
-                openPRs
+                openPRs,
+                snykVulnerabilities: snykData
               };
 
               console.log(`    ✓ ${contributors.size} contributors, ${newContributors.size} new, ${actualOpenIssues} issues, ${openPRs} PRs`);

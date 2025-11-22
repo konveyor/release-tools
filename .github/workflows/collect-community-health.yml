@@ -185,6 +185,12 @@ jobs:
               return null; // Snyk not configured
             }
 
+            // Debug: Log org ID once
+            if (repo === 'analyzer-lsp') {
+              console.log(`    [Snyk Debug] Using Org ID: ${snykOrgId.substring(0, 8)}...`);
+              console.log(`    [Snyk Debug] Token starts with: ${snykToken.substring(0, 10)}...`);
+            }
+
             try {
               // Use REST API v2 to get all issues for this org
               // Then filter by repository name

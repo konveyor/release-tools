@@ -47,6 +47,45 @@ class CommunityHealthDashboard {
         this.loadHistoricalData();
     }
 
+    /**
+     * Parse Codecov badge SVG to extract coverage percentage
+     *
+     * NOTE: This logic is duplicated in .github/workflows/collect-community-health.yml
+     * If you update this function, please update the workflow as well to keep them in sync.
+     *
+     * Why SVG parsing instead of API:
+     * - Codecov API v2 requires authentication (bearer token)
+     * - Badge SVG endpoint is public and doesn't require auth
+     * - Simpler implementation without token management
+     * - Badge SVGs are designed to be publicly accessible
+     *
+     * Alternative: Use Codecov API v2 if auth tokens become available:
+     * GET https://codecov.io/api/v2/github/{org}/repos/{repo}/commits
+     * Returns array of commits with totals.coverage field
+     *
+     * @param {string} svgText - The SVG text from Codecov badge
+     * @returns {number|null} - Coverage percentage (0-100) or null if unavailable
+     */
+    parseCodecovBadge(svgText) {
+        // Look for the coverage text in SVG text elements with y="14" (the visible text)
+        // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+        const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+        if (textMatch && textMatch.length > 0) {
+            // Get the last text element (which contains the coverage percentage)
+            const lastText = textMatch[textMatch.length - 1];
+            const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+            if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                    return null; // No coverage data
+                } else {
+                    return parseFloat(value);
+                }
+            }
+        }
+        return null;
+    }
+
     setupEventListeners() {
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -422,6 +461,19 @@ class CommunityHealthDashboard {
 
             const prMergeRate = totalPRs > 0 ? (mergedPRs / totalPRs) * 100 : 0;
 
+            // Fetch Codecov coverage data
+            let coverage = null;
+            try {
+                const codecovUrl = `https://codecov.io/github/${org}/${repo}/graph/badge.svg`;
+                const codecovResponse = await fetch(codecovUrl);
+                if (codecovResponse.ok) {
+                    const svgText = await codecovResponse.text();
+                    coverage = this.parseCodecovBadge(svgText);
+                }
+            } catch (codecovError) {
+                console.log(`[${org}/${repo}] Error fetching Codecov data:`, codecovError.message);
+            }
+
             // Store repo health data
             this.repoHealthData.push({
                 org,
@@ -434,6 +486,7 @@ class CommunityHealthDashboard {
                 avgIssueResponse,
                 avgPRResponse,
                 prMergeRate,
+                coverage,
                 openIssues,
                 openPRs
             });
@@ -625,11 +678,20 @@ class CommunityHealthDashboard {
         const tbody = document.getElementById('table-body');
 
         if (this.repoHealthData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No repository health data available</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No repository health data available</td></tr>';
             return;
         }
 
-        tbody.innerHTML = this.repoHealthData.map(repo => `
+        tbody.innerHTML = this.repoHealthData.map(repo => {
+            let coverageCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
+            if (repo.coverage !== null && repo.coverage !== undefined) {
+                const coverageClass = repo.coverage >= 80 ? 'badge-success' :
+                                     repo.coverage >= 50 ? 'badge-pr' :
+                                     'badge-failure';
+                coverageCell = `<td style="text-align: center;"><span class="badge ${coverageClass}">${repo.coverage.toFixed(1)}%</span></td>`;
+            }
+
+            return `
             <tr>
                 <td><a href="https://github.com/${repo.repoFullName}" target="_blank">${repo.repo}</a></td>
                 <td>${repo.contributors}</td>
@@ -641,10 +703,11 @@ class CommunityHealthDashboard {
                         ${repo.prMergeRate.toFixed(1)}%
                     </span>
                 </td>
+                ${coverageCell}
                 <td>${repo.openIssues}</td>
                 <td>${repo.openPRs}</td>
             </tr>
-        `).join('');
+        `}).join('');
     }
 
     renderRecentActivity(filterRepo = 'all') {
@@ -806,7 +869,7 @@ class CommunityHealthDashboard {
 
     showError(message) {
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = `<tr><td colspan="8" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
     }
 
     async loadHistoricalData() {

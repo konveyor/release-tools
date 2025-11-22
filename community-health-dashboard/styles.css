@@ -372,6 +372,11 @@ tbody tr:hover {
     color: var(--accent-red);
 }
 
+.badge-success {
+    background-color: rgba(115, 191, 105, 0.15);
+    color: var(--accent-green);
+}
+
 .badge-new-contributor {
     background-color: rgba(255, 152, 48, 0.15);
     color: var(--accent-orange);

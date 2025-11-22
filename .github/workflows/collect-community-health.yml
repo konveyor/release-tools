@@ -92,7 +92,7 @@ jobs:
                       try {
                         const parsed = JSON.parse(body);
                         // Debug Snyk responses
-                        if (options.path && options.path.includes('snyk.io') && options.path.includes('/projects')) {
+                        if (options.hostname === 'api.snyk.io' && options.path && options.path.includes('/projects')) {
                           console.log(`[Snyk API Success] Parsed response type: ${typeof parsed}, keys: ${parsed ? Object.keys(parsed).slice(0, 5).join(', ') : 'null'}`);
                         }
                         resolve(parsed);
@@ -103,7 +103,7 @@ jobs:
                     }
                   } else {
                     // Log error responses for debugging
-                    if (options.path && options.path.includes('snyk.io')) {
+                    if (options.hostname === 'api.snyk.io') {
                       console.log(`[Snyk API Error] Status ${res.statusCode}: ${body.substring(0, 200)}`);
                     }
                     resolve(null);

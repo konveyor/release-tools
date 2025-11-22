@@ -659,16 +659,12 @@ class CommunityHealthDashboard {
         }
 
         tbody.innerHTML = this.repoHealthData.map(repo => {
-            let coverageCell = '<td class="no-data">N/A</td>';
+            let coverageCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
             if (repo.coverage !== null && repo.coverage !== undefined) {
                 const coverageClass = repo.coverage >= 80 ? 'badge-success' :
                                      repo.coverage >= 50 ? 'badge-pr' :
                                      'badge-failure';
-                coverageCell = `<td>
-                    <span class="badge ${coverageClass}">
-                        ${repo.coverage.toFixed(1)}%
-                    </span>
-                </td>`;
+                coverageCell = `<td style="text-align: center;"><span class="badge ${coverageClass}">${repo.coverage.toFixed(1)}%</span></td>`;
             }
 
             return `

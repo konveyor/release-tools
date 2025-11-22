@@ -164,14 +164,18 @@ jobs:
           }
 
           /**
-           * Fetch Snyk security vulnerability data for a repository using REST API v2
+           * Fetch Snyk security vulnerability data for a repository using v1 API
            *
            * Requires SNYK_API_TOKEN and SNYK_ORG_ID environment variables.
            * Returns vulnerability counts by severity or null if unavailable.
            *
-           * Uses Snyk REST API v2 (v1 was sunset in November 2024)
-           * - REST Issues API: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
-           * - Migration guide: https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api
+           * Note: Using Snyk v1 API endpoints as REST API v2 returns 404 errors.
+           * While v1 is deprecated, the /projects and /aggregated-issues endpoints
+           * remain functional for personal API tokens.
+           *
+           * API endpoints used:
+           * - /v1/org/{orgId}/projects - List all projects in organization
+           * - /v1/org/{orgId}/project/{projectId}/aggregated-issues - Get vulnerabilities
            *
            * @param {string} org - GitHub organization
            * @param {string} repo - Repository name
@@ -185,88 +189,79 @@ jobs:
               return null; // Snyk not configured
             }
 
-            // Debug: Test token validity with v1 API
-            if (repo === 'analyzer-lsp') {
-              console.log(`    [Snyk Debug] Full Org ID: ${snykOrgId}`);
-              console.log(`    [Snyk Debug] Token starts with: ${snykToken.substring(0, 10)}...`);
-
-              // Test token with v1 API (should work with personal tokens)
-              const userTest = await httpsRequest({
+            try {
+              // Step 1: Get all projects for the organization using v1 API
+              // Note: Using v1 API because REST API v2 returns 404 errors
+              const projectsData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/v1/user/me`,
+                path: `/v1/org/${snykOrgId}/projects`,
+                method: 'POST',
                 headers: {
                   'Authorization': `token ${snykToken}`,
                   'Content-Type': 'application/json'
-                }
-              });
-              console.log(`    [Snyk Debug] Token test (v1/user/me): ${userTest ? 'VALID' : 'INVALID'}`);
-              if (userTest && userTest.orgs) {
-                console.log(`    [Snyk Debug] User has ${userTest.orgs.length} orgs`);
-                const konveyorOrg = userTest.orgs.find(o => o.name.toLowerCase() === 'konveyor');
-                if (konveyorOrg) {
-                  console.log(`    [Snyk Debug] Found Konveyor org: ${konveyorOrg.id}`);
-                }
-              }
-            }
-
-            try {
-              // Use REST API v2 to get all issues for this org
-              // Then filter by repository name
-              // API docs: https://apidocs.snyk.io/?version=2024-10-15#get-/orgs/-org_id-/issues
-              const issuesData = await httpsRequest({
-                hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/issues?limit=1000`,
-                headers: {
-                  'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/vnd.api+json',
-                  'Accept': 'application/vnd.api+json; version=2024-10-15'
-                }
+                },
+                body: JSON.stringify({})
               });
 
-              if (!issuesData || !issuesData.data) {
-                return null;
+              if (!projectsData || !projectsData.projects) {
+                return null; // No projects found
               }
 
-              // Get all included resources (projects)
-              const included = issuesData.included || [];
-
-              // Find projects that match our GitHub repo
-              const matchingProjects = included.filter(item => {
-                if (item.type !== 'project') return false;
-                const name = item.attributes?.name;
-                // Match exact repo name (konveyor/kai, konveyor/website, etc.)
-                return name === `${org}/${repo}`;
+              // Step 2: Find projects matching this GitHub repo
+              // Project names typically follow format: org/repo or org/repo:branch
+              const matchingProjects = projectsData.projects.filter(project => {
+                const name = project.name || '';
+                // Match exact repo name or repo with branch suffix
+                return name === `${org}/${repo}` || name.startsWith(`${org}/${repo}:`);
               });
 
               if (matchingProjects.length === 0) {
-                return null; // No matching project found
+                return null; // No matching project found for this repo
               }
 
-              const projectIds = matchingProjects.map(p => p.id);
-
-              // Filter issues that belong to our matching projects
-              const repoIssues = issuesData.data.filter(issue => {
-                const scanItemId = issue.relationships?.scan_item?.data?.id;
-                return projectIds.includes(scanItemId);
-              });
-
-              // Count vulnerabilities by severity
+              // Step 3: Fetch aggregated issues for each matching project
               const vulnerabilities = {
                 critical: 0,
                 high: 0,
                 medium: 0,
                 low: 0,
-                total: repoIssues.length
+                total: 0
               };
 
-              repoIssues.forEach(issue => {
-                const severity = issue.attributes?.effective_severity_level?.toLowerCase();
-                if (severity && vulnerabilities.hasOwnProperty(severity)) {
-                  vulnerabilities[severity]++;
-                }
-              });
+              for (const project of matchingProjects) {
+                const issuesData = await httpsRequest({
+                  hostname: 'api.snyk.io',
+                  path: `/v1/org/${snykOrgId}/project/${project.id}/aggregated-issues`,
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `token ${snykToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    filters: {
+                      severities: ['critical', 'high', 'medium', 'low'],
+                      types: ['vuln'],
+                      ignored: false,
+                      patched: false
+                    }
+                  })
+                });
 
-              return vulnerabilities.total > 0 || repoIssues.length === 0 ? vulnerabilities : null;
+                if (issuesData && issuesData.issues) {
+                  issuesData.issues.forEach(issue => {
+                    const severity = (issue.issueData?.severity || '').toLowerCase();
+                    if (vulnerabilities.hasOwnProperty(severity)) {
+                      vulnerabilities[severity]++;
+                      vulnerabilities.total++;
+                    }
+                  });
+                }
+
+                // Small delay between API calls to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+
+              return vulnerabilities;
             } catch (snykError) {
               // Snyk data unavailable - this is normal for repos not in Snyk
               console.log(`    [Snyk Error] ${snykError.message} for ${org}/${repo}`);

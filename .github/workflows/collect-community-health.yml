@@ -190,18 +190,18 @@ jobs:
               console.log(`    [Snyk Debug] Full Org ID: ${snykOrgId}`);
               console.log(`    [Snyk Debug] Token starts with: ${snykToken.substring(0, 10)}...`);
 
-              // Test: Try to get organization info first
-              const orgTest = await httpsRequest({
+              // Test: Try slug 'konveyor' instead of UUID
+              const orgSlugTest = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}`,
+                path: `/rest/orgs/konveyor`,
                 headers: {
                   'Authorization': `token ${snykToken}`,
                   'Accept': 'application/vnd.api+json; version=2024-10-15'
                 }
               });
-              console.log(`    [Snyk Debug] Org test result: ${orgTest ? 'SUCCESS' : 'FAILED'}`);
-              if (orgTest && orgTest.data) {
-                console.log(`    [Snyk Debug] Org name: ${orgTest.data.attributes?.name}`);
+              console.log(`    [Snyk Debug] Org slug test result: ${orgSlugTest ? 'SUCCESS' : 'FAILED'}`);
+              if (orgSlugTest && orgSlugTest.data) {
+                console.log(`    [Snyk Debug] Org ID from slug: ${orgSlugTest.data.id}`);
               }
             }
 

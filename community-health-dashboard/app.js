@@ -727,32 +727,32 @@ class CommunityHealthDashboard {
                 const criticalBg = critical > 0 ? '#ffdad8' : '#f0f0f0';
                 const criticalColor = critical > 0 ? '#9e261e' : '#999';
                 badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                    `<span style="background-color: ${criticalBg}; color: ${critical > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${critical}</span>` +
-                    `<span style="background-color: ${criticalColor}; color: ${critical > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">C</span>` +
+                    `<span style="background-color: ${criticalBg}; color: ${critical > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px; min-width: 2rem; text-align: center;">${critical}</span>` +
+                    `<span style="background-color: ${criticalColor}; color: ${critical > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0; width: 1.2rem; text-align: center;">C</span>` +
                     `</span>`);
 
                 // High badge - colored if > 0, gray if 0
                 const highBg = high > 0 ? '#ffdbcc' : '#f0f0f0';
                 const highColor = high > 0 ? '#9b3d15' : '#999';
                 badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                    `<span style="background-color: ${highBg}; color: ${high > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${high}</span>` +
-                    `<span style="background-color: ${highColor}; color: ${high > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">H</span>` +
+                    `<span style="background-color: ${highBg}; color: ${high > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px; min-width: 2rem; text-align: center;">${high}</span>` +
+                    `<span style="background-color: ${highColor}; color: ${high > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0; width: 1.2rem; text-align: center;">H</span>` +
                     `</span>`);
 
                 // Medium badge - colored if > 0, gray if 0
                 const mediumBg = medium > 0 ? '#ffe8cd' : '#f0f0f0';
                 const mediumColor = medium > 0 ? '#925c1e' : '#999';
                 badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                    `<span style="background-color: ${mediumBg}; color: ${medium > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${medium}</span>` +
-                    `<span style="background-color: ${mediumColor}; color: ${medium > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">M</span>` +
+                    `<span style="background-color: ${mediumBg}; color: ${medium > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px; min-width: 2rem; text-align: center;">${medium}</span>` +
+                    `<span style="background-color: ${mediumColor}; color: ${medium > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0; width: 1.2rem; text-align: center;">M</span>` +
                     `</span>`);
 
                 // Low badge - colored if > 0, gray if 0
                 const lowBg = low > 0 ? '#eeeeee' : '#f0f0f0';
                 const lowColor = low > 0 ? '#585675' : '#999';
                 badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                    `<span style="background-color: ${lowBg}; color: ${low > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${low}</span>` +
-                    `<span style="background-color: ${lowColor}; color: ${low > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">L</span>` +
+                    `<span style="background-color: ${lowBg}; color: ${low > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px; min-width: 2rem; text-align: center;">${low}</span>` +
+                    `<span style="background-color: ${lowColor}; color: ${low > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0; width: 1.2rem; text-align: center;">L</span>` +
                     `</span>`);
 
                 securityCell = `<td style="text-align: center; white-space: nowrap;">${badges.join('')}</td>`;

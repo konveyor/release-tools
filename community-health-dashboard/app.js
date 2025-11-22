@@ -713,20 +713,24 @@ class CommunityHealthDashboard {
             }
 
             // Format security cell with Snyk vulnerability data
-            // Two-tone badges: light background with dark text matching Snyk style
+            // Using exact Snyk CSS variables for colors
             let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
 
             if (repo.snykVulnerabilities) {
                 const { critical, high, medium, low, total } = repo.snykVulnerabilities;
 
-                // Show severity breakdown badges with Snyk two-tone colors
+                // Snyk badge styling with exact CSS variable colors
                 const badges = [];
-                const badgeStyle = 'display: inline-block; min-width: 2.5rem; padding: 0.25rem 0.5rem; margin: 0.125rem; border-radius: 3px; font-weight: 600; font-size: 0.75rem; text-align: center;';
+                const badgeStyle = 'display: inline-block; min-width: 2.5rem; padding: 0.25rem 0.5rem; margin: 0.125rem; border-radius: 3px; font-weight: 600; font-size: 12px; text-align: center; font-family: Roboto, sans-serif;';
 
-                if (critical > 0) badges.push(`<span style="${badgeStyle} background-color: #FDE8EB; color: #B83240;">${critical} C</span>`);
-                if (high > 0) badges.push(`<span style="${badgeStyle} background-color: #FFF4E5; color: #D68000;">${high} H</span>`);
-                if (medium > 0) badges.push(`<span style="${badgeStyle} background-color: #FFF8F0; color: #E89C4A;">${medium} M</span>`);
-                if (low > 0) badges.push(`<span style="${badgeStyle} background-color: #F4F4F5; color: #88879E;">${low} L</span>`);
+                // Critical: --pcl-color-severity-critical-bg: #ffdad8, --pcl-color-severity-critical-text: #9e261e
+                if (critical > 0) badges.push(`<span style="${badgeStyle} background-color: #ffdad8; color: #9e261e;">${critical} C</span>`);
+                // High: --pcl-color-severity-high-bg: #ffdbcc, --pcl-color-severity-high-text: #9b3d15
+                if (high > 0) badges.push(`<span style="${badgeStyle} background-color: #ffdbcc; color: #9b3d15;">${high} H</span>`);
+                // Medium: --pcl-color-severity-medium-bg: #ffe8cd, --pcl-color-severity-medium-text: #925c1e
+                if (medium > 0) badges.push(`<span style="${badgeStyle} background-color: #ffe8cd; color: #925c1e;">${medium} M</span>`);
+                // Low: --pcl-color-severity-low-bg: #eeeeee, --pcl-color-severity-low-text: #585675
+                if (low > 0) badges.push(`<span style="${badgeStyle} background-color: #eeeeee; color: #585675;">${low} L</span>`);
 
                 if (total === 0) {
                     securityCell = '<td style="text-align: center;"><span class="badge badge-success">✓</span></td>';

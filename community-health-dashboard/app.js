@@ -47,6 +47,34 @@ class CommunityHealthDashboard {
         this.loadHistoricalData();
     }
 
+    /**
+     * Parse Codecov badge SVG to extract coverage percentage
+     * NOTE: This logic is duplicated in .github/workflows/collect-community-health.yml
+     * If you update this function, please update the workflow as well to keep them in sync
+     *
+     * @param {string} svgText - The SVG text from Codecov badge
+     * @returns {number|null} - Coverage percentage (0-100) or null if unavailable
+     */
+    parseCodecovBadge(svgText) {
+        // Look for the coverage text in SVG text elements with y="14" (the visible text)
+        // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+        const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+        if (textMatch && textMatch.length > 0) {
+            // Get the last text element (which contains the coverage percentage)
+            const lastText = textMatch[textMatch.length - 1];
+            const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+            if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                    return null; // No coverage data
+                } else {
+                    return parseFloat(value);
+                }
+            }
+        }
+        return null;
+    }
+
     setupEventListeners() {
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -429,22 +457,7 @@ class CommunityHealthDashboard {
                 const codecovResponse = await fetch(codecovUrl);
                 if (codecovResponse.ok) {
                     const svgText = await codecovResponse.text();
-                    // Look for the coverage text in SVG text elements with y="14" (the visible text)
-                    // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
-                    const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
-                    if (textMatch && textMatch.length > 0) {
-                        // Get the last text element (which contains the coverage percentage)
-                        const lastText = textMatch[textMatch.length - 1];
-                        const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
-                        if (coverageMatch) {
-                            const value = coverageMatch[1];
-                            if (value === 'unknown') {
-                                coverage = null; // No coverage data
-                            } else {
-                                coverage = parseFloat(value);
-                            }
-                        }
-                    }
+                    coverage = this.parseCodecovBadge(svgText);
                 }
             } catch (codecovError) {
                 console.log(`[${org}/${repo}] Error fetching Codecov data:`, codecovError.message);

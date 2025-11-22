@@ -74,17 +74,21 @@ jobs:
           const newContribPeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
           const responseTimePeriod = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-          function httpsRequest(options) {
+          function httpsRequest(options, returnText = false) {
             return new Promise((resolve, reject) => {
               const req = https.get(options, (res) => {
                 let body = '';
                 res.on('data', (chunk) => body += chunk);
                 res.on('end', () => {
                   if (res.statusCode === 200) {
-                    try {
-                      resolve(JSON.parse(body));
-                    } catch (err) {
-                      reject(new Error(`Failed to parse JSON: ${err.message}`));
+                    if (returnText) {
+                      resolve(body);
+                    } else {
+                      try {
+                        resolve(JSON.parse(body));
+                      } catch (err) {
+                        reject(new Error(`Failed to parse JSON: ${err.message}`));
+                      }
                     }
                   } else {
                     resolve(null);
@@ -97,6 +101,34 @@ jobs:
                 reject(new Error('Request timeout'));
               });
             });
+          }
+
+          /**
+           * Parse Codecov badge SVG to extract coverage percentage
+           * NOTE: This logic is duplicated in community-health-dashboard/app.js
+           * If you update this function, please update the dashboard as well to keep them in sync
+           *
+           * @param {string} svgText - The SVG text from Codecov badge
+           * @returns {number|null} - Coverage percentage (0-100) or null if unavailable
+           */
+          function parseCodecovBadge(svgText) {
+            // Look for the coverage text in SVG text elements with y="14" (the visible text)
+            // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
+            const textMatch = svgText.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
+            if (textMatch && textMatch.length > 0) {
+              // Get the last text element (which contains the coverage percentage)
+              const lastText = textMatch[textMatch.length - 1];
+              const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
+              if (coverageMatch) {
+                const value = coverageMatch[1];
+                if (value === 'unknown') {
+                  return null; // No coverage data
+                } else {
+                  return parseFloat(value);
+                }
+              }
+            }
+            return null;
           }
 
           async function fetchRepoHealth(org, repo) {
@@ -246,25 +278,10 @@ jobs:
                   headers: {
                     'User-Agent': 'Konveyor-Community-Health-Collector'
                   }
-                });
+                }, true); // returnText = true
 
                 if (codecovResponse) {
-                  // Look for the coverage text in SVG text elements with y="14" (the visible text)
-                  // Format: <text x="93" y="14">37%</text> or <text x="93" y="14">unknown</text>
-                  const textMatch = codecovResponse.match(/<text[^>]*y="14"[^>]*>([^<]+)<\/text>/g);
-                  if (textMatch && textMatch.length > 0) {
-                    // Get the last text element (which contains the coverage percentage)
-                    const lastText = textMatch[textMatch.length - 1];
-                    const coverageMatch = lastText.match(/>(\d+(?:\.\d+)?%|unknown)</);
-                    if (coverageMatch) {
-                      const value = coverageMatch[1];
-                      if (value === 'unknown') {
-                        coverage = null; // No coverage data
-                      } else {
-                        coverage = parseFloat(value);
-                      }
-                    }
-                  }
+                  coverage = parseCodecovBadge(codecovResponse);
                 }
               } catch (codecovError) {
                 // No Codecov data available - this is normal for repos without Codecov

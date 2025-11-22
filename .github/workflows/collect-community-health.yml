@@ -248,9 +248,10 @@ jobs:
               // Step 1: Get all projects using REST API v2
               const projectsData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/projects?version=2024-10-15&limit=1000`,
+                path: `/rest/orgs/${snykOrgId}/projects?limit=1000`,
                 headers: {
-                  'Authorization': `token ${snykToken}`
+                  'Authorization': `token ${snykToken}`,
+                  'Accept': 'application/vnd.api+json; version=2024-10-15'
                 }
               });
 
@@ -275,9 +276,10 @@ jobs:
               // Step 3: Get all issues and filter by project IDs
               const issuesData = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=1000`,
+                path: `/rest/orgs/${snykOrgId}/issues?limit=1000`,
                 headers: {
-                  'Authorization': `token ${snykToken}`
+                  'Authorization': `token ${snykToken}`,
+                  'Accept': 'application/vnd.api+json; version=2024-10-15'
                 }
               });
 

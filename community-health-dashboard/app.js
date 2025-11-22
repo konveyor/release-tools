@@ -778,9 +778,9 @@ class CommunityHealthDashboard {
                         ${repo.prMergeRate.toFixed(1)}%
                     </span>
                 </td>
+                ${coverageCell}
                 <td>${repo.openIssues}</td>
                 <td>${repo.openPRs}</td>
-                ${coverageCell}
                 ${securityCell}
             </tr>
             `;

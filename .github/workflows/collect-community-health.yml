@@ -185,23 +185,27 @@ jobs:
               return null; // Snyk not configured
             }
 
-            // Debug: Log org ID once and test API access
+            // Debug: Test token validity with v1 API
             if (repo === 'analyzer-lsp') {
               console.log(`    [Snyk Debug] Full Org ID: ${snykOrgId}`);
               console.log(`    [Snyk Debug] Token starts with: ${snykToken.substring(0, 10)}...`);
 
-              // Test: Try slug 'konveyor' instead of UUID
-              const orgSlugTest = await httpsRequest({
+              // Test token with v1 API (should work with personal tokens)
+              const userTest = await httpsRequest({
                 hostname: 'api.snyk.io',
-                path: `/rest/orgs/konveyor`,
+                path: `/v1/user/me`,
                 headers: {
                   'Authorization': `token ${snykToken}`,
-                  'Accept': 'application/vnd.api+json; version=2024-10-15'
+                  'Content-Type': 'application/json'
                 }
               });
-              console.log(`    [Snyk Debug] Org slug test result: ${orgSlugTest ? 'SUCCESS' : 'FAILED'}`);
-              if (orgSlugTest && orgSlugTest.data) {
-                console.log(`    [Snyk Debug] Org ID from slug: ${orgSlugTest.data.id}`);
+              console.log(`    [Snyk Debug] Token test (v1/user/me): ${userTest ? 'VALID' : 'INVALID'}`);
+              if (userTest && userTest.orgs) {
+                console.log(`    [Snyk Debug] User has ${userTest.orgs.length} orgs`);
+                const konveyorOrg = userTest.orgs.find(o => o.name.toLowerCase() === 'konveyor');
+                if (konveyorOrg) {
+                  console.log(`    [Snyk Debug] Found Konveyor org: ${konveyorOrg.id}`);
+                }
               }
             }
 

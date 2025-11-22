@@ -714,48 +714,48 @@ class CommunityHealthDashboard {
 
             // Format security cell with Snyk vulnerability data
             // Two-part badge: light background number + colored severity letter
+            // Always show all 4 badges; use gray when count is 0
             let securityCell = '<td style="text-align: center;"><span style="display: inline-block; padding: 0.25rem 0.5rem;">N/A</span></td>';
 
             if (repo.snykVulnerabilities) {
-                const { critical, high, medium, low, total } = repo.snykVulnerabilities;
+                const { critical, high, medium, low } = repo.snykVulnerabilities;
 
                 // Snyk badge styling: number in light rounded box + letter in colored square
                 const badges = [];
 
-                // Critical: light pink number box + dark red letter box
-                if (critical > 0) {
-                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                        `<span style="background-color: #ffdad8; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${critical}</span>` +
-                        `<span style="background-color: #9e261e; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">C</span>` +
-                        `</span>`);
-                }
-                // High: light orange number box + dark orange letter box
-                if (high > 0) {
-                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                        `<span style="background-color: #ffdbcc; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${high}</span>` +
-                        `<span style="background-color: #9b3d15; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">H</span>` +
-                        `</span>`);
-                }
-                // Medium: light peach number box + brown letter box
-                if (medium > 0) {
-                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                        `<span style="background-color: #ffe8cd; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${medium}</span>` +
-                        `<span style="background-color: #925c1e; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">M</span>` +
-                        `</span>`);
-                }
-                // Low: light gray number box + dark gray letter box
-                if (low > 0) {
-                    badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
-                        `<span style="background-color: #eeeeee; color: #333; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${low}</span>` +
-                        `<span style="background-color: #585675; color: white; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">L</span>` +
-                        `</span>`);
-                }
+                // Critical badge - colored if > 0, gray if 0
+                const criticalBg = critical > 0 ? '#ffdad8' : '#f0f0f0';
+                const criticalColor = critical > 0 ? '#9e261e' : '#999';
+                badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                    `<span style="background-color: ${criticalBg}; color: ${critical > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${critical}</span>` +
+                    `<span style="background-color: ${criticalColor}; color: ${critical > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">C</span>` +
+                    `</span>`);
 
-                if (total === 0) {
-                    securityCell = '<td style="text-align: center;"><span class="badge badge-success">✓</span></td>';
-                } else {
-                    securityCell = `<td style="text-align: center; white-space: nowrap;">${badges.join('')}</td>`;
-                }
+                // High badge - colored if > 0, gray if 0
+                const highBg = high > 0 ? '#ffdbcc' : '#f0f0f0';
+                const highColor = high > 0 ? '#9b3d15' : '#999';
+                badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                    `<span style="background-color: ${highBg}; color: ${high > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${high}</span>` +
+                    `<span style="background-color: ${highColor}; color: ${high > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">H</span>` +
+                    `</span>`);
+
+                // Medium badge - colored if > 0, gray if 0
+                const mediumBg = medium > 0 ? '#ffe8cd' : '#f0f0f0';
+                const mediumColor = medium > 0 ? '#925c1e' : '#999';
+                badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                    `<span style="background-color: ${mediumBg}; color: ${medium > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${medium}</span>` +
+                    `<span style="background-color: ${mediumColor}; color: ${medium > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">M</span>` +
+                    `</span>`);
+
+                // Low badge - colored if > 0, gray if 0
+                const lowBg = low > 0 ? '#eeeeee' : '#f0f0f0';
+                const lowColor = low > 0 ? '#585675' : '#999';
+                badges.push(`<span style="display: inline-flex; align-items: center; margin: 0.125rem; font-family: Roboto, sans-serif; font-size: 12px; font-weight: 600;">` +
+                    `<span style="background-color: ${lowBg}; color: ${low > 0 ? '#333' : '#999'}; padding: 0.25rem 0.4rem; border-radius: 3px 0 0 3px;">${low}</span>` +
+                    `<span style="background-color: ${lowColor}; color: ${low > 0 ? 'white' : '#ddd'}; padding: 0.25rem 0.4rem; border-radius: 0 3px 3px 0;">L</span>` +
+                    `</span>`);
+
+                securityCell = `<td style="text-align: center; white-space: nowrap;">${badges.join('')}</td>`;
             }
 
             return `

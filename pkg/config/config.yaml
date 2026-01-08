@@ -124,8 +124,8 @@ labels:
     description: Related to insights discovery
     name: team/insights-discovery
   - color: 9e3b12
-    description: Related to application inventory management
-    name: team/app-inventory-mgmt
+    description: Related to inventory management
+    name: team/inventory
   - color: 719ece
     description: Related to application modification
     name: team/app-mod

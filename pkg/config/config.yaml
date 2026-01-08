@@ -123,7 +123,7 @@ labels:
   - color: 36c262
     description: Related to insights discovery
     name: team/insights-discovery
-  - color: 9e3b12
+  - color: e87722
     description: Related to inventory management
     name: team/inventory
   - color: 719ece

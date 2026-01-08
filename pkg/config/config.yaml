@@ -152,7 +152,6 @@ labels:
   - color: fef2f0
     description: This PR should be cherry-picked to release-0.8 branch
     name: cherry-pick/release-0.8
-  - color: 00ffff
 
 # Milestones
 # List of milestones, and their state, that should exist in the specified repositories.

@@ -28,6 +28,10 @@ inputs:
   pre_build_cmd:
     description: "Command to run before building images"
     required: false
+  publish:
+    description: "Whether to push the built image to the registry"
+    required: false
+    default: "true"
   ref:
     description: "git ref to build"
     required: true
@@ -87,6 +91,7 @@ runs:
     - name: Push To Quay
       uses: redhat-actions/push-to-registry@main
       id: push
+      if: ${{ inputs.publish == 'true' }}
       with:
         image: ${{ steps.build.outputs.image }}
         tags: ${{ env.branch }}

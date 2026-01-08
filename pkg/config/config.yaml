@@ -116,6 +116,19 @@ labels:
   - color: e11d21
     description: Highest priority. Must be actively worked on as someone's top priority right now. # Stuff is burning. If it's not being actively worked on, someone is expected to drop what they're doing immediately to work on it. Team leaders are responsible for making sure that all the issues, labeled with this priority, in their area are being actively worked on. Examples include user-visible bugs in core features, broken builds or tests and critical security issues.
     name: priority/critical-urgent
+  # Team Planning
+  - color: 00ffff
+    description: Related to integration testing work
+    name: integration-testing
+  - color: 36c262
+    description: Related to insights discovery
+    name: team/insights-discovery
+  - color: 9e3b12
+    description: Related to application inventory management
+    name: team/app-inventory-mgmt
+  - color: 719ece
+    description: Related to application modification
+    name: team/app-mod
   # Etcetera
   - color: 15dd18
     description: Indicates that a PR is ready to be merged.
@@ -139,6 +152,7 @@ labels:
   - color: fef2f0
     description: This PR should be cherry-picked to release-0.8 branch
     name: cherry-pick/release-0.8
+  - color: 00ffff
 
 # Milestones
 # List of milestones, and their state, that should exist in the specified repositories.

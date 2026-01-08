@@ -49,6 +49,11 @@ on:
         default: ""
         required: false
         type: string
+      publish:
+        description: "Whether to push the built image to the registry"
+        default: "true"
+        required: false
+        type: string
     secrets:
       registry_username:
         description: "Quay publish robot"
@@ -145,6 +150,7 @@ jobs:
       - name: Push To Quay
         uses: redhat-actions/push-to-registry@main
         id: push
+        if: ${{ inputs.publish == 'true' }}
         with:
           image: ${{ steps.build.outputs.image }}
           tags: ${{ env.tag }}-${{ matrix.architecture }}
@@ -155,6 +161,7 @@ jobs:
   manifest:
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ inputs.publish == 'true' }}
     steps:
       - name: Create manifest
         shell: bash

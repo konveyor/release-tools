@@ -111,10 +111,22 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Configure QEMU
-        uses: docker/setup-qemu-action@master
-        with:
-          platforms: all
+      - name: Install QEMU static
+        shell: bash
+        run: |
+          # Remove any existing qemu setup
+          sudo systemctl stop systemd-binfmt || true
+
+          # Install latest qemu-user-static
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+          # Re-register binfmt interpreters
+          sudo systemctl restart systemd-binfmt
+          sudo systemctl enable systemd-binfmt
+
+          # Verify registration
+          ls -la /proc/sys/fs/binfmt_misc/
 
       - name: Image meta
         id: meta

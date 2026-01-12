@@ -81,7 +81,7 @@ type StaleSnapshot struct {
 	TotalStale  int             `json:"totalStale"`
 	StaleIssues int             `json:"staleIssues"`
 	StalePRs    int             `json:"stalePRs"`
-	Repos       []StaleRepoData `json:"repos"`
+	Repos       []StaleRepoData `json:"repositories"`
 }
 
 // StaleRepoData represents stale data for a single repository

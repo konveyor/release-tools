@@ -19,6 +19,7 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 		"divideMs": func(ms float64) float64 {
 			return ms / 3600000.0 // Convert ms to hours
 		},
+		"formatDuration": FormatDuration,
 	}
 
 	tmpl, err := template.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -45,6 +46,7 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 		"divideMs": func(ms float64) float64 {
 			return ms / 3600000.0 // Convert ms to hours
 		},
+		"formatDuration": FormatDuration,
 	}
 
 	tmpl, err := textTemplate.New("email").Funcs(funcMap).Parse(string(tmplContent))

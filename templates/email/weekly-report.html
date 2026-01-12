@@ -298,7 +298,8 @@
             </div>
             {{end}}
 
-            <!-- Security & Coverage -->
+            <!-- Security & Coverage - only show if data exists -->
+            {{if or .CurrentHealth.Vulnerabilities .CurrentHealth.Coverage}}
             <h3 class="section-title">Security & Coverage</h3>
             {{if .CurrentHealth.Vulnerabilities}}
             <div style="margin-top: 10px;">
@@ -318,18 +319,13 @@
                     </span>
                 </div>
             </div>
-            {{else}}
-            <p style="color: #586069;">Snyk integration not configured</p>
             {{end}}
 
             {{if .CurrentHealth.Coverage}}
             <div style="margin-top: 15px;">
                 <strong>Code Coverage:</strong> {{printf "%.1f" .CurrentHealth.Coverage}}%
             </div>
-            {{else}}
-            <div style="margin-top: 15px; color: #586069;">
-                Code coverage not available
-            </div>
+            {{end}}
             {{end}}
 
             <div class="links">

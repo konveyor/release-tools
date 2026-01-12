@@ -51,6 +51,7 @@ New Contributors This Week:
 {{end}}
 {{end}}
 
+{{if or .CurrentHealth.Vulnerabilities .CurrentHealth.Coverage}}
 SECURITY & COVERAGE
 --------------------------------------------------------------------------------
 {{if .CurrentHealth.Vulnerabilities}}
@@ -60,14 +61,12 @@ Snyk Vulnerabilities:
   Medium:   {{.CurrentHealth.Vulnerabilities.Medium}}
   Low:      {{.CurrentHealth.Vulnerabilities.Low}}
   Total:    {{.CurrentHealth.Vulnerabilities.Total}}
-{{else}}
-Snyk integration not configured
 {{end}}
 
 {{if .CurrentHealth.Coverage}}
 Code Coverage: {{printf "%.1f" .CurrentHealth.Coverage}}%
-{{else}}
-Code coverage not available
+{{end}}
+
 {{end}}
 
 QUICK LINKS

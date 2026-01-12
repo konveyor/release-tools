@@ -92,6 +92,20 @@ func loadAvailableDates(dir string) ([]string, error) {
 		return nil, fmt.Errorf("failed to read index.json: %w", err)
 	}
 
+	// Try to unmarshal as object with available_dates field
+	var indexObj struct {
+		AvailableDates []string `json:"available_dates"`
+	}
+	if err := json.Unmarshal(data, &indexObj); err == nil && len(indexObj.AvailableDates) > 0 {
+		dates := indexObj.AvailableDates
+		// Sort dates newest first
+		sort.Slice(dates, func(i, j int) bool {
+			return dates[i] > dates[j]
+		})
+		return dates, nil
+	}
+
+	// Fallback: try to unmarshal as array of strings
 	var dates []string
 	if err := json.Unmarshal(data, &dates); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal index.json: %w", err)

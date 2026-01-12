@@ -16,8 +16,8 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 	}
 
 	funcMap := template.FuncMap{
-		"divideMs": func(ms int64) float64 {
-			return float64(ms) / 3600000.0 // Convert ms to hours
+		"divideMs": func(ms float64) float64 {
+			return ms / 3600000.0 // Convert ms to hours
 		},
 	}
 
@@ -42,8 +42,8 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 	}
 
 	funcMap := textTemplate.FuncMap{
-		"divideMs": func(ms int64) float64 {
-			return float64(ms) / 3600000.0 // Convert ms to hours
+		"divideMs": func(ms float64) float64 {
+			return ms / 3600000.0 // Convert ms to hours
 		},
 	}
 
@@ -61,10 +61,10 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 }
 
 // FormatDuration formats milliseconds into a human-readable duration
-func FormatDuration(ms int64) string {
-	hours := float64(ms) / 3600000.0
+func FormatDuration(ms float64) string {
+	hours := ms / 3600000.0
 	if hours < 1.0 {
-		minutes := float64(ms) / 60000.0
+		minutes := ms / 60000.0
 		return fmt.Sprintf("%.0fm", minutes)
 	}
 	return fmt.Sprintf("%.1fh", hours)

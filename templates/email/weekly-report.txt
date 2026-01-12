@@ -39,8 +39,8 @@ COMMUNITY HEALTH
 --------------------------------------------------------------------------------
 Contributors (90d):         {{.CurrentHealth.Contributors}}
 New Contributors (30d):     {{.CurrentHealth.NewContributors}}
-Avg Issue Response:         {{if gt .CurrentHealth.AvgIssueResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgIssueResponseMs)}}h{{else}}N/A{{end}}
-Avg PR Response:            {{if gt .CurrentHealth.AvgPRResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgPRResponseMs)}}h{{else}}N/A{{end}}
+Avg Issue Response:         {{if gt .CurrentHealth.AvgIssueResponseMs 0.0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgIssueResponseMs)}}h{{else}}N/A{{end}}
+Avg PR Response:            {{if gt .CurrentHealth.AvgPRResponseMs 0.0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgPRResponseMs)}}h{{else}}N/A{{end}}
 PR Merge Rate:              {{printf "%.0f" .CurrentHealth.PRMergeRate}}%
 Open Issues:                {{.CurrentHealth.OpenIssues}}
 Open PRs:                   {{.CurrentHealth.OpenPRs}}

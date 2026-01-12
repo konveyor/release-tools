@@ -14,7 +14,7 @@ type CommunityHealthSnapshot struct {
 	Timestamp   string                        `json:"timestamp"`
 	Date        string                        `json:"date"`
 	Metrics     CommunityMetrics              `json:"metrics"`
-	Repos       []CommunityRepoData           `json:"repos"`
+	Repos       []CommunityRepoData           `json:"repositories"`
 	PRMetrics   PRMetrics                     `json:"prMetrics"`
 	IssueMetrics IssueMetrics                 `json:"issueMetrics"`
 }
@@ -23,9 +23,9 @@ type CommunityHealthSnapshot struct {
 type CommunityMetrics struct {
 	TotalContributors  int     `json:"totalContributors"`
 	NewContributors    int     `json:"newContributors"`
-	AvgResponseTime    int64   `json:"avgResponseTime"` // milliseconds
-	AvgIssueResponse   int64   `json:"avgIssueResponse"`
-	AvgPRResponse      int64   `json:"avgPRResponse"`
+	AvgResponseTime    float64 `json:"avgResponseTime"` // milliseconds
+	AvgIssueResponse   float64 `json:"avgIssueResponse"`
+	AvgPRResponse      float64 `json:"avgPRResponse"`
 	PRMergeRate        float64 `json:"prMergeRate"`
 	OpenIssues         int     `json:"openIssues"`
 	OpenPRs            int     `json:"openPRs"`
@@ -40,8 +40,8 @@ type CommunityRepoData struct {
 	ContributorsList    []string           `json:"contributorsList"`
 	NewContributors     int                `json:"newContributors"`
 	NewContributorsList []string           `json:"newContributorsList"`
-	AvgIssueResponseMs  int64              `json:"avgIssueResponseMs"`
-	AvgPRResponseMs     int64              `json:"avgPRResponseMs"`
+	AvgIssueResponseMs  float64            `json:"avgIssueResponseMs"`
+	AvgPRResponseMs     float64            `json:"avgPRResponseMs"`
 	PRMergeRate         float64            `json:"prMergeRate"`
 	OpenIssues          int                `json:"openIssues"`
 	OpenPRs             int                `json:"openPRs"`
@@ -153,8 +153,8 @@ type StaleMetrics struct {
 type HealthMetrics struct {
 	Contributors       int
 	NewContributors    int
-	AvgIssueResponseMs int64
-	AvgPRResponseMs    int64
+	AvgIssueResponseMs float64
+	AvgPRResponseMs    float64
 	PRMergeRate        float64
 	OpenIssues         int
 	OpenPRs            int

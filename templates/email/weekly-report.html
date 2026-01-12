@@ -273,11 +273,11 @@
                 </div>
                 <div class="metric">
                     <div class="metric-label">Avg Issue Response</div>
-                    <div class="metric-value">{{if gt .CurrentHealth.AvgIssueResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgIssueResponseMs)}}h{{else}}N/A{{end}}</div>
+                    <div class="metric-value">{{if gt .CurrentHealth.AvgIssueResponseMs 0.0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgIssueResponseMs)}}h{{else}}N/A{{end}}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-label">Avg PR Response</div>
-                    <div class="metric-value">{{if gt .CurrentHealth.AvgPRResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgPRResponseMs)}}h{{else}}N/A{{end}}</div>
+                    <div class="metric-value">{{if gt .CurrentHealth.AvgPRResponseMs 0.0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgPRResponseMs)}}h{{else}}N/A{{end}}</div>
                 </div>
                 <div class="metric">
                     <div class="metric-label">PR Merge Rate</div>

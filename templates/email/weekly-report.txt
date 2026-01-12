@@ -1,0 +1,83 @@
+================================================================================
+KONVEYOR REPOSITORY HEALTH REPORT
+================================================================================
+
+Weekly report for {{.MaintainerName}}
+Week ending {{.WeekEnding}}
+Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}
+
+{{if gt .TotalRepos 1}}
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Repositories:          {{.TotalRepos}}
+Total Stale Items:     {{.TotalStale}}
+New Contributors:      {{.TotalNewContributors}}
+
+{{end}}
+{{range .Repos}}
+================================================================================
+{{.Org}}/{{.Repo}}
+================================================================================
+
+STALE ISSUES & PRS
+--------------------------------------------------------------------------------
+Total Stale:    {{.CurrentStale.TotalStale}} {{if eq .StaleTrend.Direction "up"}}↑{{else if eq .StaleTrend.Direction "down"}}↓{{else}}→{{end}} {{if ne .StaleTrend.Direction "same"}}{{.StaleTrend.Absolute}} ({{printf "%.1f" .StaleTrend.Percent}}%){{else}}(no change){{end}}
+Stale Issues:   {{.CurrentStale.StaleIssues}}
+Stale PRs:      {{.CurrentStale.StalePRs}}
+
+{{if .StaleItems}}
+Recent Stale Items:
+{{range .StaleItems}}
+  • {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+    By @{{.Author}} • Last updated: {{.UpdatedAt}}
+{{end}}
+{{end}}
+
+COMMUNITY HEALTH
+--------------------------------------------------------------------------------
+Contributors (90d):         {{.CurrentHealth.Contributors}}
+New Contributors (30d):     {{.CurrentHealth.NewContributors}}
+Avg Issue Response:         {{if gt .CurrentHealth.AvgIssueResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgIssueResponseMs)}}h{{else}}N/A{{end}}
+Avg PR Response:            {{if gt .CurrentHealth.AvgPRResponseMs 0}}{{printf "%.1f" (divideMs .CurrentHealth.AvgPRResponseMs)}}h{{else}}N/A{{end}}
+PR Merge Rate:              {{printf "%.0f" .CurrentHealth.PRMergeRate}}%
+Open Issues:                {{.CurrentHealth.OpenIssues}}
+Open PRs:                   {{.CurrentHealth.OpenPRs}}
+
+{{if .NewContributors}}
+New Contributors This Week:
+{{range .NewContributors}}  • @{{.Username}}
+{{end}}
+{{end}}
+
+SECURITY & COVERAGE
+--------------------------------------------------------------------------------
+{{if .CurrentHealth.Vulnerabilities}}
+Snyk Vulnerabilities:
+  Critical: {{.CurrentHealth.Vulnerabilities.Critical}}
+  High:     {{.CurrentHealth.Vulnerabilities.High}}
+  Medium:   {{.CurrentHealth.Vulnerabilities.Medium}}
+  Low:      {{.CurrentHealth.Vulnerabilities.Low}}
+  Total:    {{.CurrentHealth.Vulnerabilities.Total}}
+{{else}}
+Snyk integration not configured
+{{end}}
+
+{{if .CurrentHealth.Coverage}}
+Code Coverage: {{printf "%.1f" .CurrentHealth.Coverage}}%
+{{else}}
+Code coverage not available
+{{end}}
+
+QUICK LINKS
+--------------------------------------------------------------------------------
+Repository:         {{.DashboardURL}}
+Stale Items:        {{.StaleURL}}
+Community Insights: {{.CommunityHealthURL}}
+
+{{end}}
+================================================================================
+
+Generated with Konveyor Release Tools
+https://github.com/konveyor/release-tools

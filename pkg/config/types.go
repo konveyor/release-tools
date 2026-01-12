@@ -48,3 +48,26 @@ type Milestone struct {
 	Due         string `json:"due"`
 	Replaces    string `json:"replaces"`
 }
+
+// MaintainerConfig holds configuration for weekly email notifications to maintainers
+type MaintainerConfig struct {
+	Maintainers []Maintainer `json:"maintainers" yaml:"maintainers"`
+	CCEmails    []string     `json:"cc_emails" yaml:"cc_emails"`
+	SMTP        SMTPConfig   `json:"smtp" yaml:"smtp"`
+}
+
+// Maintainer represents a repository maintainer who receives weekly health reports
+type Maintainer struct {
+	Org   string `json:"org" yaml:"org"`
+	Repo  string `json:"repo" yaml:"repo"`
+	Email string `json:"email" yaml:"email"`
+	Name  string `json:"name" yaml:"name"`
+}
+
+// SMTPConfig holds SMTP server configuration for sending emails
+type SMTPConfig struct {
+	Server    string `json:"server" yaml:"server"`
+	Port      int    `json:"port" yaml:"port"`
+	FromEmail string `json:"from_email" yaml:"from_email"`
+	FromName  string `json:"from_name" yaml:"from_name"`
+}

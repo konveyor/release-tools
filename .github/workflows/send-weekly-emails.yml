@@ -1,0 +1,118 @@
+name: Send Weekly Repository Health Emails
+
+on:
+  schedule:
+    # Mondays at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      dry_run:
+        description: 'Dry run (generate emails but do not send)'
+        required: false
+        default: false
+        type: boolean
+      test_email:
+        description: 'Send to specific email only (for testing)'
+        required: false
+        type: string
+      log_level:
+        description: 'Log level (debug, info, warn, error)'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - debug
+          - info
+          - warn
+          - error
+
+permissions:
+  contents: read
+
+jobs:
+  send-weekly-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.19'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build weekly email tool
+        run: |
+          cd cmd/weekly-email
+          go build -o ../../weekly-email .
+          cd ../..
+          chmod +x weekly-email
+
+      - name: Verify maintainers config exists
+        run: |
+          if [ ! -f pkg/config/maintainers.yaml ]; then
+            echo "Error: pkg/config/maintainers.yaml not found"
+            echo "Please create maintainers.yaml from maintainers.yaml.example"
+            exit 1
+          fi
+
+      - name: Send weekly emails (dry-run mode)
+        if: ${{ inputs.dry_run == true || inputs.dry_run == 'true' }}
+        run: |
+          echo "Running in dry-run mode"
+          ./weekly-email \
+            --maintainers=pkg/config/maintainers.yaml \
+            --dry-run \
+            --log-level=${{ inputs.log_level || 'info' }}
+
+      - name: Send test email (single recipient)
+        if: ${{ inputs.test_email != '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
+        env:
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          echo "Sending test email to ${{ inputs.test_email }}"
+          ./weekly-email \
+            --maintainers=pkg/config/maintainers.yaml \
+            --email="${{ inputs.test_email }}" \
+            --confirm \
+            --log-level=${{ inputs.log_level || 'info' }}
+
+      - name: Send weekly emails to all maintainers
+        if: ${{ inputs.test_email == '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
+        env:
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          echo "Sending weekly emails to all maintainers"
+          ./weekly-email \
+            --maintainers=pkg/config/maintainers.yaml \
+            --confirm \
+            --log-level=${{ inputs.log_level || 'info' }}
+
+      - name: Generate workflow summary
+        if: always()
+        run: |
+          {
+            echo "## Weekly Email Report Summary"
+            echo ""
+            echo "- **Workflow**: ${{ github.workflow }}"
+            echo "- **Run ID**: ${{ github.run_id }}"
+            echo "- **Triggered by**: ${{ github.event_name }}"
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "- **Mode**: Dry run (no emails sent)"
+            elif [ -n "${{ inputs.test_email }}" ]; then
+              echo "- **Mode**: Test (sent to ${{ inputs.test_email }})"
+            else
+              echo "- **Mode**: Production (sent to all maintainers)"
+            fi
+            echo "- **Log level**: ${{ inputs.log_level || 'info' }}"
+            echo ""
+            echo "Check the logs above for detailed information."
+          } >> "$GITHUB_STEP_SUMMARY"

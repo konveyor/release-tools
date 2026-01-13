@@ -1,0 +1,85 @@
+# Maintainers configuration for weekly email reports
+# This file maps repositories to maintainer email addresses
+
+# List of maintainers - each entry associates a repository with a maintainer's email
+# Multiple entries can share the same email address, which will result in one
+# consolidated email containing all repositories for that maintainer
+maintainers:
+  # Example: Single maintainer for one repository
+  - org: konveyor
+    repo: analyzer-lsp
+    email: maintainer@example.com
+    name: John Doe
+
+  # Example: Same maintainer for multiple repositories
+  # (will receive one email with all repos)
+  - org: konveyor
+    repo: kai
+    email: maintainer@example.com
+    name: John Doe
+
+  # Example: Different maintainer for another repository
+  - org: konveyor
+    repo: tackle2-hub
+    email: another-maintainer@example.com
+    name: Jane Smith
+
+  # Example: Multiple maintainers for the same repository
+  # (each will receive their own separate email)
+  - org: konveyor
+    repo: kantra
+    email: lead-maintainer@example.com
+    name: Lead Maintainer
+
+  - org: konveyor
+    repo: kantra
+    email: co-maintainer@example.com
+    name: Co-Maintainer
+
+# Optional: CC email addresses that will receive all emails
+# Useful for team leads or project managers who want visibility
+cc_emails:
+  - team-lead@example.com
+  - project-manager@example.com
+
+# SMTP configuration for sending emails
+# Note: SMTP username and password are read from environment variables
+# SMTP_USERNAME and SMTP_PASSWORD (typically set in GitHub Secrets)
+smtp:
+  # SMTP server address
+  server: smtp.gmail.com
+
+  # SMTP server port (587 for TLS/STARTTLS, 465 for SSL)
+  port: 587
+
+  # Email address to send from
+  from_email: noreply-konveyor@example.com
+
+  # Display name for the sender
+  from_name: Konveyor Health Reports
+
+# SMTP Configuration Examples:
+#
+# Gmail (requires app-specific password):
+# server: smtp.gmail.com
+# port: 587
+# SMTP_USERNAME: your-email@gmail.com
+# SMTP_PASSWORD: your-app-specific-password
+#
+# Office 365:
+# server: smtp.office365.com
+# port: 587
+# SMTP_USERNAME: your-email@company.com
+# SMTP_PASSWORD: your-password
+#
+# SendGrid:
+# server: smtp.sendgrid.net
+# port: 587
+# SMTP_USERNAME: apikey
+# SMTP_PASSWORD: your-sendgrid-api-key
+#
+# AWS SES:
+# server: email-smtp.us-east-1.amazonaws.com
+# port: 587
+# SMTP_USERNAME: your-ses-smtp-username
+# SMTP_PASSWORD: your-ses-smtp-password

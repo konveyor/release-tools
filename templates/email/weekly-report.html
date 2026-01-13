@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konveyor Weekly Repository Health Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #24292e;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 6px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0366d6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #0366d6;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 5px 0 0;
+            color: #586069;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            border-left: 4px solid #0366d6;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 15px;
+            color: #24292e;
+        }
+        .repo-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: #0366d6;
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #586069;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #24292e;
+            margin: 5px 0;
+        }
+        .metric-trend {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .trend-up {
+            color: #d73a49;
+        }
+        .trend-down {
+            color: #28a745;
+        }
+        .trend-same {
+            color: #6a737d;
+        }
+        .stale-list {
+            margin-top: 10px;
+        }
+        .stale-item {
+            padding: 10px;
+            background-color: #ffffff;
+            border-left: 3px solid #f66a0a;
+            margin-bottom: 8px;
+            border-radius: 3px;
+        }
+        .stale-item-title {
+            font-weight: 600;
+            color: #24292e;
+        }
+        .stale-item-meta {
+            font-size: 12px;
+            color: #586069;
+            margin-top: 4px;
+        }
+        .contributors-list {
+            margin-top: 10px;
+        }
+        .contributor {
+            display: inline-block;
+            background-color: #ffffff;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 16px;
+            border: 1px solid #e1e4e8;
+            font-size: 14px;
+        }
+        .vulnerability {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+        .vuln-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        .vuln-critical {
+            background-color: #d73a49;
+            color: #ffffff;
+        }
+        .vuln-high {
+            background-color: #f66a0a;
+            color: #ffffff;
+        }
+        .vuln-medium {
+            background-color: #ffd33d;
+            color: #24292e;
+        }
+        .vuln-low {
+            background-color: #6a737d;
+            color: #ffffff;
+        }
+        .links {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f6f8fa;
+            border-radius: 6px;
+        }
+        .links a {
+            color: #0366d6;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e4e8;
+            text-align: center;
+            color: #586069;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+            font-size: 12px;
+            color: #586069;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Konveyor Repository Health Report</h1>
+            <p>Weekly report for {{.MaintainerName}} • Week ending {{.WeekEnding}}</p>
+        </div>
+
+        {{if gt .TotalRepos 1}}
+        <div class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="metric-grid">
+                <div class="metric">
+                    <div class="metric-label">Repositories</div>
+                    <div class="metric-value">{{.TotalRepos}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Total Stale Items</div>
+                    <div class="metric-value">{{.TotalStale}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">New Contributors</div>
+                    <div class="metric-value">{{.TotalNewContributors}}</div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+
+        {{range .Repos}}
+        <div class="section">
+            <h2 class="repo-title">{{.Org}}/{{.Repo}}</h2>
+
+            <!-- Stale Issues & PRs -->
+            <h3 class="section-title">Stale Issues & PRs</h3>
+            <div class="metric-grid">
+                <div class="metric">
+                    <div class="metric-label">Total Stale</div>
+                    <div class="metric-value">{{.CurrentStale.TotalStale}}</div>
+                    <div class="metric-trend {{if eq .StaleTrend.Direction "up"}}trend-up{{else if eq .StaleTrend.Direction "down"}}trend-down{{else}}trend-same{{end}}">
+                        {{if eq .StaleTrend.Direction "up"}}↑{{else if eq .StaleTrend.Direction "down"}}↓{{else}}→{{end}}
+                        {{if ne .StaleTrend.Direction "same"}}{{.StaleTrend.Absolute}} ({{printf "%.1f" .StaleTrend.Percent}}%){{else}}No change{{end}}
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Stale Issues</div>
+                    <div class="metric-value">{{.CurrentStale.StaleIssues}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Stale PRs</div>
+                    <div class="metric-value">{{.CurrentStale.StalePRs}}</div>
+                </div>
+            </div>
+
+            {{if .StaleItems}}
+            <div class="stale-list">
+                {{range .StaleItems}}
+                <div class="stale-item">
+                    <div class="stale-item-title">
+                        {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+                    </div>
+                    <div class="stale-item-meta">
+                        By @{{.Author}} • Last updated: {{.UpdatedAt}}
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+
+            <!-- Community Health -->
+            <h3 class="section-title">Community Health</h3>
+            <div class="metric-grid">
+                <div class="metric">
+                    <div class="metric-label">Contributors (90d)</div>
+                    <div class="metric-value">{{.CurrentHealth.Contributors}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">New Contributors (30d)</div>
+                    <div class="metric-value">{{.CurrentHealth.NewContributors}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Avg Issue Response</div>
+                    <div class="metric-value">{{if gt .CurrentHealth.AvgIssueResponseMs 0.0}}{{formatDuration .CurrentHealth.AvgIssueResponseMs}}{{else}}N/A{{end}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Avg PR Response</div>
+                    <div class="metric-value">{{if gt .CurrentHealth.AvgPRResponseMs 0.0}}{{formatDuration .CurrentHealth.AvgPRResponseMs}}{{else}}N/A{{end}}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">PR Merge Rate</div>
+                    <div class="metric-value">{{printf "%.0f" .CurrentHealth.PRMergeRate}}%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Open Issues</div>
+                    <div class="metric-value">{{.CurrentHealth.OpenIssues}}</div>
+                </div>
+            </div>
+
+            {{if .NewContributors}}
+            <div class="contributors-list">
+                <strong>New Contributors This Week:</strong><br>
+                {{range .NewContributors}}
+                <span class="contributor">@{{.Username}}</span>
+                {{end}}
+            </div>
+            {{end}}
+
+            <!-- Security & Coverage - only show if data exists -->
+            {{if or .CurrentHealth.Vulnerabilities .CurrentHealth.Coverage}}
+            <h3 class="section-title">Security & Coverage</h3>
+            {{if .CurrentHealth.Vulnerabilities}}
+            <div style="margin-top: 10px;">
+                <strong>Snyk Vulnerabilities:</strong><br>
+                <div style="margin-top: 10px;">
+                    <span class="vulnerability">
+                        Critical: <span class="vuln-badge vuln-critical">{{.CurrentHealth.Vulnerabilities.Critical}}</span>
+                    </span>
+                    <span class="vulnerability">
+                        High: <span class="vuln-badge vuln-high">{{.CurrentHealth.Vulnerabilities.High}}</span>
+                    </span>
+                    <span class="vulnerability">
+                        Medium: <span class="vuln-badge vuln-medium">{{.CurrentHealth.Vulnerabilities.Medium}}</span>
+                    </span>
+                    <span class="vulnerability">
+                        Low: <span class="vuln-badge vuln-low">{{.CurrentHealth.Vulnerabilities.Low}}</span>
+                    </span>
+                </div>
+            </div>
+            {{end}}
+
+            {{if .CurrentHealth.Coverage}}
+            <div style="margin-top: 15px;">
+                <strong>Code Coverage:</strong> {{printf "%.1f" .CurrentHealth.Coverage}}%
+            </div>
+            {{end}}
+            {{end}}
+
+            <div class="links">
+                <strong>Quick Links:</strong><br>
+                <a href="{{.DashboardURL}}">Repository</a>
+                <a href="{{.StaleURL}}">Stale Items</a>
+                <a href="{{.CommunityHealthURL}}">Community Insights</a>
+            </div>
+        </div>
+        {{end}}
+
+        <div class="footer">
+            <p>Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}</p>
+            <p>Generated with <a href="https://github.com/konveyor/release-tools">Konveyor Release Tools</a></p>
+        </div>
+    </div>
+</body>
+</html>

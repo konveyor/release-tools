@@ -225,32 +225,39 @@ The token is stored in localStorage and only used for client-side API requests.
 
 ### 3. Snyk Security Integration (Optional)
 
-To enable security vulnerability tracking in the dashboard:
+The dashboard uses **Snyk CLI via GitHub Actions** to scan repositories for security vulnerabilities. This approach is more reliable than the API and works with personal Snyk tokens.
 
-1. **Get your Snyk API token**:
+#### Quick Setup:
+
+1. **Get your Snyk token**:
    - Go to <https://app.snyk.io/account>
    - Click "Generate Token" or copy existing token
    - Token should start with `snyk-`
 
-2. **Find your Snyk Organization ID**:
-   - Go to <https://app.snyk.io>
-   - Click Settings (gear icon)
-   - Copy the Organization ID
+2. **Add GitHub Secret**:
+   - Go to: Repository → Settings → Secrets and variables → Actions
+   - Add: **New repository secret**
+   - Name: `SNYK_TOKEN`
+   - Value: Your Snyk token
+   - Click: **Add secret**
 
-3. **Add GitHub Secrets**:
-   - Go to your repository Settings → Secrets and variables → Actions
-   - Add two new repository secrets:
-     - `SNYK_API_TOKEN`: Your Snyk API token
-     - `SNYK_ORG_ID`: Your Snyk organization ID
+3. **Run the scan workflow** (one-time):
+   - Go to: **Actions** tab
+   - Select: **Scan Snyk Vulnerabilities**
+   - Click: **Run workflow**
 
-4. **Ensure repositories are monitored by Snyk**:
-   - Import your repositories into Snyk if not already done
-   - The workflow will only show vulnerability data for repos that Snyk is monitoring
+That's it! The scan runs daily at 2 AM UTC and the dashboard displays the results automatically.
 
 **What happens if not configured:**
-- If secrets are not set, the Security column will show "N/A" for all repositories
-- The dashboard will continue to work normally for all other metrics
+- If `SNYK_TOKEN` is not set, the Security column will show "N/A" for all repositories
+- The dashboard continues to work normally for all other metrics
 - No errors will occur - Snyk integration is completely optional
+
+**For detailed documentation**, see [SNYK-CLI-INTEGRATION.md](../SNYK-CLI-INTEGRATION.md) including:
+- Troubleshooting
+- Advanced configuration
+- Custom scan options
+- Migration from API approach
 
 ### 4. Enable Automated Data Collection
 
@@ -435,28 +442,33 @@ community-health-dashboard/
 ### Security Metrics (Snyk)
 
 **Vulnerability Collection**:
-- Fetched from Snyk API using `SNYK_API_TOKEN` and `SNYK_ORG_ID`
-- Queries Snyk's `/v1/org/{orgId}/projects` endpoint to find monitored GitHub repos
-- For each repo, retrieves aggregated issues from `/v1/org/{orgId}/project/{projectId}/aggregated-issues`
+- Uses **Snyk CLI via GitHub Actions** (not the REST API)
+- Scan workflow (`scan-snyk-vulnerabilities.yml`) runs daily at 2:00 AM UTC
+- Clones each repository and runs `snyk test` locally
+- Stores results in `community-health-dashboard/data/snyk/latest.json`
+- Community health workflow reads from this file at 3:00 AM UTC
 - Counts vulnerabilities by severity: critical, high, medium, low
-- Returns `null` if repo is not monitored by Snyk or API credentials not configured
+- Returns `null` if repo has no dependency files or scan fails
 
 **Display Logic**:
 - **Severity badges**: Shows count for each severity level present (e.g., "2C 3H 5M")
 - **No vulnerabilities**: Green checkmark badge if total = 0
-- **Not configured/monitored**: Shows "N/A" with consistent cell padding
-- **Error handling**: Gracefully handles API failures, shows N/A for affected repos
+- **Not scanned**: Shows "N/A" with consistent cell padding
+- **Error handling**: Gracefully handles missing scan data, shows N/A for affected repos
 
 **Data Collection Frequency**:
-- Collected daily by GitHub Actions workflow at 3:00 AM UTC
+- Scanned daily by Snyk CLI workflow at 2:00 AM UTC
+- Incorporated into community health metrics at 3:00 AM UTC
 - Stored in historical data files alongside other metrics
 - Allows tracking vulnerability trends over time
 
-**Known Limitations**:
-- Currently uses Snyk v1 API endpoints (deprecated September 2024)
-- v1 endpoints remain functional with no published sunset date
-- Migration to REST (v2) Issues API recommended for future compatibility
-- See [Snyk migration guide](https://docs.snyk.io/snyk-api/guides/migrating-to-the-rest-api) for details
+**Advantages of CLI Approach**:
+- ✅ Works with personal Snyk tokens (not just service accounts)
+- ✅ More reliable than API (avoids 403 authentication errors)
+- ✅ Scans actual repository code (not just Snyk-monitored projects)
+- ✅ Simpler setup - only requires `SNYK_TOKEN` secret
+- ✅ Better error handling and logging
+- See [SNYK-CLI-INTEGRATION.md](../SNYK-CLI-INTEGRATION.md) for details
 
 ## API Rate Limits
 

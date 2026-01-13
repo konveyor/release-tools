@@ -94,6 +94,37 @@ The dashboard works in conjunction with the Stale Issue Workflow to provide visi
 
 **For Maintainers**: Hosting the dashboard requires manually enabling GitHub Pages in repository settings. See the [dashboard README](./stale-dashboard/README.md) for complete setup instructions.
 
+### Weekly Email Reports
+
+See [weekly email documentation](./docs/weekly-email-reports.md)
+
+An automated email notification system that sends weekly repository health reports to maintainers every Monday at 9:00 AM UTC. Each email includes:
+
+- **Stale Issues & PRs**: Count and list of stale items with week-over-week trends
+- **Community Health**: Contributors, response times, PR merge rates, and activity metrics
+- **Security & Coverage**: Snyk vulnerability counts by severity and code coverage (when available)
+- **New Contributors**: List of new contributors from the past week
+- **Quick Links**: Direct links to GitHub repository and dashboards
+
+**Key Features**:
+- Consolidated emails (one email per maintainer with all their repositories)
+- Week-over-week trend analysis with visual indicators (↑↓→)
+- Smart time formatting (minutes for <1h, hours for ≥1h)
+- HTML emails with plain text fallback
+- Multiple testing modes (preview, dry-run, single-email)
+- Automated delivery via GitHub Actions
+
+**Quick Start**:
+```bash
+# Preview email (no SMTP needed)
+./weekly-email --maintainers=pkg/config/maintainers.yaml --preview > preview.html
+
+# Send test email
+./weekly-email --maintainers=pkg/config/maintainers.yaml --email=test@example.com --confirm
+```
+
+For complete setup instructions, SMTP configuration, and troubleshooting, see the [weekly email reports documentation](./docs/weekly-email-reports.md).
+
 # Contributing
 
 We welcome contributions to this project! If you're interested in contributing,

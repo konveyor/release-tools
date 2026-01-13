@@ -63,51 +63,76 @@ jobs:
             if git clone --depth 1 "https://github.com/${org}/${repo}.git" "$REPO_DIR" 2>/dev/null; then
               cd "$REPO_DIR"
 
-              # Run Snyk test and capture JSON output
+              # Run Snyk dependency test and capture JSON output
               # Use || true to continue even if vulnerabilities are found (which causes non-zero exit)
-              snyk test --json --org=konveyor > "/tmp/${repo}-snyk.json" 2>&1 || true
+              echo "  Running dependency scan..."
+              snyk test --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
 
-              # Parse the results
-              if [ -f "/tmp/${repo}-snyk.json" ]; then
-                # Extract vulnerability counts by severity
-                CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
-                HIGH=$(jq '[.vulnerabilities[]? | select(.severity == "high")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
-                MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
-                LOW=$(jq '[.vulnerabilities[]? | select(.severity == "low")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
-                TOTAL=$(jq '.vulnerabilities | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
+              # Run Snyk Code test for source code vulnerabilities
+              echo "  Running code scan..."
+              snyk code test --json --org=konveyor > "/tmp/${repo}-code.json" 2>&1 || true
 
-                echo "  Found: ${CRITICAL} critical, ${HIGH} high, ${MEDIUM} medium, ${LOW} low (${TOTAL} total)"
+              # Parse and combine results from both scans
+              CRITICAL=0
+              HIGH=0
+              MEDIUM=0
+              LOW=0
 
-                # Add to results JSON
-                jq --arg org "$org" --arg repo "$repo" \
-                   --argjson critical "$CRITICAL" --argjson high "$HIGH" \
-                   --argjson medium "$MEDIUM" --argjson low "$LOW" --argjson total "$TOTAL" \
-                   '.repositories += [{
-                     "org": $org,
-                     "repo": $repo,
-                     "vulnerabilities": {
-                       "critical": $critical,
-                       "high": $high,
-                       "medium": $medium,
-                       "low": $low,
-                       "total": $total
-                     }
-                   }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
+              # Parse dependency scan results
+              if [ -f "/tmp/${repo}-deps.json" ]; then
+                DEPS_CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_HIGH=$(jq '[.vulnerabilities[]? | select(.severity == "high")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_LOW=$(jq '[.vulnerabilities[]? | select(.severity == "low")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
 
-                mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
-              else
-                echo "  ⚠️  No Snyk data available for ${org}/${repo}"
+                CRITICAL=$((CRITICAL + DEPS_CRITICAL))
+                HIGH=$((HIGH + DEPS_HIGH))
+                MEDIUM=$((MEDIUM + DEPS_MEDIUM))
+                LOW=$((LOW + DEPS_LOW))
 
-                # Add null entry for repos without data
-                jq --arg org "$org" --arg repo "$repo" \
-                   '.repositories += [{
-                     "org": $org,
-                     "repo": $repo,
-                     "vulnerabilities": null
-                   }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
-
-                mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
+                echo "    Dependencies: ${DEPS_CRITICAL} critical, ${DEPS_HIGH} high, ${DEPS_MEDIUM} medium, ${DEPS_LOW} low"
               fi
+
+              # Parse code scan results
+              if [ -f "/tmp/${repo}-code.json" ]; then
+                CODE_CRITICAL=$(jq '[.runs[]?.results[]? | select(.level == "error") | select(.properties.priorityScore >= 700)] | length' < "/tmp/${repo}-code.json" 2>/dev/null || echo "0")
+                CODE_HIGH=$(jq '[.runs[]?.results[]? | select(.level == "error") | select(.properties.priorityScore >= 400 and .properties.priorityScore < 700)] | length' < "/tmp/${repo}-code.json" 2>/dev/null || echo "0")
+                CODE_MEDIUM=$(jq '[.runs[]?.results[]? | select(.level == "warning")] | length' < "/tmp/${repo}-code.json" 2>/dev/null || echo "0")
+                CODE_LOW=$(jq '[.runs[]?.results[]? | select(.level == "note")] | length' < "/tmp/${repo}-code.json" 2>/dev/null || echo "0")
+
+                CRITICAL=$((CRITICAL + CODE_CRITICAL))
+                HIGH=$((HIGH + CODE_HIGH))
+                MEDIUM=$((MEDIUM + CODE_MEDIUM))
+                LOW=$((LOW + CODE_LOW))
+
+                echo "    Code: ${CODE_CRITICAL} critical, ${CODE_HIGH} high, ${CODE_MEDIUM} medium, ${CODE_LOW} low"
+              fi
+
+              TOTAL=$((CRITICAL + HIGH + MEDIUM + LOW))
+
+              if [ $TOTAL -gt 0 ]; then
+                echo "  Total: ${CRITICAL} critical, ${HIGH} high, ${MEDIUM} medium, ${LOW} low (${TOTAL} total)"
+              else
+                echo "  No vulnerabilities found"
+              fi
+
+              # Add to results JSON
+              jq --arg org "$org" --arg repo "$repo" \
+                 --argjson critical "$CRITICAL" --argjson high "$HIGH" \
+                 --argjson medium "$MEDIUM" --argjson low "$LOW" --argjson total "$TOTAL" \
+                 '.repositories += [{
+                   "org": $org,
+                   "repo": $repo,
+                   "vulnerabilities": {
+                     "critical": $critical,
+                     "high": $high,
+                     "medium": $medium,
+                     "low": $low,
+                     "total": $total
+                   }
+                 }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
+
+              mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
 
               # Cleanup
               cd /tmp

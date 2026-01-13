@@ -1,30 +1,20 @@
 {
-  "timestamp": "2025-12-31T02:39:46.638Z",
-  "date": "2025-12-31",
+  "timestamp": "2026-01-13T02:40:43.972Z",
+  "date": "2026-01-13",
   "repositories": [
     {
       "org": "konveyor",
       "repo": "analyzer-lsp",
-      "totalStale": 2,
-      "staleIssues": 1,
+      "totalStale": 1,
+      "staleIssues": 0,
       "stalePRs": 1,
       "items": [
         {
-          "number": 887,
-          "title": ":bug: Use XML line numbers directly from xmlquery",
+          "number": 691,
+          "title": "Add doc for analyzer provider interation",
           "type": "pr",
-          "updatedAt": "2025-12-22T01:34:08Z",
-          "author": "aufi",
-          "labels": [
-            "stale"
-          ]
-        },
-        {
-          "number": 478,
-          "title": "Refactor description/message according to discussion",
-          "type": "issue",
-          "updatedAt": "2025-11-18T01:32:47Z",
-          "author": "jmle",
+          "updatedAt": "2026-01-07T01:33:46Z",
+          "author": "midays",
           "labels": [
             "stale"
           ]
@@ -338,8 +328,8 @@
     {
       "org": "konveyor",
       "repo": "enhancements",
-      "totalStale": 22,
-      "staleIssues": 20,
+      "totalStale": 21,
+      "staleIssues": 19,
       "stalePRs": 2,
       "items": [
         {
@@ -392,19 +382,6 @@
           ]
         },
         {
-          "number": 192,
-          "title": "[RFE] Dynamic File-Based Input for Rules",
-          "type": "issue",
-          "updatedAt": "2025-11-04T01:29:21Z",
-          "author": "brunoborges",
-          "labels": [
-            "needs-triage",
-            "needs-kind",
-            "needs-priority",
-            "stale"
-          ]
-        },
-        {
           "number": 191,
           "title": "[LFX Fall '24 Mentorship]: Enhancing Kai with Data Querying for Fine-Tuning and Potential InstructLab Integration",
           "type": "issue",
@@ -421,7 +398,7 @@
           "number": 190,
           "title": "Add proposal for a binaries download page",
           "type": "pr",
-          "updatedAt": "2025-11-04T01:29:25Z",
+          "updatedAt": "2026-01-06T16:35:06Z",
           "author": "fabianvf",
           "labels": [
             "stale"
@@ -605,9 +582,19 @@
       "org": "konveyor",
       "repo": "kai",
       "totalStale": 25,
-      "staleIssues": 18,
-      "stalePRs": 7,
+      "staleIssues": 19,
+      "stalePRs": 6,
       "items": [
+        {
+          "number": 894,
+          "title": "Add a test covering a basic analysis using rpc and a JDTLS pipe",
+          "type": "issue",
+          "updatedAt": "2026-01-10T01:32:14Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
         {
           "number": 852,
           "title": ":sapling: Add more verbose logs to solution server",
@@ -720,16 +707,6 @@
           "type": "issue",
           "updatedAt": "2025-11-05T01:32:11Z",
           "author": "jwmatthews",
-          "labels": [
-            "stale"
-          ]
-        },
-        {
-          "number": 759,
-          "title": ":ghost: improve logging",
-          "type": "pr",
-          "updatedAt": "2025-11-05T01:32:13Z",
-          "author": "pranavgaikwad",
           "labels": [
             "stale"
           ]
@@ -877,8 +854,8 @@
     {
       "org": "konveyor",
       "repo": "kantra",
-      "totalStale": 17,
-      "staleIssues": 17,
+      "totalStale": 16,
+      "staleIssues": 16,
       "stalePRs": 0,
       "items": [
         {
@@ -999,19 +976,6 @@
           ]
         },
         {
-          "number": 365,
-          "title": "[BUG] Containerless-Kantra [Windows -Only] : built-in provider grep is not supported",
-          "type": "issue",
-          "updatedAt": "2025-11-06T01:31:36Z",
-          "author": "kthatipally",
-          "labels": [
-            "needs-triage",
-            "kind/bug",
-            "priority/critical-urgent",
-            "stale"
-          ]
-        },
-        {
           "number": 364,
           "title": "[BUG] Containerless-Kantra : [Windows-Only - Java binary analysis] Fails to decompile class files and creates incidents on the dependencies from .m2",
           "type": "issue",
@@ -1064,19 +1028,6 @@
           ]
         },
         {
-          "number": 279,
-          "title": "Static report needs to display when rule(s) error",
-          "type": "issue",
-          "updatedAt": "2025-11-08T01:31:04Z",
-          "author": "eemcmullan",
-          "labels": [
-            "needs-triage",
-            "needs-kind",
-            "needs-priority",
-            "stale"
-          ]
-        },
-        {
           "number": 228,
           "title": "Include sha of rulesets in `version` command",
           "type": "issue",
@@ -1097,6 +1048,16 @@
           "author": "djzager",
           "labels": [
             "kind/feature",
+            "stale"
+          ]
+        },
+        {
+          "number": 121,
+          "title": "[MacOS] Performance observation:  Kantra is ~144x slower than WindUp on jboss-eap-quickstarts",
+          "type": "issue",
+          "updatedAt": "2026-01-13T01:31:54Z",
+          "author": "jwmatthews",
+          "labels": [
             "stale"
           ]
         }
@@ -1177,8 +1138,8 @@
       "org": "konveyor",
       "repo": "rulesets",
       "totalStale": 26,
-      "staleIssues": 22,
-      "stalePRs": 4,
+      "staleIssues": 23,
+      "stalePRs": 3,
       "items": [
         {
           "number": 298,
@@ -1373,16 +1334,6 @@
           ]
         },
         {
-          "number": 256,
-          "title": "Adding correct usage across the rulesets for from filepaths",
-          "type": "pr",
-          "updatedAt": "2025-11-05T01:31:31Z",
-          "author": "shawn-hurley",
-          "labels": [
-            "stale"
-          ]
-        },
-        {
           "number": 255,
           "title": "Cloud Readiness support for dotnet applications",
           "type": "issue",
@@ -1439,19 +1390,6 @@
           ]
         },
         {
-          "number": 239,
-          "title": "Add a higher level of granularity for rulesets - aka \"Migration Scenario\"",
-          "type": "issue",
-          "updatedAt": "2025-11-07T01:31:34Z",
-          "author": "brunoborges",
-          "labels": [
-            "needs-triage",
-            "needs-kind",
-            "needs-priority",
-            "stale"
-          ]
-        },
-        {
           "number": 237,
           "title": "[RFE] For dependency rules, add ability to ignore a match if its an indirect dependency",
           "type": "issue",
@@ -1461,6 +1399,34 @@
             "needs-triage",
             "needs-kind",
             "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 234,
+          "title": "Rules detecting migration to MicroProfile OpenAPI 4.0 (EAP XP6)",
+          "type": "issue",
+          "updatedAt": "2026-01-07T01:32:19Z",
+          "author": "pferraro",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 233,
+          "title": "Rules for Spring Boot - Spring Session Changes - Gradle and Maven",
+          "type": "issue",
+          "updatedAt": "2026-01-08T01:31:59Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
             "stale"
           ]
         },
@@ -1508,37 +1474,33 @@
     {
       "org": "konveyor",
       "repo": "tackle2-hub",
-      "totalStale": 10,
-      "staleIssues": 6,
-      "stalePRs": 4,
+      "totalStale": 9,
+      "staleIssues": 8,
+      "stalePRs": 1,
       "items": [
         {
-          "number": 893,
-          "title": ":ghost: Better migration support for dev.",
-          "type": "pr",
-          "updatedAt": "2025-11-04T01:29:09Z",
-          "author": "jortel",
+          "number": 952,
+          "title": "Ensure dependent components are built with matching branches",
+          "type": "issue",
+          "updatedAt": "2026-01-13T01:29:14Z",
+          "author": "aufi",
           "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
             "stale"
           ]
         },
         {
-          "number": 887,
-          "title": ":ghost: Add CMP package.",
-          "type": "pr",
-          "updatedAt": "2025-11-04T01:29:11Z",
-          "author": "jortel",
+          "number": 948,
+          "title": "Trigger Hub rebuild for dependent repo changes (seeds and rulesets)",
+          "type": "issue",
+          "updatedAt": "2026-01-12T01:29:33Z",
+          "author": "aufi",
           "labels": [
-            "stale"
-          ]
-        },
-        {
-          "number": 861,
-          "title": ":sparkles: Reconcile additional resource kinds.",
-          "type": "pr",
-          "updatedAt": "2025-11-04T01:29:13Z",
-          "author": "jortel",
-          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
             "stale"
           ]
         },
@@ -1623,9 +1585,9 @@
     {
       "org": "konveyor",
       "repo": "tackle2-ui",
-      "totalStale": 29,
+      "totalStale": 27,
       "staleIssues": 27,
-      "stalePRs": 2,
+      "stalePRs": 0,
       "items": [
         {
           "number": 2651,
@@ -1889,16 +1851,6 @@
           ]
         },
         {
-          "number": 2154,
-          "title": ":sparkles: Update application Name column popover paths for correct breadcrumb navigation",
-          "type": "pr",
-          "updatedAt": "2025-11-05T01:29:36Z",
-          "author": "EstyBiton",
-          "labels": [
-            "stale"
-          ]
-        },
-        {
           "number": 2151,
           "title": "Future improvements here to get a better counting endpoint from the hub backend services.",
           "type": "issue",
@@ -1908,16 +1860,6 @@
             "kind/feature",
             "triage/accepted",
             "priority/minor",
-            "stale"
-          ]
-        },
-        {
-          "number": 2144,
-          "title": ":sparkles: Refine tag name filter",
-          "type": "pr",
-          "updatedAt": "2025-11-05T01:29:25Z",
-          "author": "DvoraShechter1",
-          "labels": [
             "stale"
           ]
         },
@@ -1998,8 +1940,8 @@
   ],
   "totals": {
     "repositories": 11,
-    "totalStale": 164,
-    "staleIssues": 143,
-    "stalePRs": 21
+    "totalStale": 158,
+    "staleIssues": 144,
+    "stalePRs": 14
   }
 }

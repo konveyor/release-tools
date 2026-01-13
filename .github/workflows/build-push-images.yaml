@@ -39,6 +39,21 @@ on:
         default: ""
         required: false
         type: string
+      ref:
+        description: "The github ref to checkout if different then github.ref context"
+        default: ""
+        required: false
+        type: string
+      tag:
+        description: "Allow for the caller to pass in a specific tag to use"
+        default: ""
+        required: false
+        type: string
+      publish:
+        description: "Whether to push the built image to the registry"
+        default: "true"
+        required: false
+        type: string
     secrets:
       registry_username:
         description: "Quay publish robot"
@@ -48,7 +63,7 @@ on:
         required: true
 
 env:
-  tag: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name }}
+  tag: ${{ inputs.tag || (github.ref == 'refs/heads/main' && 'latest' || github.ref_name) }}
 
 jobs:
   build:
@@ -93,11 +108,25 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Configure QEMU
-        uses: docker/setup-qemu-action@master
         with:
-          platforms: all
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Install QEMU static
+        shell: bash
+        run: |
+          # Remove any existing qemu setup
+          sudo systemctl stop systemd-binfmt || true
+
+          # Install latest qemu-user-static
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+          # Re-register binfmt interpreters
+          sudo systemctl restart systemd-binfmt
+          sudo systemctl enable systemd-binfmt
+
+          # Verify registration
+          ls -la /proc/sys/fs/binfmt_misc/
 
       - name: Image meta
         id: meta
@@ -133,6 +162,7 @@ jobs:
       - name: Push To Quay
         uses: redhat-actions/push-to-registry@main
         id: push
+        if: ${{ inputs.publish == 'true' }}
         with:
           image: ${{ steps.build.outputs.image }}
           tags: ${{ env.tag }}-${{ matrix.architecture }}
@@ -143,6 +173,7 @@ jobs:
   manifest:
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ inputs.publish == 'true' }}
     steps:
       - name: Create manifest
         shell: bash

@@ -21,6 +21,11 @@ jobs:
       - name: Setup Snyk CLI
         uses: snyk/actions/setup@master
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Load repository configuration
         id: load-config
         run: |
@@ -63,11 +68,28 @@ jobs:
             if git clone --depth 1 "https://github.com/${org}/${repo}.git" "$REPO_DIR" 2>/dev/null; then
               cd "$REPO_DIR"
 
+              # Install Python dependencies if requirements.txt exists
+              # Snyk requires dependencies to be installed in an active venv to scan Python projects
+              if find . -name "requirements.txt" -not -path "*/tests/*" -not -path "*/notebooks/*" | grep -q .; then
+                echo "  Installing Python dependencies..."
+                python3 -m venv .snyk-venv
+                source .snyk-venv/bin/activate
+                find . -name "requirements.txt" -not -path "*/tests/*" -not -path "*/notebooks/*" | while read -r reqfile; do
+                  echo "    Installing from $reqfile"
+                  pip install -q -r "$reqfile" 2>/dev/null || true
+                done
+              fi
+
               # Run Snyk dependency test and capture JSON output
               # Use --all-projects to scan all manifest files (package.json, go.mod, pom.xml, requirements.txt, etc.)
+              # Use --exclude to skip test directories
               # Use || true to continue even if vulnerabilities are found (which causes non-zero exit)
               echo "  Running dependency scan..."
-              snyk test --all-projects --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
+              # Activate venv if it exists (for Python projects)
+              if [ -d .snyk-venv ]; then
+                source .snyk-venv/bin/activate
+              fi
+              snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
 
               # Run Snyk Code test for source code vulnerabilities
               echo "  Running code scan..."
@@ -80,11 +102,12 @@ jobs:
               LOW=0
 
               # Parse dependency scan results
+              # --all-projects returns an array of project results
               if [ -f "/tmp/${repo}-deps.json" ]; then
-                DEPS_CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
-                DEPS_HIGH=$(jq '[.vulnerabilities[]? | select(.severity == "high")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
-                DEPS_MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
-                DEPS_LOW=$(jq '[.vulnerabilities[]? | select(.severity == "low")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_CRITICAL=$(jq '[.[] | .vulnerabilities[]? | select(.severity == "critical")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_HIGH=$(jq '[.[] | .vulnerabilities[]? | select(.severity == "high")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_MEDIUM=$(jq '[.[] | .vulnerabilities[]? | select(.severity == "medium")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
+                DEPS_LOW=$(jq '[.[] | .vulnerabilities[]? | select(.severity == "low")] | length' < "/tmp/${repo}-deps.json" 2>/dev/null || echo "0")
 
                 CRITICAL=$((CRITICAL + DEPS_CRITICAL))
                 HIGH=$((HIGH + DEPS_HIGH))

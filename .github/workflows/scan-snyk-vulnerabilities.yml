@@ -64,9 +64,10 @@ jobs:
               cd "$REPO_DIR"
 
               # Run Snyk dependency test and capture JSON output
+              # Use --all-projects to scan all manifest files (package.json, go.mod, pom.xml, requirements.txt, etc.)
               # Use || true to continue even if vulnerabilities are found (which causes non-zero exit)
               echo "  Running dependency scan..."
-              snyk test --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
+              snyk test --all-projects --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
 
               # Run Snyk Code test for source code vulnerabilities
               echo "  Running code scan..."

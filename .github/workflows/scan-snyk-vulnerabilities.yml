@@ -74,15 +74,11 @@ jobs:
                 echo "  Installing Python dependencies..."
                 python3 -m venv .snyk-venv
                 source .snyk-venv/bin/activate
-                echo "    Python: $(which python3)"
-                echo "    Pip: $(which pip)"
                 # Use process substitution to avoid subshell in pipe
                 while IFS= read -r reqfile; do
                   echo "    Installing from $reqfile"
-                  pip install -r "$reqfile" 2>&1 | head -5 || echo "    Installation failed"
+                  pip install -q -r "$reqfile" 2>/dev/null || true
                 done < <(find . -name "requirements.txt" -not -path "*/tests/*" -not -path "*/notebooks/*")
-                echo "    Installed packages:"
-                pip list | head -20
               fi
 
               # Run Snyk dependency test and capture JSON output
@@ -92,14 +88,10 @@ jobs:
               echo "  Running dependency scan..."
               # Activate venv and run scan in the same shell context
               if [ -d .snyk-venv ]; then
-                echo "    Venv found, activating for scan..."
-                (source .snyk-venv/bin/activate && echo "    Python in scan: $(which python3)" && echo "    Pip in scan: $(which pip)" && snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1) || true
+                (source .snyk-venv/bin/activate && snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1) || true
               else
-                echo "    No venv, scanning without Python activation..."
                 snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
               fi
-              echo "    Scan output preview:"
-              head -50 "/tmp/${repo}-deps.json" || echo "    No output file"
 
               # Run Snyk Code test for source code vulnerabilities
               echo "  Running code scan..."

@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-01-13T13:17:14Z",
+  "repositories": [
+    {
+      "org": "analyzer-lsp",
+      "repo": "enhancements",
+      "vulnerabilities": null
+    },
+    {
+      "org": "java-analyzer-bundle",
+      "repo": "kai",
+      "vulnerabilities": null
+    },
+    {
+      "org": "kantra",
+      "repo": "operator",
+      "vulnerabilities": null
+    },
+    {
+      "org": "rulesets",
+      "repo": "tackle2-hub",
+      "vulnerabilities": null
+    }
+  ]
+}

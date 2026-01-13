@@ -38,7 +38,7 @@ jobs:
           mkdir -p community-health-dashboard/data/snyk
 
           # Initialize results JSON
-          echo '{"timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "repositories": []}' > /tmp/snyk-results.json
+          echo "{\"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"repositories\": []}" > /tmp/snyk-results.json
 
           # Read repositories and scan each one
           while IFS='/' read -r org repo; do

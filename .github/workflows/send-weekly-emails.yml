@@ -99,18 +99,20 @@ jobs:
       - name: Generate workflow summary
         if: always()
         run: |
-          echo "## Weekly Email Report Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workflow**: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Run ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "- **Mode**: Dry run (no emails sent)" >> $GITHUB_STEP_SUMMARY
-          elif [ -n "${{ inputs.test_email }}" ]; then
-            echo "- **Mode**: Test (sent to ${{ inputs.test_email }})" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Mode**: Production (sent to all maintainers)" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Log level**: ${{ inputs.log_level || 'info' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check the logs above for detailed information." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Weekly Email Report Summary"
+            echo ""
+            echo "- **Workflow**: ${{ github.workflow }}"
+            echo "- **Run ID**: ${{ github.run_id }}"
+            echo "- **Triggered by**: ${{ github.event_name }}"
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "- **Mode**: Dry run (no emails sent)"
+            elif [ -n "${{ inputs.test_email }}" ]; then
+              echo "- **Mode**: Test (sent to ${{ inputs.test_email }})"
+            else
+              echo "- **Mode**: Production (sent to all maintainers)"
+            fi
+            echo "- **Log level**: ${{ inputs.log_level || 'info' }}"
+            echo ""
+            echo "Check the logs above for detailed information."
+          } >> "$GITHUB_STEP_SUMMARY"

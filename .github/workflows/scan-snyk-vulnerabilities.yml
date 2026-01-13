@@ -25,10 +25,10 @@ jobs:
         id: load-config
         run: |
           # Extract repository list from config.js
-          cat community-health-dashboard/config.js | grep -A 100 "repositories:" | grep -E "org:|repo:" | sed 's/[^:]*://g' | sed 's/[^a-zA-Z0-9-]//g' | paste -d "/" - - > /tmp/repos.txt
+          grep -A 100 "repositories:" < community-health-dashboard/config.js | grep -E "org:|repo:" | sed 's/[^:]*://g' | sed 's/[^a-zA-Z0-9-]//g' | paste -d "/" - - > /tmp/repos.txt
 
           echo "Repositories to scan:"
-          cat /tmp/repos.txt
+          < /tmp/repos.txt cat
 
       - name: Scan repositories with Snyk CLI
         env:
@@ -64,11 +64,11 @@ jobs:
               # Parse the results
               if [ -f "/tmp/${repo}-snyk.json" ]; then
                 # Extract vulnerability counts by severity
-                CRITICAL=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' 2>/dev/null || echo "0")
-                HIGH=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "high")] | length' 2>/dev/null || echo "0")
-                MEDIUM=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' 2>/dev/null || echo "0")
-                LOW=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "low")] | length' 2>/dev/null || echo "0")
-                TOTAL=$(cat "/tmp/${repo}-snyk.json" | jq '.vulnerabilities | length' 2>/dev/null || echo "0")
+                CRITICAL=$(jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
+                HIGH=$(jq '[.vulnerabilities[]? | select(.severity == "high")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
+                MEDIUM=$(jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
+                LOW=$(jq '[.vulnerabilities[]? | select(.severity == "low")] | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
+                TOTAL=$(jq '.vulnerabilities | length' < "/tmp/${repo}-snyk.json" 2>/dev/null || echo "0")
 
                 echo "  Found: ${CRITICAL} critical, ${HIGH} high, ${MEDIUM} medium, ${LOW} low (${TOTAL} total)"
 

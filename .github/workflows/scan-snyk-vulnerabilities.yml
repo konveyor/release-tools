@@ -25,7 +25,10 @@ jobs:
         id: load-config
         run: |
           # Extract repository list from config.js
-          grep -A 100 "repositories:" < community-health-dashboard/config.js | grep -E "org:|repo:" | sed 's/[^:]*://g' | sed 's/[^a-zA-Z0-9-]//g' | paste -d "/" - - > /tmp/repos.txt
+          # Parse lines like: { org: 'konveyor', repo: 'analyzer-lsp' },
+          grep -A 100 "repositories:" < community-health-dashboard/config.js | \
+            grep "org:" | \
+            sed "s/.*org: *['\"]\\([^'\"]*\\)['\"].*repo: *['\"]\\([^'\"]*\\)['\"].*/\\1\\/\\2/" > /tmp/repos.txt
 
           echo "Repositories to scan:"
           < /tmp/repos.txt cat

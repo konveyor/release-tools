@@ -1,6 +1,7 @@
 package email
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -115,7 +116,10 @@ func (s *EmailSender) TestConnection() error {
 		return fmt.Errorf("failed to create SMTP client: %w", err)
 	}
 
-	if err := client.DialWithContext(nil); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := client.DialWithContext(ctx); err != nil {
 		return fmt.Errorf("failed to connect to SMTP server: %w", err)
 	}
 

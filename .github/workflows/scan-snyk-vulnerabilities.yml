@@ -85,11 +85,12 @@ jobs:
               # Use --exclude to skip test directories
               # Use || true to continue even if vulnerabilities are found (which causes non-zero exit)
               echo "  Running dependency scan..."
-              # Activate venv if it exists (for Python projects)
+              # Activate venv and run scan in the same shell context
               if [ -d .snyk-venv ]; then
-                source .snyk-venv/bin/activate
+                (source .snyk-venv/bin/activate && snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1) || true
+              else
+                snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
               fi
-              snyk test --all-projects --exclude=tests,notebooks --json --org=konveyor > "/tmp/${repo}-deps.json" 2>&1 || true
 
               # Run Snyk Code test for source code vulnerabilities
               echo "  Running code scan..."

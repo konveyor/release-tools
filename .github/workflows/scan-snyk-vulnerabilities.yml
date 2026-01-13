@@ -43,6 +43,9 @@ jobs:
           # Initialize results JSON
           echo "{\"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"repositories\": []}" > /tmp/snyk-results.json
 
+          # Save the working directory
+          WORK_DIR="$(pwd)"
+
           # Read repositories and scan each one
           while IFS='/' read -r org repo; do
             if [ -z "$org" ] || [ -z "$repo" ]; then
@@ -127,7 +130,8 @@ jobs:
             sleep 2
           done < /tmp/repos.txt
 
-          # Copy final results to the data directory
+          # Return to working directory and copy final results
+          cd "$WORK_DIR"
           cp /tmp/snyk-results.json community-health-dashboard/data/snyk/latest.json
 
           echo ""

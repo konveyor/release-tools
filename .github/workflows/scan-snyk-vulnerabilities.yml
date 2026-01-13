@@ -74,10 +74,11 @@ jobs:
                 echo "  Installing Python dependencies..."
                 python3 -m venv .snyk-venv
                 source .snyk-venv/bin/activate
-                find . -name "requirements.txt" -not -path "*/tests/*" -not -path "*/notebooks/*" | while read -r reqfile; do
+                # Use process substitution to avoid subshell in pipe
+                while IFS= read -r reqfile; do
                   echo "    Installing from $reqfile"
                   pip install -q -r "$reqfile" 2>/dev/null || true
-                done
+                done < <(find . -name "requirements.txt" -not -path "*/tests/*" -not -path "*/notebooks/*")
               fi
 
               # Run Snyk dependency test and capture JSON output

@@ -26,8 +26,6 @@ jobs:
       - name: Collect community health metrics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SNYK_API_TOKEN: ${{ secrets.SNYK_API_TOKEN }}
-          SNYK_ORG_ID: ${{ secrets.SNYK_ORG_ID }}
         run: |
           # Create data directory if it doesn't exist
           mkdir -p community-health-dashboard/data/history
@@ -164,111 +162,43 @@ jobs:
           }
 
           /**
-           * Fetch Snyk security vulnerability data for a repository using REST API v2
+           * Fetch Snyk security vulnerability data for a repository from local scan results
            *
-           * Requires SNYK_API_TOKEN (service account) and SNYK_ORG_ID environment variables.
-           * Returns vulnerability counts by severity or null if unavailable.
+           * Reads from community-health-dashboard/data/snyk/latest.json which is generated
+           * by the scan-snyk-vulnerabilities.yml workflow using Snyk CLI.
            *
-           * Uses Snyk REST API v2 which requires a service account token.
-           * Personal API tokens will not work with REST API endpoints.
+           * This approach uses GitHub Actions + Snyk CLI instead of the Snyk REST API,
+           * which avoids API authentication issues and provides more reliable data.
            *
-           * API endpoints used (version must be query parameter):
-           * - GET /rest/orgs/{orgId}/projects?version=2024-10-15 - List all projects
-           * - GET /rest/orgs/{orgId}/issues?version=2024-10-15 - Get vulnerability issues
+           * The scan workflow runs daily at 2 AM UTC (1 hour before this collection runs).
            *
            * @param {string} org - GitHub organization
            * @param {string} repo - Repository name
            * @returns {Object|null} - {critical, high, medium, low, total} or null
            */
           async function fetchSnykData(org, repo) {
-            const snykOrgId = process.env.SNYK_ORG_ID;
-            const snykToken = process.env.SNYK_API_TOKEN;
-
-            if (!snykToken || !snykOrgId) {
-              return null; // Snyk not configured
-            }
-
             try {
-              // Step 1: Get all projects using REST API v2
-              const projectsData = await httpsRequest({
-                hostname: 'api.snyk.io',
-                path: `/rest/orgs/${snykOrgId}/projects?version=2024-10-15&limit=100`,
-                headers: {
-                  'Authorization': `token ${snykToken}`,
-                  'Content-Type': 'application/vnd.api+json'
-                }
-              });
-
-              if (!projectsData || !projectsData.data) {
-                return null; // No projects found
+              // Check if Snyk scan results file exists
+              if (!fs.existsSync('community-health-dashboard/data/snyk/latest.json')) {
+                console.log(`    [Snyk] No scan results file found - run scan-snyk-vulnerabilities workflow first`);
+                return null;
               }
 
-              // Step 2: Find projects matching this GitHub repo
-              // Project names format: org/repo:file or org/repo:branch/file
-              const matchingProjects = projectsData.data.filter(project => {
-                const name = project.attributes?.name || '';
-                // Match projects that start with org/repo
-                return name.startsWith(`${org}/${repo}:`);
-              });
+              // Read the scan results
+              const snykData = JSON.parse(fs.readFileSync('community-health-dashboard/data/snyk/latest.json', 'utf8'));
 
-              if (matchingProjects.length === 0) {
-                return null; // No matching project found for this repo
+              // Find the matching repository in the results
+              const repoData = snykData.repositories.find(r => r.org === org && r.repo === repo);
+
+              if (!repoData) {
+                console.log(`    [Snyk] No data found for ${org}/${repo} in scan results`);
+                return null;
               }
 
-              const projectIds = matchingProjects.map(p => p.id);
-
-              // Step 3: Get all issues with pagination (max 100 per request)
-              let allIssues = [];
-              let nextUrl = `/rest/orgs/${snykOrgId}/issues?version=2024-10-15&limit=100`;
-
-              while (nextUrl) {
-                const issuesData = await httpsRequest({
-                  hostname: 'api.snyk.io',
-                  path: nextUrl,
-                  headers: {
-                    'Authorization': `token ${snykToken}`,
-                    'Content-Type': 'application/vnd.api+json'
-                  }
-                });
-
-                if (!issuesData || !issuesData.data) {
-                  break;
-                }
-
-                allIssues = allIssues.concat(issuesData.data);
-
-                // Check for next page
-                nextUrl = issuesData.links?.next || null;
-                if (nextUrl) {
-                  // Extract just the path from the full URL
-                  nextUrl = nextUrl.replace('https://api.snyk.io', '');
-                }
-              }
-
-              // Step 4: Filter issues by matching project IDs and count by severity
-              const vulnerabilities = {
-                critical: 0,
-                high: 0,
-                medium: 0,
-                low: 0,
-                total: 0
-              };
-
-              allIssues.forEach(issue => {
-                // Check if issue belongs to one of our matching projects
-                const scanItemId = issue.relationships?.scan_item?.data?.id;
-                if (projectIds.includes(scanItemId)) {
-                  const severity = (issue.attributes?.effective_severity_level || '').toLowerCase();
-                  if (vulnerabilities.hasOwnProperty(severity)) {
-                    vulnerabilities[severity]++;
-                    vulnerabilities.total++;
-                  }
-                }
-              });
-
-              return vulnerabilities;
+              // Return the vulnerability data (or null if not scanned)
+              return repoData.vulnerabilities;
             } catch (snykError) {
-              // Snyk data unavailable - this is normal for repos not in Snyk
+              // Snyk data unavailable - this is normal for repos not scanned
               console.log(`    [Snyk Error] ${snykError.message} for ${org}/${repo}`);
               return null;
             }

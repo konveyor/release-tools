@@ -1,0 +1,155 @@
+name: Scan Snyk Vulnerabilities
+
+on:
+  schedule:
+    # Run daily at 2:00 AM UTC (1 hour before community health collection)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  scan-vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Load repository configuration
+        id: load-config
+        run: |
+          # Extract repository list from config.js
+          cat community-health-dashboard/config.js | grep -A 100 "repositories:" | grep -E "org:|repo:" | sed 's/[^:]*://g' | sed 's/[^a-zA-Z0-9-]//g' | paste -d "/" - - > /tmp/repos.txt
+
+          echo "Repositories to scan:"
+          cat /tmp/repos.txt
+
+      - name: Scan repositories with Snyk CLI
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          # Create output directory
+          mkdir -p community-health-dashboard/data/snyk
+
+          # Initialize results JSON
+          echo '{"timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "repositories": []}' > /tmp/snyk-results.json
+
+          # Read repositories and scan each one
+          while IFS='/' read -r org repo; do
+            if [ -z "$org" ] || [ -z "$repo" ]; then
+              continue
+            fi
+
+            echo "========================================="
+            echo "Scanning ${org}/${repo}..."
+            echo "========================================="
+
+            # Clone the repository to a temp location
+            REPO_DIR="/tmp/scan-${repo}"
+            rm -rf "$REPO_DIR"
+
+            if git clone --depth 1 "https://github.com/${org}/${repo}.git" "$REPO_DIR" 2>/dev/null; then
+              cd "$REPO_DIR"
+
+              # Run Snyk test and capture JSON output
+              # Use || true to continue even if vulnerabilities are found (which causes non-zero exit)
+              snyk test --json --org=konveyor > "/tmp/${repo}-snyk.json" 2>&1 || true
+
+              # Parse the results
+              if [ -f "/tmp/${repo}-snyk.json" ]; then
+                # Extract vulnerability counts by severity
+                CRITICAL=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "critical")] | length' 2>/dev/null || echo "0")
+                HIGH=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "high")] | length' 2>/dev/null || echo "0")
+                MEDIUM=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "medium")] | length' 2>/dev/null || echo "0")
+                LOW=$(cat "/tmp/${repo}-snyk.json" | jq '[.vulnerabilities[]? | select(.severity == "low")] | length' 2>/dev/null || echo "0")
+                TOTAL=$(cat "/tmp/${repo}-snyk.json" | jq '.vulnerabilities | length' 2>/dev/null || echo "0")
+
+                echo "  Found: ${CRITICAL} critical, ${HIGH} high, ${MEDIUM} medium, ${LOW} low (${TOTAL} total)"
+
+                # Add to results JSON
+                jq --arg org "$org" --arg repo "$repo" \
+                   --argjson critical "$CRITICAL" --argjson high "$HIGH" \
+                   --argjson medium "$MEDIUM" --argjson low "$LOW" --argjson total "$TOTAL" \
+                   '.repositories += [{
+                     "org": $org,
+                     "repo": $repo,
+                     "vulnerabilities": {
+                       "critical": $critical,
+                       "high": $high,
+                       "medium": $medium,
+                       "low": $low,
+                       "total": $total
+                     }
+                   }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
+
+                mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
+              else
+                echo "  ⚠️  No Snyk data available for ${org}/${repo}"
+
+                # Add null entry for repos without data
+                jq --arg org "$org" --arg repo "$repo" \
+                   '.repositories += [{
+                     "org": $org,
+                     "repo": $repo,
+                     "vulnerabilities": null
+                   }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
+
+                mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
+              fi
+
+              # Cleanup
+              cd /tmp
+              rm -rf "$REPO_DIR"
+            else
+              echo "  ✗ Failed to clone ${org}/${repo}"
+
+              # Add null entry for failed clones
+              jq --arg org "$org" --arg repo "$repo" \
+                 '.repositories += [{
+                   "org": $org,
+                   "repo": $repo,
+                   "vulnerabilities": null
+                 }]' /tmp/snyk-results.json > /tmp/snyk-results-tmp.json
+
+              mv /tmp/snyk-results-tmp.json /tmp/snyk-results.json
+            fi
+
+            # Small delay to avoid rate limits
+            sleep 2
+          done < /tmp/repos.txt
+
+          # Copy final results to the data directory
+          cp /tmp/snyk-results.json community-health-dashboard/data/snyk/latest.json
+
+          echo ""
+          echo "========================================="
+          echo "Scan Summary"
+          echo "========================================="
+          jq -r '.repositories[] | "\(.org)/\(.repo): \(if .vulnerabilities then "\(.vulnerabilities.total) vulnerabilities" else "N/A" end)"' /tmp/snyk-results.json
+
+      - name: Commit Snyk scan results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add the results file
+          git add community-health-dashboard/data/snyk/latest.json
+
+          # Check if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          # Commit with timestamp
+          DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
+          git commit -m ":shield: Update Snyk vulnerability scan results - ${DATE}"
+
+          # Push to repository
+          git push

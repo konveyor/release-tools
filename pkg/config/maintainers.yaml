@@ -1,0 +1,36 @@
+# Maintainers configuration for weekly email reports
+# This file maps repositories to maintainer email addresses
+
+# List of maintainers - each entry associates a repository with a maintainer's email
+# Multiple entries can share the same email address, which will result in one
+# consolidated email containing all repositories for that maintainer
+maintainers:
+  - org: konveyor
+    repo: analyzer-lsp
+    email: tsanders@redhat.com
+    name: Todd Sanders
+
+  - org: konveyor
+    repo: kai
+    email: tsanders@redhat.com
+    name: Todd Sanders
+
+# Optional: CC email addresses that will receive all emails
+# Useful for team leads or project managers who want visibility
+cc_emails: []
+
+# SMTP configuration for sending emails
+# Note: SMTP username and password are read from environment variables
+# SMTP_USERNAME and SMTP_PASSWORD (typically set in GitHub Secrets)
+smtp:
+  # SMTP server address
+  server: smtp.gmail.com
+
+  # SMTP server port (587 for TLS/STARTTLS, 465 for SSL)
+  port: 587
+
+  # Email address to send from
+  from_email: konveyor.health.reports@gmail.com
+
+  # Display name for the sender
+  from_name: Konveyor Health Reports

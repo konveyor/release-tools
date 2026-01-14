@@ -225,7 +225,10 @@
             <h2 class="repo-title">{{.Org}}/{{.Repo}}</h2>
 
             <!-- Stale Issues & PRs -->
-            <h3 class="section-title">Stale Issues & PRs</h3>
+            <h3 class="section-title">
+                Stale Issues & PRs
+                <a href="{{.StaleURL}}" style="font-size: 14px; font-weight: normal; color: #0366d6; text-decoration: none; margin-left: 10px;">→ View Dashboard</a>
+            </h3>
             <div class="metric-grid">
                 <div class="metric">
                     <div class="metric-label">Total Stale</div>
@@ -265,7 +268,10 @@
             {{end}}
 
             <!-- Community Health -->
-            <h3 class="section-title">Community Health</h3>
+            <h3 class="section-title">
+                Community Health
+                <a href="{{.CommunityHealthURL}}" style="font-size: 14px; font-weight: normal; color: #0366d6; text-decoration: none; margin-left: 10px;">→ View Dashboard</a>
+            </h3>
             <div class="metric-grid">
                 <div class="metric">
                     <div class="metric-label">Contributors (90d)</div>

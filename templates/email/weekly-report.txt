@@ -23,6 +23,8 @@ New Contributors:      {{.TotalNewContributors}}
 
 STALE ISSUES & PRS
 --------------------------------------------------------------------------------
+Dashboard: {{.StaleURL}}
+
 Total Stale:    {{.CurrentStale.TotalStale}} {{if eq .StaleTrend.Direction "up"}}↑{{else if eq .StaleTrend.Direction "down"}}↓{{else}}→{{end}} {{if ne .StaleTrend.Direction "same"}}{{.StaleTrend.Absolute}} ({{printf "%.1f" .StaleTrend.Percent}}%){{else}}(no change){{end}}
 Stale Issues:   {{.CurrentStale.StaleIssues}}
 Stale PRs:      {{.CurrentStale.StalePRs}}
@@ -40,6 +42,8 @@ Recent Stale Items:
 
 COMMUNITY HEALTH
 --------------------------------------------------------------------------------
+Dashboard: {{.CommunityHealthURL}}
+
 Contributors (90d):         {{.CurrentHealth.Contributors}}
 New Contributors (30d):     {{.CurrentHealth.NewContributors}}
 Avg Issue Response:         {{if gt .CurrentHealth.AvgIssueResponseMs 0.0}}{{formatDuration .CurrentHealth.AvgIssueResponseMs}}{{else}}N/A{{end}}

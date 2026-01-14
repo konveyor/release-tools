@@ -29,8 +29,11 @@ Stale PRs:      {{.CurrentStale.StalePRs}}
 
 {{if .StaleItems}}
 Recent Stale Items:
+{{$org := .Org}}
+{{$repo := .Repo}}
 {{range .StaleItems}}
   • {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+    https://github.com/{{$org}}/{{$repo}}/{{if eq .Type "issue"}}issues{{else}}pull{{end}}/{{.Number}}
     By @{{.Author}} • Last updated: {{.UpdatedAt}}
 {{end}}
 {{end}}

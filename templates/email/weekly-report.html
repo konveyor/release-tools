@@ -247,10 +247,14 @@
 
             {{if .StaleItems}}
             <div class="stale-list">
+                {{$org := .Org}}
+                {{$repo := .Repo}}
                 {{range .StaleItems}}
                 <div class="stale-item">
                     <div class="stale-item-title">
-                        {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+                        <a href="https://github.com/{{$org}}/{{$repo}}/{{if eq .Type "issue"}}issues{{else}}pull{{end}}/{{.Number}}" style="color: #0366d6; text-decoration: none;">
+                            {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+                        </a>
                     </div>
                     <div class="stale-item-meta">
                         By @{{.Author}} • Last updated: {{.UpdatedAt}}

@@ -161,8 +161,8 @@ func AggregateRepoData(org, repo string, data *HistoricalData) (*RepoReport, err
 		Org:  org,
 		Repo: repo,
 		DashboardURL:       fmt.Sprintf("https://github.com/%s/%s", org, repo),
-		StaleURL:           fmt.Sprintf("https://github.com/%s/%s/issues?q=is:open+label:stale", org, repo),
-		CommunityHealthURL: fmt.Sprintf("https://github.com/%s/%s/pulse", org, repo),
+		StaleURL:           fmt.Sprintf("https://konveyor.github.io/release-tools/stale-dashboard/#repo=%s/%s", org, repo),
+		CommunityHealthURL: fmt.Sprintf("https://konveyor.github.io/release-tools/community-health-dashboard/#repo=%s/%s", org, repo),
 	}
 
 	// Get current (most recent) and previous (7 days ago) data

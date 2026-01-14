@@ -225,7 +225,10 @@
             <h2 class="repo-title">{{.Org}}/{{.Repo}}</h2>
 
             <!-- Stale Issues & PRs -->
-            <h3 class="section-title">Stale Issues & PRs</h3>
+            <h3 class="section-title">
+                Stale Issues & PRs
+                <a href="{{.StaleURL}}" style="font-size: 14px; font-weight: normal; color: #0366d6; text-decoration: none; margin-left: 10px;">→ View Dashboard</a>
+            </h3>
             <div class="metric-grid">
                 <div class="metric">
                     <div class="metric-label">Total Stale</div>
@@ -247,10 +250,14 @@
 
             {{if .StaleItems}}
             <div class="stale-list">
+                {{$org := .Org}}
+                {{$repo := .Repo}}
                 {{range .StaleItems}}
                 <div class="stale-item">
                     <div class="stale-item-title">
-                        {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+                        <a href="https://github.com/{{$org}}/{{$repo}}/{{if eq .Type "issue"}}issues{{else}}pull{{end}}/{{.Number}}" style="color: #0366d6; text-decoration: none;">
+                            {{if eq .Type "issue"}}Issue{{else}}PR{{end}} #{{.Number}}: {{.Title}}
+                        </a>
                     </div>
                     <div class="stale-item-meta">
                         By @{{.Author}} • Last updated: {{.UpdatedAt}}
@@ -261,7 +268,10 @@
             {{end}}
 
             <!-- Community Health -->
-            <h3 class="section-title">Community Health</h3>
+            <h3 class="section-title">
+                Community Health
+                <a href="{{.CommunityHealthURL}}" style="font-size: 14px; font-weight: normal; color: #0366d6; text-decoration: none; margin-left: 10px;">→ View Dashboard</a>
+            </h3>
             <div class="metric-grid">
                 <div class="metric">
                     <div class="metric-label">Contributors (90d)</div>

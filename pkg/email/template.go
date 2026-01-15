@@ -105,6 +105,10 @@ func FormatDuration(ms float64) string {
 		minutes := ms / 60000.0
 		return fmt.Sprintf("%.0fm", minutes)
 	}
+	if hours >= 48.0 {
+		days := hours / 24.0
+		return fmt.Sprintf("%.1fd", days)
+	}
 	return fmt.Sprintf("%.1fh", hours)
 }
 

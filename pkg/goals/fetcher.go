@@ -917,7 +917,7 @@ func (f *Fetcher) fetchPRsAwaitingAuthorResponse(ctx context.Context, org, repo 
 			var latestChangeRequest *github.PullRequestReview
 			for _, review := range reviews {
 				if review.GetState() == "CHANGES_REQUESTED" {
-					if latestChangeRequest == nil || (review.SubmittedAt != nil && review.SubmittedAt.After(latestChangeRequest.SubmittedAt.Time)) {
+					if latestChangeRequest == nil || (review.SubmittedAt != nil && latestChangeRequest.SubmittedAt != nil && review.SubmittedAt.After(latestChangeRequest.SubmittedAt.Time)) {
 						latestChangeRequest = review
 					}
 				}

@@ -50,7 +50,7 @@
             color: #24292e;
         }
         .repo-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             margin: 20px 0 10px;
             color: #0366d6;
@@ -200,6 +200,264 @@
             <p>Weekly report for {{.MaintainerName}} • Week ending {{.WeekEnding}}</p>
         </div>
 
+        {{if .GoalsProgress}}
+        <div class="section">
+            <h2 class="section-title">Team Goals Progress</h2>
+            <p style="color: #586069; font-size: 14px; margin-bottom: 20px;">
+                Tracking progress across all {{.GoalsProgress.TotalReposChecked}} repositories
+            </p>
+
+            <!-- Goal 1: 30-Day Activity Rule -->
+            <div style="margin-bottom: 25px; padding: 15px; background: #ffffff; border-radius: 6px; border: 1px solid #e1e4e8;">
+                <h3 style="font-size: 15px; margin: 0 0 10px 0; color: #24292e;">
+                    1. 30-Day Activity Rule
+                    <span class="status-badge status-{{.GoalsProgress.ThirtyDayActivity.Status}}">
+                        {{.GoalsProgress.ThirtyDayActivity.Status}}
+                    </span>
+                </h3>
+                <p style="font-size: 13px; color: #586069; margin-bottom: 10px;">
+                    Goal: No open issue/PR should go >30 days without maintainer comment
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{printf "%.1f" .GoalsProgress.ThirtyDayActivity.ComplianceRate}}%"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 14px; color: #24292e;">
+                    <strong>{{printf "%.1f" .GoalsProgress.ThirtyDayActivity.ComplianceRate}}%</strong> compliant
+                    ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} of {{.GoalsProgress.ThirtyDayActivity.TotalOpenItems}} items need attention)
+                </div>
+                {{if .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+                <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total)</summary>
+                    <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
+                        {{range .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+                        <li style="margin-bottom: 5px;">
+                            <a href="{{.URL}}" style="color: #0366d6; text-decoration: none;">{{.Org}}/{{.Repo}} #{{.Number}}</a> - {{.DaysSinceUpdate}} days
+                        </li>
+                        {{end}}
+                    </ul>
+                </details>
+                {{end}}
+            </div>
+
+            <!-- Goal 2: Backlog Cleanup -->
+            <div style="margin-bottom: 25px; padding: 15px; background: #ffffff; border-radius: 6px; border: 1px solid #e1e4e8;">
+                <h3 style="font-size: 15px; margin: 0 0 10px 0; color: #24292e;">
+                    2. Backlog Cleanup (90+ days)
+                    <span class="status-badge status-{{.GoalsProgress.BacklogCleanup.Status}}">
+                        {{.GoalsProgress.BacklogCleanup.Status}}
+                    </span>
+                </h3>
+                <p style="font-size: 13px; color: #586069; margin-bottom: 10px;">
+                    Goal: Reduce stale backlog by 20% over 4 weeks (baseline: {{.GoalsProgress.BacklogCleanup.Baseline}} on {{.GoalsProgress.BacklogCleanup.BaselineDate}})
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{if lt .GoalsProgress.BacklogCleanup.ReductionPercent 0.0}}0{{else if gt .GoalsProgress.BacklogCleanup.ReductionPercent 100.0}}100{{else}}{{printf "%.1f" .GoalsProgress.BacklogCleanup.ReductionPercent}}{{end}}%"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 14px; color: #24292e;">
+                    {{if lt .GoalsProgress.BacklogCleanup.ItemsReduced 0}}
+                    <strong style="color: #d73a49;">{{printf "%.1f" (absFloat .GoalsProgress.BacklogCleanup.ReductionPercent)}}%</strong> increase ({{abs .GoalsProgress.BacklogCleanup.ItemsReduced}} items added)
+                    {{else}}
+                    <strong>{{printf "%.1f" .GoalsProgress.BacklogCleanup.ReductionPercent}}%</strong> reduction achieved ({{.GoalsProgress.BacklogCleanup.ItemsReduced}} items reduced)
+                    {{end}}
+                </div>
+                <div style="margin-top: 5px; font-size: 12px; color: #586069;">
+                    Current: {{.GoalsProgress.BacklogCleanup.CurrentBacklog}} items • {{.GoalsProgress.BacklogCleanup.TimeRemaining}}
+                </div>
+            </div>
+
+            <!-- Goal 3: Triage Speed -->
+            <div style="margin-bottom: 25px; padding: 15px; background: #ffffff; border-radius: 6px; border: 1px solid #e1e4e8;">
+                <h3 style="font-size: 15px; margin: 0 0 10px 0; color: #24292e;">
+                    3. Triage Speed (72 hours)
+                    <span class="status-badge status-{{.GoalsProgress.TriageSpeed.Status}}">
+                        {{.GoalsProgress.TriageSpeed.Status}}
+                    </span>
+                </h3>
+                <p style="font-size: 13px; color: #586069; margin-bottom: 10px;">
+                    Goal: 100% of new issues triaged (labeled + assigned) within 72 hours
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{printf "%.1f" .GoalsProgress.TriageSpeed.TriageRate}}%"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 14px; color: #24292e;">
+                    <strong>{{printf "%.1f" .GoalsProgress.TriageSpeed.TriageRate}}%</strong> triaged
+                    ({{.GoalsProgress.TriageSpeed.TriagedIssues}} of {{.GoalsProgress.TriageSpeed.NewIssuesLast72h}} new issues)
+                </div>
+                {{if .GoalsProgress.TriageSpeed.UntriagedList}}
+                <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show untriaged issues ({{len .GoalsProgress.TriageSpeed.UntriagedList}})</summary>
+                    <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
+                        {{range .GoalsProgress.TriageSpeed.UntriagedList}}
+                        <li style="margin-bottom: 5px;">
+                            <a href="{{.URL}}" style="color: #0366d6; text-decoration: none;">{{.Org}}/{{.Repo}} #{{.Number}}</a> - {{.HoursOpen}}h open
+                            {{if .MissingLabel}}<span style="color: #d73a49;">(needs label)</span>{{end}}
+                            {{if .MissingAssignee}}<span style="color: #d73a49;">(needs assignee)</span>{{end}}
+                        </li>
+                        {{end}}
+                    </ul>
+                </details>
+                {{end}}
+            </div>
+
+            <!-- Goal 4: Ownership Files -->
+            <div style="margin-bottom: 25px; padding: 15px; background: #ffffff; border-radius: 6px; border: 1px solid #e1e4e8;">
+                <h3 style="font-size: 15px; margin: 0 0 10px 0; color: #24292e;">
+                    4. Ownership File Updates
+                    <span class="status-badge status-{{.GoalsProgress.OwnershipUpdates.Status}}">
+                        {{.GoalsProgress.OwnershipUpdates.Status}}
+                    </span>
+                </h3>
+                <p style="font-size: 13px; color: #586069; margin-bottom: 10px;">
+                    Goal: All repositories have OWNERS and README files
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{printf "%.1f" .GoalsProgress.OwnershipUpdates.ComplianceRate}}%"></div>
+                </div>
+                <div style="margin-top: 8px; font-size: 14px; color: #24292e;">
+                    <strong>{{printf "%.1f" .GoalsProgress.OwnershipUpdates.ComplianceRate}}%</strong> compliant
+                    ({{.GoalsProgress.OwnershipUpdates.ReposWithFiles}} of {{.GoalsProgress.OwnershipUpdates.TotalRepos}} repos)
+                </div>
+                {{if .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+                <details style="margin-top: 10px;">
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show repos needing files ({{len .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}})</summary>
+                    <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
+                        {{range .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+                        <li style="margin-bottom: 5px;">
+                            <a href="{{.URL}}" style="color: #0366d6; text-decoration: none;">{{.Org}}/{{.Repo}}</a>
+                            {{if not .HasOwners}}<span style="color: #d73a49;">(missing OWNERS)</span>{{end}}
+                            {{if not .HasReadme}}<span style="color: #d73a49;">(missing README)</span>{{end}}
+                        </li>
+                        {{end}}
+                    </ul>
+                </details>
+                {{end}}
+            </div>
+
+            <!-- Per-Repository Breakdown -->
+            {{if .GoalsProgress.PerRepoMetrics}}
+            <div style="margin-top: 30px; border-top: 2px solid #e1e4e8; padding-top: 20px;">
+                <h3 style="font-size: 16px; margin: 0 0 15px 0; color: #24292e;">
+                    Repository Breakdown
+                </h3>
+                <details open>
+                    <summary style="cursor: pointer; color: #0366d6; margin-bottom: 15px; font-size: 13px;">
+                        Show per-repository metrics ({{len .GoalsProgress.PerRepoMetrics}} repos)
+                    </summary>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;">
+                        <thead>
+                            <tr style="background: #f6f8fa; border-bottom: 2px solid #d1d5da;">
+                                <th style="padding: 8px; text-align: left;">Repository</th>
+                                <th style="padding: 8px; text-align: center;">Status</th>
+                                <th style="padding: 8px; text-align: center;">30-Day</th>
+                                <th style="padding: 8px; text-align: center;">Backlog</th>
+                                <th style="padding: 8px; text-align: center;">Triage</th>
+                                <th style="padding: 8px; text-align: center;">Files</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .GoalsProgress.PerRepoMetrics}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 8px;">
+                                    <a href="https://github.com/{{.Org}}/{{.Repo}}" style="color: #0366d6; text-decoration: none;">{{.Org}}/{{.Repo}}</a>
+                                </td>
+                                <td style="padding: 8px; text-align: center;">
+                                    <span class="status-badge status-{{.OverallStatus}}" style="font-size: 10px; padding: 2px 6px;">
+                                        {{.OverallStatus}}
+                                    </span>
+                                </td>
+                                <td style="padding: 8px; text-align: center;">
+                                    {{printf "%.0f" .ActivityCompliance}}%
+                                    {{if gt .ItemsOver30Days 0}}
+                                    <span style="color: #d73a49;">({{.ItemsOver30Days}})</span>
+                                    {{end}}
+                                </td>
+                                <td style="padding: 8px; text-align: center;">
+                                    {{.BacklogCount}}
+                                </td>
+                                <td style="padding: 8px; text-align: center;">
+                                    {{if gt .NewIssuesLast72h 0}}
+                                    {{printf "%.0f" .TriageRate}}%
+                                    {{if gt .UntriagedCount 0}}
+                                    <span style="color: #d73a49;">({{.UntriagedCount}})</span>
+                                    {{end}}
+                                    {{else}}
+                                    -
+                                    {{end}}
+                                </td>
+                                <td style="padding: 8px; text-align: center;">
+                                    {{if and .HasOwners .HasReadme}}✓{{else}}
+                                    {{if not .HasOwners}}<span style="color: #d73a49;">✗O</span>{{end}}
+                                    {{if not .HasReadme}}<span style="color: #d73a49;">✗R</span>{{end}}
+                                    {{end}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                    <p style="font-size: 11px; color: #586069; margin-top: 10px; font-style: italic;">
+                        ✗O = Missing OWNERS, ✗R = Missing README. Numbers in red show items needing attention.
+                    </p>
+                </details>
+            </div>
+            {{end}}
+
+            <p style="font-size: 12px; color: #586069; margin-top: 15px; text-align: center;">
+                Data fetched: {{.GoalsProgress.FetchedAt.Format "2006-01-02 15:04 MST"}}
+            </p>
+        </div>
+
+        <style>
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background-color: #e1e4e8;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34d058 0%, #28a745 100%);
+            transition: width 0.3s ease;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-on-track {
+            background-color: #28a745;
+            color: #ffffff;
+        }
+        .status-needs-attention {
+            background-color: #ffd33d;
+            color: #24292e;
+        }
+        .status-critical {
+            background-color: #d73a49;
+            color: #ffffff;
+        }
+        </style>
+        {{end}}
+
+        {{if ge .TotalRepos 3}}
+        <div class="section" style="background-color: #f6f8fa; border-left-color: #0366d6;">
+            <h2 class="section-title" style="color: #0366d6;">📑 Table of Contents</h2>
+            <p style="color: #586069; font-size: 14px; margin-bottom: 15px;">
+                Jump to a specific repository:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                {{range .Repos}}
+                <a href="#repo-{{.Org}}-{{.Repo}}" style="display: inline-block; padding: 8px 16px; background: #ffffff; border: 1px solid #d1d5da; border-radius: 6px; color: #0366d6; text-decoration: none; font-weight: 500; font-size: 14px; transition: background-color 0.2s;">
+                    {{.Org}}/{{.Repo}}
+                </a>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
         {{if gt .TotalRepos 1}}
         <div class="section">
             <h2 class="section-title">Executive Summary</h2>
@@ -221,8 +479,225 @@
         {{end}}
 
         {{range .Repos}}
-        <div class="section">
+        <div class="section" id="repo-{{.Org}}-{{.Repo}}">
             <h2 class="repo-title">{{.Org}}/{{.Repo}}</h2>
+
+            <!-- Action Items -->
+            {{if .ActionItems}}
+            {{if gt .ActionItems.TotalItems 0}}
+            <div style="margin-bottom: 25px; padding: 15px; background: #fff5f5; border-radius: 6px; border-left: 4px solid #d73a49;">
+                <h3 style="font-size: 16px; margin: 0 0 10px 0; color: #d73a49;">
+                    ⚠️ Action Items Requiring Attention
+                </h3>
+                <p style="color: #586069; font-size: 13px; margin-bottom: 15px;">
+                    {{.ActionItems.TotalItems}} item{{if ne .ActionItems.TotalItems 1}}s{{end}} need your immediate attention
+                </p>
+
+                {{if .ActionItems.UnrespondedIssues}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #d73a49; font-size: 14px;">🔴 Issues Without Response ({{len .ActionItems.UnrespondedIssues}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Issue</th>
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Author</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Age</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.UnrespondedIssues}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{.Number}}
+                                    </a>
+                                    <br>
+                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                </td>
+                                <td style="padding: 6px;">
+                                    <span style="color: #586069;">@{{.Author}}</span>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #d73a49; font-weight: 600;">{{.DaysSince}}d</span>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .ActionItems.UnreviewedPRs}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #d97706; font-size: 14px;">🟡 Pull Requests Awaiting Review ({{len .ActionItems.UnreviewedPRs}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Pull Request</th>
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Author</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Age</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.UnreviewedPRs}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{.Number}}
+                                    </a>
+                                    <br>
+                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                </td>
+                                <td style="padding: 6px;">
+                                    <span style="color: #586069;">@{{.Author}}</span>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #d97706; font-weight: 600;">{{.DaysSince}}d</span>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .ActionItems.FailingBranches}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #d73a49; font-size: 14px;">❌ Failing Default Branch ({{len .ActionItems.FailingBranches}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Branch</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Status</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.FailingBranches}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <code style="background: #f6f8fa; padding: 2px 6px; border-radius: 3px; font-size: 12px;">{{.Branch}}</code>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #d73a49; font-weight: 600; text-transform: uppercase;">{{.Status}}</span>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <a href="{{.ChecksURL}}" style="color: #0366d6; text-decoration: none; font-size: 12px;">View checks</a>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .ActionItems.ApprovedPRsReadyToMerge}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #22863a; font-size: 14px;">✅ Approved PRs Ready to Merge ({{len .ActionItems.ApprovedPRsReadyToMerge}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Pull Request</th>
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Author</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Approved</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.ApprovedPRsReadyToMerge}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{.Number}}
+                                    </a>
+                                    <br>
+                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                </td>
+                                <td style="padding: 6px;">
+                                    <span style="color: #586069;">@{{.Author}}</span>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #22863a; font-weight: 600;">{{.DaysSince}}d ago ({{.ApprovalCount}} ✓)</span>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .ActionItems.ExternalContributorPRs}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #6f42c1; font-size: 14px;">👋 External/First-Time Contributor PRs ({{len .ActionItems.ExternalContributorPRs}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Pull Request</th>
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Author</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Waiting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.ExternalContributorPRs}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{.Number}}
+                                    </a>
+                                    <br>
+                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                </td>
+                                <td style="padding: 6px;">
+                                    <span style="color: #586069;">@{{.Author}}</span>
+                                    {{if .IsFirstTime}}<br><span style="background: #6f42c1; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">First-time</span>{{end}}
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #6f42c1; font-weight: 600;">{{.DaysWaiting}}d</span>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+
+                {{if .ActionItems.PRsAwaitingAuthorResponse}}
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #e36209; font-size: 14px;">⏳ PRs Awaiting Author Response ({{len .ActionItems.PRsAwaitingAuthorResponse}})</strong>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e1e4e8;">
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Pull Request</th>
+                                <th style="text-align: left; padding: 6px; color: #586069; font-weight: 600;">Author</th>
+                                <th style="text-align: center; padding: 6px; color: #586069; font-weight: 600;">Waiting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .ActionItems.PRsAwaitingAuthorResponse}}
+                            <tr style="border-bottom: 1px solid #e1e4e8;">
+                                <td style="padding: 6px;">
+                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{.Number}}
+                                    </a>
+                                    <br>
+                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                    <br>
+                                    <span style="color: #e36209; font-size: 11px;">Changes requested by @{{.Reviewer}}</span>
+                                </td>
+                                <td style="padding: 6px;">
+                                    <span style="color: #586069;">@{{.Author}}</span>
+                                </td>
+                                <td style="padding: 6px; text-align: center;">
+                                    <span style="color: #e36209; font-weight: 600;">{{.DaysSinceRequest}}d</span>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+            {{end}}
 
             <!-- Stale Issues & PRs -->
             <h3 class="section-title">
@@ -333,7 +808,7 @@
 
             {{if .CurrentHealth.Coverage}}
             <div style="margin-top: 15px;">
-                <strong>Code Coverage:</strong> {{printf "%.1f" .CurrentHealth.Coverage}}%
+                <strong>Code Coverage:</strong> {{printf "%.1f" (derefFloat .CurrentHealth.Coverage)}}%
             </div>
             {{end}}
             {{end}}

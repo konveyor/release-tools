@@ -1,6 +1,10 @@
 package email
 
-import "time"
+import (
+	"time"
+
+	"github.com/konveyor/release-tools/pkg/goals"
+)
 
 // HistoricalData contains aggregated data from community health and stale dashboards
 type HistoricalData struct {
@@ -112,9 +116,12 @@ type EmailReport struct {
 	GeneratedAt    time.Time    // When the report was generated
 
 	// Summary across all repos (for multi-repo emails)
-	TotalStale         int
-	TotalRepos         int
+	TotalStale           int
+	TotalRepos           int
 	TotalNewContributors int
+
+	// Goals progress (nil if goals disabled)
+	GoalsProgress *goals.GoalsProgress
 }
 
 // RepoReport represents weekly data for a single repository
@@ -135,6 +142,9 @@ type RepoReport struct {
 
 	// New contributors this week
 	NewContributors []Contributor
+
+	// Action items for this repo (nil if action items disabled)
+	ActionItems *goals.ActionItems
 
 	// Links
 	DashboardURL       string

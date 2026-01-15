@@ -3,6 +3,7 @@ package goals
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v55/github"
@@ -847,6 +848,11 @@ func (f *Fetcher) fetchExternalContributorPRs(ctx context.Context, org, repo str
 
 			author := pr.GetUser().GetLogin()
 			if author == "" {
+				continue
+			}
+
+			// Skip bot accounts (e.g., dependabot[bot])
+			if strings.Contains(strings.ToLower(author), "[bot]") {
 				continue
 			}
 

@@ -372,7 +372,12 @@ func (f *Fetcher) checkRateLimit(ctx context.Context) error {
 		if core.Remaining < 10 {
 			waitTime := time.Until(core.Reset.Time)
 			logrus.WithField("wait_time", waitTime).Info("Waiting for rate limit reset")
-			time.Sleep(waitTime + time.Second)
+			select {
+			case <-time.After(waitTime + time.Second):
+				// Rate limit reset
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 

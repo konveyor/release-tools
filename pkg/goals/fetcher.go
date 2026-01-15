@@ -382,6 +382,10 @@ func (f *Fetcher) checkRateLimit(ctx context.Context) error {
 
 // FetchActionItems fetches immediate action items for maintainers
 func (f *Fetcher) FetchActionItems(ctx context.Context, repos []config.Repo, cfg *config.ActionItemsConfig) (*ActionItems, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("action items config is nil")
+	}
+
 	items := &ActionItems{
 		UnrespondedIssues:        make([]UnrespondedIssue, 0),
 		UnreviewedPRs:            make([]UnreviewedPR, 0),

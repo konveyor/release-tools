@@ -783,7 +783,9 @@ func (f *Fetcher) fetchApprovedPRsReadyToMerge(ctx context.Context, org, repo st
 			}
 
 			// Check if mergeable (no conflicts)
-			if pr.GetMergeable() == false {
+			// Note: Mergeable can be nil (not yet computed), true, or false
+			// Only skip if explicitly false (has conflicts), not if nil
+			if pr.Mergeable != nil && !*pr.Mergeable {
 				continue
 			}
 

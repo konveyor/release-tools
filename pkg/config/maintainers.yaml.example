@@ -42,6 +42,42 @@ cc_emails:
   - team-lead@example.com
   - project-manager@example.com
 
+# Team Goals Configuration (Optional)
+# Track progress on team-wide goals across all repositories
+# Set enabled to false to disable goals tracking
+goals:
+  enabled: true
+  # Baseline number of stale backlog items (90+ days old) at start of tracking period
+  backlog_baseline: 100
+  # Date when baseline was captured (YYYY-MM-DD format)
+  backlog_baseline_date: "2026-01-01"
+  # Files to check for ownership documentation
+  ownership_files:
+    - "OWNERS"
+    - "OWNERS.md"
+    - "CODEOWNERS"
+    - "README.md"
+
+# Action Items Configuration (Optional)
+# Track items requiring immediate maintainer attention
+# Set enabled to false to disable action items tracking
+action_items:
+  enabled: true
+  # Hours before flagging issues without maintainer response
+  issue_response_time_hours: 48
+  # Hours before flagging PRs without any review
+  pr_review_wait_hours: 72
+  # Check for failing default branch CI
+  check_default_branch_ci: true
+  # Check for approved PRs ready to merge
+  check_approved_prs: true
+  # Check for PRs from external/first-time contributors
+  check_external_contributors: true
+  # Check for PRs awaiting author response after changes requested
+  check_prs_awaiting_author: true
+  # Days before flagging PRs awaiting author response
+  pr_awaiting_author_response_days: 7
+
 # SMTP configuration for sending emails
 # Note: SMTP username and password are read from environment variables
 # SMTP_USERNAME and SMTP_PASSWORD (typically set in GitHub Secrets)

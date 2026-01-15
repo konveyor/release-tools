@@ -50,15 +50,15 @@ func (f *Fetcher) FetchGoalsData(ctx context.Context, repos []config.Repo) (*Raw
 			data.ActivityItems = append(data.ActivityItems, items...)
 		}
 
-		// Goal 2: Count backlog (90+ days)
-		count, err := f.fetchBacklogCount(ctx, repo.Org, repo.Repo)
+		// Goal 2: Fetch backlog items (90+ days)
+		backlogItems, err := f.fetchBacklogItems(ctx, repo.Org, repo.Repo)
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to fetch backlog for %s/%s", repo.Org, repo.Repo)
 		} else {
-			data.BacklogCount += count
+			data.BacklogItems = append(data.BacklogItems, backlogItems...)
 		}
 
-		// Goal 3: Fetch new issues (72 hours)
+		// Goal 3: Fetch issues >72 hours old (for triage speed tracking)
 		issues, err := f.fetchNewIssues(ctx, repo.Org, repo.Repo)
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to fetch new issues for %s/%s", repo.Org, repo.Repo)
@@ -77,7 +77,7 @@ func (f *Fetcher) FetchGoalsData(ctx context.Context, repos []config.Repo) (*Raw
 
 	logrus.WithFields(logrus.Fields{
 		"activity_items":   len(data.ActivityItems),
-		"backlog_count":    data.BacklogCount,
+		"backlog_items":    len(data.BacklogItems),
 		"new_issues":       len(data.NewIssues),
 		"ownership_status": len(data.OwnershipStatus),
 	}).Info("Goals data fetched successfully")
@@ -197,8 +197,9 @@ func (f *Fetcher) hasRecentMaintainerActivity(ctx context.Context, org, repo str
 	return false, nil
 }
 
-// fetchBacklogCount counts issues/PRs with no activity for 90+ days
-func (f *Fetcher) fetchBacklogCount(ctx context.Context, org, repo string) (int, error) {
+// fetchBacklogItems finds issues/PRs with no activity for 90+ days
+func (f *Fetcher) fetchBacklogItems(ctx context.Context, org, repo string) ([]BacklogItem, error) {
+	items := make([]BacklogItem, 0)
 	ninetyDaysAgo := time.Now().AddDate(0, 0, -90)
 
 	opts := &github.IssueListByRepoOptions{
@@ -210,11 +211,10 @@ func (f *Fetcher) fetchBacklogCount(ctx context.Context, org, repo string) (int,
 		},
 	}
 
-	count := 0
 	for {
 		issues, resp, err := f.client.Issues.ListByRepo(ctx, org, repo, opts)
 		if err != nil {
-			return 0, fmt.Errorf("failed to list issues: %w", err)
+			return nil, fmt.Errorf("failed to list issues: %w", err)
 		}
 
 		for _, issue := range issues {
@@ -223,10 +223,25 @@ func (f *Fetcher) fetchBacklogCount(ctx context.Context, org, repo string) (int,
 			}
 
 			if issue.UpdatedAt.Before(ninetyDaysAgo) {
-				count++
+				itemType := "issue"
+				if issue.IsPullRequest() {
+					itemType = "pr"
+				}
+
+				daysSince := int(time.Since(issue.UpdatedAt.Time).Hours() / 24)
+
+				items = append(items, BacklogItem{
+					Org:             org,
+					Repo:            repo,
+					Number:          issue.GetNumber(),
+					Title:           issue.GetTitle(),
+					Type:            itemType,
+					UpdatedAt:       issue.UpdatedAt.Time,
+					DaysSinceUpdate: daysSince,
+				})
 			} else {
 				// Items are sorted, so we can stop once we hit a recent one
-				return count, nil
+				return items, nil
 			}
 		}
 
@@ -236,18 +251,17 @@ func (f *Fetcher) fetchBacklogCount(ctx context.Context, org, repo string) (int,
 		opts.Page = resp.NextPage
 	}
 
-	return count, nil
+	return items, nil
 }
 
-// fetchNewIssues gets issues created in last 72 hours
+// fetchNewIssues gets issues created >72 hours ago that are still untriaged
 func (f *Fetcher) fetchNewIssues(ctx context.Context, org, repo string) ([]NewIssue, error) {
 	seventyTwoHoursAgo := time.Now().Add(-72 * time.Hour)
 
 	opts := &github.IssueListByRepoOptions{
 		State:     "open",
 		Sort:      "created",
-		Direction: "desc",
-		Since:     seventyTwoHoursAgo,
+		Direction: "asc", // Oldest first to get issues >72h old
 		ListOptions: github.ListOptions{
 			PerPage: 100,
 		},
@@ -271,8 +285,8 @@ func (f *Fetcher) fetchNewIssues(ctx context.Context, org, repo string) ([]NewIs
 				continue
 			}
 
-			// Only include issues created in the last 72 hours
-			if issue.CreatedAt.After(seventyTwoHoursAgo) {
+			// Only include issues created MORE than 72 hours ago
+			if issue.CreatedAt.Before(seventyTwoHoursAgo) {
 				labels := make([]string, 0)
 				for _, label := range issue.Labels {
 					labels = append(labels, label.GetName())
@@ -292,6 +306,10 @@ func (f *Fetcher) fetchNewIssues(ctx context.Context, org, repo string) ([]NewIs
 					Labels:    labels,
 					Assignees: assignees,
 				})
+			} else {
+				// Issues are sorted by created date ascending (oldest first)
+				// Once we hit an issue newer than 72h, all remaining will be newer
+				return newIssues, nil
 			}
 		}
 

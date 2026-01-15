@@ -26,7 +26,7 @@ func NewCalculator(goalsConfig *config.GoalsConfig) *Calculator {
 func (c *Calculator) CalculateGoalsProgress(data *RawGoalsData, totalRepos int) *GoalsProgress {
 	return &GoalsProgress{
 		ThirtyDayActivity: c.calculateActivityGoal(data.ActivityItems, data),
-		BacklogCleanup:    c.calculateBacklogGoal(data.BacklogCount),
+		BacklogCleanup:    c.calculateBacklogGoal(len(data.BacklogItems)),
 		TriageSpeed:       c.calculateTriageGoal(data.NewIssues),
 		OwnershipUpdates:  c.calculateOwnershipGoal(data.OwnershipStatus),
 		PerRepoMetrics:    c.calculatePerRepoMetrics(data),
@@ -120,6 +120,8 @@ func (c *Calculator) calculateBacklogGoal(currentCount int) BacklogGoalMetrics {
 }
 
 // calculateTriageGoal calculates Goal 3: Triage Speed metrics
+// Note: The issues parameter contains only issues created >72 hours ago,
+// so we're measuring how many of those were triaged vs missed the 72h deadline
 func (c *Calculator) calculateTriageGoal(issues []NewIssue) TriageGoalMetrics {
 	triagedCount := 0
 	untriagedList := make([]UntriagedIssue, 0)
@@ -127,7 +129,7 @@ func (c *Calculator) calculateTriageGoal(issues []NewIssue) TriageGoalMetrics {
 	for _, issue := range issues {
 		hasLabel := len(issue.Labels) > 0
 		hasAssignee := len(issue.Assignees) > 0
-		isTriaged := hasLabel && hasAssignee
+		isTriaged := hasLabel || hasAssignee
 
 		if isTriaged {
 			triagedCount++
@@ -228,6 +230,15 @@ func (c *Calculator) calculatePerRepoMetrics(data *RawGoalsData) []RepoGoalMetri
 		repoMap[key].TotalOpenItems++
 	}
 
+	// Add backlog metrics (90+ days)
+	for _, item := range data.BacklogItems {
+		key := fmt.Sprintf("%s/%s", item.Org, item.Repo)
+		if _, ok := repoMap[key]; !ok {
+			repoMap[key] = &RepoGoalMetrics{Org: item.Org, Repo: item.Repo}
+		}
+		repoMap[key].BacklogCount++
+	}
+
 	// Add new issues to total open items
 	for _, issue := range data.NewIssues {
 		key := fmt.Sprintf("%s/%s", issue.Org, issue.Repo)
@@ -251,7 +262,7 @@ func (c *Calculator) calculatePerRepoMetrics(data *RawGoalsData) []RepoGoalMetri
 		repoMap[key].NewIssuesLast72h++
 		hasLabel := len(issue.Labels) > 0
 		hasAssignee := len(issue.Assignees) > 0
-		if !hasLabel || !hasAssignee {
+		if !hasLabel && !hasAssignee {
 			repoMap[key].UntriagedCount++
 		}
 	}
@@ -350,10 +361,8 @@ func calculateTimeRemaining(baselineDateStr string) string {
 	days := int(remaining.Hours() / 24)
 	weeks := days / 7
 
-	if weeks > 0 {
-		if weeks == 1 {
-			return "1 week remaining"
-		}
+	// Show weeks only if >= 3 weeks, otherwise show days for clarity
+	if weeks >= 3 {
 		return fmt.Sprintf("%d weeks remaining", weeks)
 	}
 	if days == 1 {

@@ -117,13 +117,24 @@ type OwnershipRepoStatus struct {
 // RawGoalsData contains raw data fetched from GitHub API
 type RawGoalsData struct {
 	ActivityItems   []ActivityItem
-	BacklogCount    int
+	BacklogItems    []BacklogItem
 	NewIssues       []NewIssue
 	OwnershipStatus []RepoOwnership
 }
 
 // ActivityItem represents an issue/PR that's been inactive
 type ActivityItem struct {
+	Org             string
+	Repo            string
+	Number          int
+	Title           string
+	Type            string // "issue" or "pr"
+	UpdatedAt       time.Time
+	DaysSinceUpdate int
+}
+
+// BacklogItem represents an issue/PR that's been stale for 90+ days
+type BacklogItem struct {
 	Org             string
 	Repo            string
 	Number          int

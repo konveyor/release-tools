@@ -390,6 +390,17 @@ func (f *Fetcher) FetchActionItems(ctx context.Context, repos []config.Repo, cfg
 		return nil, fmt.Errorf("action items config is nil")
 	}
 
+	// Validate threshold values to prevent zero-value cutoffs that would flag all items
+	if cfg.IssueResponseTimeHours <= 0 {
+		return nil, fmt.Errorf("issue_response_time_hours must be >= 1 (got %d)", cfg.IssueResponseTimeHours)
+	}
+	if cfg.PRReviewWaitHours <= 0 {
+		return nil, fmt.Errorf("pr_review_wait_hours must be >= 1 (got %d)", cfg.PRReviewWaitHours)
+	}
+	if cfg.CheckPRsAwaitingAuthor && cfg.PRAwaitingAuthorResponseDays <= 0 {
+		return nil, fmt.Errorf("pr_awaiting_author_response_days must be >= 1 (got %d)", cfg.PRAwaitingAuthorResponseDays)
+	}
+
 	items := &ActionItems{
 		UnrespondedIssues:        make([]UnrespondedIssue, 0),
 		UnreviewedPRs:            make([]UnreviewedPR, 0),

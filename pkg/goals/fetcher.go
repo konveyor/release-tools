@@ -996,14 +996,25 @@ func (f *Fetcher) fetchPRsAwaitingAuthorResponse(ctx context.Context, org, repo 
 			}
 
 			daysSince := int(time.Since(requestTime).Hours() / 24)
-			reviewer := latestChangeRequest.GetUser().GetLogin()
+
+			// Get reviewer login (with nil check)
+			reviewer := "unknown"
+			if latestChangeRequest.GetUser() != nil {
+				reviewer = latestChangeRequest.GetUser().GetLogin()
+			}
+
+			// Get author login (with nil check)
+			author := "unknown"
+			if pr.GetUser() != nil {
+				author = pr.GetUser().GetLogin()
+			}
 
 			awaitingPRs = append(awaitingPRs, PRAwaitingAuthor{
 				Org:              org,
 				Repo:             repo,
 				Number:           pr.GetNumber(),
 				Title:            pr.GetTitle(),
-				Author:           pr.GetUser().GetLogin(),
+				Author:           author,
 				Reviewer:         reviewer,
 				RequestedAt:      requestTime,
 				DaysSinceRequest: daysSince,

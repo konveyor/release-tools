@@ -6,6 +6,84 @@ Weekly report for {{.MaintainerName}}
 Week ending {{.WeekEnding}}
 Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}
 
+{{if .GoalsProgress}}
+================================================================================
+TEAM GOALS PROGRESS
+================================================================================
+Tracking progress across all {{.GoalsProgress.TotalReposChecked}} repositories
+
+1. 30-DAY ACTIVITY RULE [{{.GoalsProgress.ThirtyDayActivity.Status | upper}}]
+   Goal: No open issue/PR should go >30 days without maintainer comment
+   Progress: {{printf "%.1f" .GoalsProgress.ThirtyDayActivity.ComplianceRate}}% compliant
+   Status: {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} of {{.GoalsProgress.ThirtyDayActivity.TotalOpenItems}} items need attention
+{{if .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+
+   Top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total):
+{{range .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+   • {{.Org}}/{{.Repo}} #{{.Number}} - {{.DaysSinceUpdate}} days
+     {{.URL}}
+{{end}}
+{{end}}
+
+2. BACKLOG CLEANUP (90+ DAYS) [{{.GoalsProgress.BacklogCleanup.Status | upper}}]
+   Goal: Reduce stale backlog by 20% over 4 weeks
+   Baseline: {{.GoalsProgress.BacklogCleanup.Baseline}} items on {{.GoalsProgress.BacklogCleanup.BaselineDate}}
+   Progress: {{if lt .GoalsProgress.BacklogCleanup.ItemsReduced 0}}{{printf "%.1f" (absFloat .GoalsProgress.BacklogCleanup.ReductionPercent)}}% INCREASE ({{abs .GoalsProgress.BacklogCleanup.ItemsReduced}} items added){{else}}{{printf "%.1f" .GoalsProgress.BacklogCleanup.ReductionPercent}}% reduction achieved ({{.GoalsProgress.BacklogCleanup.ItemsReduced}} reduced){{end}}
+   Current: {{.GoalsProgress.BacklogCleanup.CurrentBacklog}} items
+   {{.GoalsProgress.BacklogCleanup.TimeRemaining}}
+
+3. TRIAGE SPEED (72 HOURS) [{{.GoalsProgress.TriageSpeed.Status | upper}}]
+   Goal: 100% of new issues triaged (labeled + assigned) within 72 hours
+   Progress: {{printf "%.1f" .GoalsProgress.TriageSpeed.TriageRate}}% triaged
+   Status: {{.GoalsProgress.TriageSpeed.TriagedIssues}} of {{.GoalsProgress.TriageSpeed.NewIssuesLast72h}} new issues triaged
+{{if .GoalsProgress.TriageSpeed.UntriagedList}}
+
+   Untriaged issues:
+{{range .GoalsProgress.TriageSpeed.UntriagedList}}
+   • {{.Org}}/{{.Repo}} #{{.Number}} - {{.HoursOpen}}h open
+     {{.URL}}
+{{end}}
+{{end}}
+
+4. OWNERSHIP FILES [{{.GoalsProgress.OwnershipUpdates.Status | upper}}]
+   Goal: All repositories have OWNERS and README files
+   Progress: {{printf "%.1f" .GoalsProgress.OwnershipUpdates.ComplianceRate}}% compliant
+   Status: {{.GoalsProgress.OwnershipUpdates.ReposWithFiles}} of {{.GoalsProgress.OwnershipUpdates.TotalRepos}} repos have required files
+{{if .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+
+   Repos needing files:
+{{range .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+   • {{.Org}}/{{.Repo}} {{if not .HasOwners}}(missing OWNERS){{end}}{{if not .HasReadme}}(missing README){{end}}
+     {{.URL}}
+{{end}}
+{{end}}
+
+--------------------------------------------------------------------------------
+REPOSITORY BREAKDOWN
+--------------------------------------------------------------------------------
+{{if .GoalsProgress.PerRepoMetrics}}
+{{range .GoalsProgress.PerRepoMetrics}}
+{{.Org}}/{{.Repo}} [{{.OverallStatus | upper}}]
+   30-Day Activity: {{printf "%.0f" .ActivityCompliance}}% compliant{{if gt .ItemsOver30Days 0}} ({{.ItemsOver30Days}} items need attention){{end}}
+   Backlog (90+ days): {{.BacklogCount}} items
+   Triage Speed: {{if gt .NewIssuesLast72h 0}}{{printf "%.0f" .TriageRate}}% ({{.NewIssuesLast72h}} new issues{{if gt .UntriagedCount 0}}, {{.UntriagedCount}} untriaged{{end}}){{else}}No new issues{{end}}
+   Ownership Files: {{if .HasOwners}}✓ OWNERS{{else}}✗ OWNERS{{end}} | {{if .HasReadme}}✓ README{{else}}✗ README{{end}}
+
+{{end}}
+{{end}}
+
+Data fetched: {{.GoalsProgress.FetchedAt.Format "2006-01-02 15:04:05 MST"}}
+
+{{end}}
+{{if ge .TotalRepos 3}}
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+{{range .Repos}}
+  • {{.Org}}/{{.Repo}}
+{{end}}
+
+{{end}}
 {{if gt .TotalRepos 1}}
 ================================================================================
 EXECUTIVE SUMMARY
@@ -21,6 +99,74 @@ New Contributors:      {{.TotalNewContributors}}
 {{.Org}}/{{.Repo}}
 ================================================================================
 
+{{if .ActionItems}}
+{{if gt .ActionItems.TotalItems 0}}
+⚠️  ACTION ITEMS REQUIRING ATTENTION
+--------------------------------------------------------------------------------
+{{.ActionItems.TotalItems}} item{{if ne .ActionItems.TotalItems 1}}s{{end}} need your immediate attention
+
+{{if .ActionItems.UnrespondedIssues}}
+🔴 ISSUES WITHOUT RESPONSE ({{len .ActionItems.UnrespondedIssues}})
+{{range .ActionItems.UnrespondedIssues}}
+  • #{{.Number}} - {{.DaysSince}}d old
+    {{.Title}}
+    {{.URL}}
+    Author: @{{.Author}}
+
+{{end}}
+{{end}}
+{{if .ActionItems.UnreviewedPRs}}
+🟡 PULL REQUESTS AWAITING REVIEW ({{len .ActionItems.UnreviewedPRs}})
+{{range .ActionItems.UnreviewedPRs}}
+  • #{{.Number}} - {{.DaysSince}}d old
+    {{.Title}}
+    {{.URL}}
+    Author: @{{.Author}}
+
+{{end}}
+{{end}}
+{{if .ActionItems.FailingBranches}}
+❌ FAILING DEFAULT BRANCH ({{len .ActionItems.FailingBranches}})
+{{range .ActionItems.FailingBranches}}
+  • {{.Branch}} - Status: {{.Status | upper}}
+    View checks: {{.ChecksURL}}
+
+{{end}}
+{{end}}
+{{if .ActionItems.ApprovedPRsReadyToMerge}}
+✅ APPROVED PRS READY TO MERGE ({{len .ActionItems.ApprovedPRsReadyToMerge}})
+{{range .ActionItems.ApprovedPRsReadyToMerge}}
+  • #{{.Number}} - {{.DaysSince}}d ago ({{.ApprovalCount}} approvals)
+    {{.Title}}
+    {{.URL}}
+    Author: @{{.Author}}
+
+{{end}}
+{{end}}
+{{if .ActionItems.ExternalContributorPRs}}
+👋 EXTERNAL/FIRST-TIME CONTRIBUTOR PRS ({{len .ActionItems.ExternalContributorPRs}})
+{{range .ActionItems.ExternalContributorPRs}}
+  • #{{.Number}} - {{.DaysWaiting}}d waiting{{if .IsFirstTime}} [FIRST-TIME]{{end}}
+    {{.Title}}
+    {{.URL}}
+    Author: @{{.Author}}
+
+{{end}}
+{{end}}
+{{if .ActionItems.PRsAwaitingAuthorResponse}}
+⏳ PRS AWAITING AUTHOR RESPONSE ({{len .ActionItems.PRsAwaitingAuthorResponse}})
+{{range .ActionItems.PRsAwaitingAuthorResponse}}
+  • #{{.Number}} - {{.DaysSinceRequest}}d since changes requested by @{{.Reviewer}}
+    {{.Title}}
+    {{.URL}}
+    Author: @{{.Author}}
+
+{{end}}
+{{end}}
+--------------------------------------------------------------------------------
+
+{{end}}
+{{end}}
 STALE ISSUES & PRS
 --------------------------------------------------------------------------------
 Dashboard: {{.StaleURL}}
@@ -71,7 +217,7 @@ Snyk Vulnerabilities:
 {{end}}
 
 {{if .CurrentHealth.Coverage}}
-Code Coverage: {{printf "%.1f" .CurrentHealth.Coverage}}%
+Code Coverage: {{printf "%.1f" (derefFloat .CurrentHealth.Coverage)}}%
 {{end}}
 
 {{end}}

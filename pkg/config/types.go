@@ -51,9 +51,11 @@ type Milestone struct {
 
 // MaintainerConfig holds configuration for weekly email notifications to maintainers
 type MaintainerConfig struct {
-	Maintainers []Maintainer `json:"maintainers" yaml:"maintainers"`
-	CCEmails    []string     `json:"cc_emails" yaml:"cc_emails"`
-	SMTP        SMTPConfig   `json:"smtp" yaml:"smtp"`
+	Maintainers []Maintainer       `json:"maintainers" yaml:"maintainers"`
+	CCEmails    []string           `json:"cc_emails" yaml:"cc_emails"`
+	SMTP        SMTPConfig         `json:"smtp" yaml:"smtp"`
+	Goals       *GoalsConfig       `json:"goals,omitempty" yaml:"goals,omitempty"`
+	ActionItems *ActionItemsConfig `json:"action_items,omitempty" yaml:"action_items,omitempty"`
 }
 
 // Maintainer represents a repository maintainer who receives weekly health reports
@@ -70,4 +72,24 @@ type SMTPConfig struct {
 	Port      int    `json:"port" yaml:"port"`
 	FromEmail string `json:"from_email" yaml:"from_email"`
 	FromName  string `json:"from_name" yaml:"from_name"`
+}
+
+// GoalsConfig holds configuration for team goals tracking
+type GoalsConfig struct {
+	Enabled             bool     `json:"enabled" yaml:"enabled"`
+	BacklogBaseline     int      `json:"backlog_baseline" yaml:"backlog_baseline"`
+	BacklogBaselineDate string   `json:"backlog_baseline_date" yaml:"backlog_baseline_date"`
+	OwnershipFiles      []string `json:"ownership_files" yaml:"ownership_files"`
+}
+
+// ActionItemsConfig holds configuration for action items tracking
+type ActionItemsConfig struct {
+	Enabled                      bool `json:"enabled" yaml:"enabled"`
+	IssueResponseTimeHours       int  `json:"issue_response_time_hours" yaml:"issue_response_time_hours"`
+	PRReviewWaitHours            int  `json:"pr_review_wait_hours" yaml:"pr_review_wait_hours"`
+	CheckDefaultBranchCI         bool `json:"check_default_branch_ci" yaml:"check_default_branch_ci"`
+	CheckApprovedPRs             bool `json:"check_approved_prs" yaml:"check_approved_prs"`
+	CheckExternalContributors    bool `json:"check_external_contributors" yaml:"check_external_contributors"`
+	CheckPRsAwaitingAuthor       bool `json:"check_prs_awaiting_author" yaml:"check_prs_awaiting_author"`
+	PRAwaitingAuthorResponseDays int  `json:"pr_awaiting_author_response_days" yaml:"pr_awaiting_author_response_days"`
 }

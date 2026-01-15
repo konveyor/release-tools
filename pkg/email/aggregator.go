@@ -1,14 +1,18 @@
 package email
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/konveyor/release-tools/pkg/action"
 	"github.com/konveyor/release-tools/pkg/config"
+	"github.com/konveyor/release-tools/pkg/goals"
 	"github.com/sirupsen/logrus"
 )
 
@@ -188,8 +192,12 @@ func AggregateRepoData(org, repo string, data *HistoricalData) (*RepoReport, err
 					Vulnerabilities:    repoData.SnykVulnerabilities,
 				}
 
-				// Extract new contributors
+				// Extract new contributors (excluding bots)
 				for _, username := range repoData.NewContributorsList {
+					// Skip bot accounts
+					if strings.Contains(strings.ToLower(username), "[bot]") {
+						continue
+					}
 					report.NewContributors = append(report.NewContributors, Contributor{
 						Username: username,
 						Commits:  0, // Not tracking individual commit counts
@@ -325,6 +333,14 @@ func GenerateEmailReports(maintainerConfig *config.MaintainerConfig, data *Histo
 
 	grouped := GroupMaintainersByEmail(maintainerConfig.Maintainers)
 
+	// Fetch goals data once for all maintainers
+	allRepos := extractAllRepos(maintainerConfig.Maintainers)
+	goalsProgress, err := FetchGoalsProgress(maintainerConfig, allRepos)
+	if err != nil {
+		logrus.WithError(err).Warn("Failed to fetch goals progress, continuing without it")
+		goalsProgress = nil
+	}
+
 	for email, maintainers := range grouped {
 		report := &EmailReport{
 			MaintainerName: maintainers[0].Name, // Use the first maintainer's name
@@ -332,6 +348,7 @@ func GenerateEmailReports(maintainerConfig *config.MaintainerConfig, data *Histo
 			WeekEnding:     data.AvailableDates[0],
 			GeneratedAt:    time.Now(),
 			TotalRepos:     len(maintainers),
+			GoalsProgress:  goalsProgress,
 		}
 
 		for _, m := range maintainers {
@@ -344,6 +361,16 @@ func GenerateEmailReports(maintainerConfig *config.MaintainerConfig, data *Histo
 				continue
 			}
 
+			// Fetch action items for this repo
+			actionItems, err := FetchRepoActionItems(maintainerConfig, m.Org, m.Repo)
+			if err != nil {
+				logrus.WithError(err).WithFields(logrus.Fields{
+					"org":  m.Org,
+					"repo": m.Repo,
+				}).Warn("Failed to fetch action items for repo, continuing without them")
+			}
+			repoReport.ActionItems = actionItems
+
 			report.Repos = append(report.Repos, *repoReport)
 			report.TotalStale += repoReport.CurrentStale.TotalStale
 			report.TotalNewContributors += len(repoReport.NewContributors)
@@ -355,4 +382,107 @@ func GenerateEmailReports(maintainerConfig *config.MaintainerConfig, data *Histo
 	logrus.WithField("reports_generated", len(reports)).Info("Email reports generated")
 
 	return reports, nil
+}
+
+// FetchGoalsProgress fetches and calculates goals progress across all repos
+func FetchGoalsProgress(
+	maintainerConfig *config.MaintainerConfig,
+	repos []config.Repo,
+) (*goals.GoalsProgress, error) {
+	// Return nil if goals not enabled
+	if maintainerConfig.Goals == nil || !maintainerConfig.Goals.Enabled {
+		logrus.Debug("Goals tracking is disabled")
+		return nil, nil
+	}
+
+	logrus.Info("Fetching goals progress data from GitHub API")
+
+	// Create GitHub client
+	client := action.GetClient()
+
+	// Create fetcher and calculator
+	fetcher := goals.NewFetcher(client, maintainerConfig.Goals.OwnershipFiles)
+	calculator := goals.NewCalculator(maintainerConfig.Goals)
+
+	// Fetch raw data with context and timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	rawData, err := fetcher.FetchGoalsData(ctx, repos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch goals data: %w", err)
+	}
+
+	// Calculate progress
+	progress := calculator.CalculateGoalsProgress(rawData, len(repos))
+
+	logrus.WithFields(logrus.Fields{
+		"total_repos": progress.TotalReposChecked,
+		"activity_compliance": progress.ThirtyDayActivity.ComplianceRate,
+		"triage_rate": progress.TriageSpeed.TriageRate,
+	}).Info("Goals progress calculated successfully")
+
+	return progress, nil
+}
+
+// FetchActionItems fetches and identifies action items across all repos
+func FetchActionItems(
+	maintainerConfig *config.MaintainerConfig,
+	repos []config.Repo,
+) (*goals.ActionItems, error) {
+	// Return nil if action items not enabled
+	if maintainerConfig.ActionItems == nil || !maintainerConfig.ActionItems.Enabled {
+		logrus.Debug("Action items tracking is disabled")
+		return nil, nil
+	}
+
+	logrus.Info("Fetching action items from GitHub API")
+
+	// Create GitHub client
+	client := action.GetClient()
+
+	// Create fetcher
+	fetcher := goals.NewFetcher(client, nil) // nil for ownership files (not needed for action items)
+
+	// Fetch action items with context and timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	items, err := fetcher.FetchActionItems(ctx, repos, maintainerConfig.ActionItems)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch action items: %w", err)
+	}
+
+	return items, nil
+}
+
+// FetchRepoActionItems fetches action items for a single repository
+func FetchRepoActionItems(
+	maintainerConfig *config.MaintainerConfig,
+	org, repo string,
+) (*goals.ActionItems, error) {
+	// Return nil if action items not enabled
+	if maintainerConfig.ActionItems == nil || !maintainerConfig.ActionItems.Enabled {
+		return nil, nil
+	}
+
+	// Create a single-repo list and call FetchActionItems
+	repos := []config.Repo{{Org: org, Repo: repo}}
+	return FetchActionItems(maintainerConfig, repos)
+}
+
+// extractAllRepos deduplicates repos across all maintainers
+func extractAllRepos(maintainers []config.Maintainer) []config.Repo {
+	seen := make(map[string]bool)
+	var repos []config.Repo
+
+	for _, m := range maintainers {
+		key := m.Org + "/" + m.Repo
+		if !seen[key] {
+			repos = append(repos, config.Repo{Org: m.Org, Repo: m.Repo})
+			seen[key] = true
+		}
+	}
+
+	return repos
 }

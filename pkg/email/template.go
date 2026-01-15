@@ -20,6 +20,24 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 			return ms / 3600000.0 // Convert ms to hours
 		},
 		"formatDuration": FormatDuration,
+		"abs": func(n int) int {
+			if n < 0 {
+				return -n
+			}
+			return n
+		},
+		"absFloat": func(f float64) float64 {
+			if f < 0 {
+				return -f
+			}
+			return f
+		},
+		"derefFloat": func(f *float64) float64 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
 	}
 
 	tmpl, err := template.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -47,6 +65,24 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 			return ms / 3600000.0 // Convert ms to hours
 		},
 		"formatDuration": FormatDuration,
+		"abs": func(n int) int {
+			if n < 0 {
+				return -n
+			}
+			return n
+		},
+		"absFloat": func(f float64) float64 {
+			if f < 0 {
+				return -f
+			}
+			return f
+		},
+		"derefFloat": func(f *float64) float64 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
 	}
 
 	tmpl, err := textTemplate.New("email").Funcs(funcMap).Parse(string(tmplContent))

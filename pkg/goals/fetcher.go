@@ -140,10 +140,9 @@ func (f *Fetcher) fetchOldItems(ctx context.Context, org, repo string) ([]Activi
 						DaysSinceUpdate: daysSinceUpdate,
 					})
 				}
-			} else {
-				// Items are sorted by update date, so once we hit a recent one, we're done
-				break
 			}
+			// Continue processing all pages to avoid missing stale items
+			// that may shift positions between paginated API calls
 		}
 
 		if resp.NextPage == 0 {

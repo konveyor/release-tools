@@ -5,19 +5,124 @@
 # Multiple entries can share the same email address, which will result in one
 # consolidated email containing all repositories for that maintainer
 maintainers:
+
+# konveyor/analyzer-lsp
   - org: konveyor
     repo: analyzer-lsp
     email: shurley@redhat.com
-    name: Shawn 
-
+    name: Shawn Hurley
+    
+# konveyor/kai
   - org: konveyor
     repo: kai
-    email: tsanders@redhat.com
-    name: Todd Sanders
+    email: fvonfeil@redhat.com 
+    name: Fabian von Feilitzsh
+
+ - org: konveyor
+    repo: kai
+    email: pgaikwad@redhat.com 
+    name: Pranav Gaikwad
+    
+# konveyor/operator
+  - org: konveyor
+      repo: operator
+      email: dymurray@redhat.com
+      name: Dylan Murray
+
+   - org: konveyor
+      repo: operator
+      email: jmontleo@redhat.com
+      name: Jason Montleon
+      
+# konveyor/tackle2-hub
+  - org: konveyor
+      repo: tackle2-hub
+      email: jortel@redhat.com
+      name: Jeff Ortel
+
+# konveyor/tackle2-addon
+  - org: konveyor
+      repo: tackle2-addon
+      email: jortel@redhat.com
+      name: Jeff Ortel
+
+# konveyor/tackle2-ui
+  - org: konveyor
+      repo: tackle2-hub
+      email: sdickers@redhat.com
+      name: Scott Dickerson
+
+# konveyor/kantra
+  - org: konveyor
+      repo: kantra
+      email: emcmulla@redhat.com
+      name: Emily McMullan
+
+# konveyor/rulesets
+  - org: konveyor
+      repo: rulesets
+      email: jleflete@redhat.com
+      name: Juanma Estrada
+
+# konveyor/java-analyzer-bundle
+  - org: konveyor
+      repo: java-analyzer-bundle
+      email: shurley@redhat.com
+      name: Shawn Hurley
+
+# konveyor/c-sharp-analyzer-provider
+  - org: konveyor
+      repo: c-sharp-analyzer-provider
+      email: shurley@redhat.com
+      name: Shawn Hurley
+
+# konveyor/enhancements
+  - org: konveyor
+      repo: enhancements
+      email: jmatthews@redhat.com
+      name: John Matthews
+      
+ - org: konveyor
+      repo: enhancements
+      email: dymurray@redhat.com
+      name: Dylan Murray
+
+# konveyor/asset-generation
+  - org: konveyor
+      repo: asset-generation
+      email: emcmulla@redhat.com
+      name: Emily McMullan
+      
+ - org: konveyor
+      repo: asset-generation
+      email: jortel@redhat.com
+      name: Jeff Ortel
+
+# konveyor/editor-extensions
+  - org: konveyor
+      repo: editor-extensions
+      email: dzager@redhat.com
+      name: David Zager
+      
+ - org: konveyor
+      repo: editor-extensions
+      email: ibolton@redhat.com
+      name: Ian Bolton
+
+# konveyor/community
+  - org: konveyor
+      repo: community
+      email: sraghuna@redhat.com 
+      name: Savitha Raghunathan
+      
+ - org: konveyor
+      repo: community
+      email: dymurray@redhat.com
+      name: Dylan Murray
 
 # Optional: CC email addresses that will receive all emails
 # Useful for team leads or project managers who want visibility
-cc_emails: [dymurray@redhat.com]
+cc_emails: [dymurray@redhat.com, tsanders@redhat.com]
 
 # SMTP configuration for sending emails
 # Note: SMTP username and password are read from environment variables

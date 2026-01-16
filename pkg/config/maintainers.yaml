@@ -11,6 +11,12 @@ maintainers:
     repo: analyzer-lsp
     email: shurley@redhat.com
     name: Shawn Hurley
+
+# konveyor/koncur
+  - org: konveyor
+    repo: koncur
+    email: shurley@redhat.com
+    name: Shawn Hurley
     
 # konveyor/kai
   - org: konveyor

@@ -28,6 +28,8 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   send-weekly-emails:

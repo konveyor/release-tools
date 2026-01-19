@@ -269,7 +269,7 @@
                     </ul>
                     {{if gt .GoalsProgress.ThirtyDayActivity.ItemsOver30Days (len .GoalsProgress.ThirtyDayActivity.WorstOffenders)}}
                     <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 13px;">
-                        <a href="https://github.com/issues?q=org%3Akonveyor+is%3Aopen+updated%3A%3C{{.GoalsProgress.FetchedAt.AddDate 0 0 -30 | formatDate}}+sort%3Aupdated-asc" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} stale items on GitHub →</a>
+                        <a href="https://github.com/issues?q=org%3Akonveyor+is%3Aopen+updated%3A%3C{{.GoalsProgress.FetchedAt.AddDate 0 0 -30 | formatDate}}+sort%3Aupdated-asc" style="color: #0366d6; text-decoration: none;">View all stale items on GitHub →</a>
                     </p>
                     {{end}}
                 </details>
@@ -334,7 +334,7 @@
                         {{end}}
                         {{if gt (len .GoalsProgress.TriageSpeed.UntriagedList) 10}}
                         <li style="margin-top: 10px; font-style: italic; color: #586069;">
-                            <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Alabel+no%3Aassignee" style="color: #0366d6; text-decoration: none;">View all {{len .GoalsProgress.TriageSpeed.UntriagedList}} untriaged issues on GitHub →</a>
+                            <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Alabel+no%3Aassignee" style="color: #0366d6; text-decoration: none;">View all untriaged issues on GitHub →</a>
                         </li>
                         {{end}}
                     </ul>
@@ -525,7 +525,7 @@
                     </table>
                     {{if gt (len .ActionItems.UnrespondedIssues) 10}}
                     <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 12px;">
-                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Acomments" style="color: #0366d6; text-decoration: none;">View all {{len .ActionItems.UnrespondedIssues}} unresponded issues on GitHub →</a>
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Acomments" style="color: #0366d6; text-decoration: none;">View all unresponded issues on GitHub →</a>
                     </p>
                     {{end}}
                 </div>
@@ -567,7 +567,7 @@
                     </table>
                     {{if gt (len .ActionItems.UnreviewedPRs) 10}}
                     <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 12px;">
-                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Apr+is%3Aopen+review%3Anone" style="color: #0366d6; text-decoration: none;">View all {{len .ActionItems.UnreviewedPRs}} unreviewed PRs on GitHub →</a>
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Apr+is%3Aopen+review%3Anone" style="color: #0366d6; text-decoration: none;">View all unreviewed PRs on GitHub →</a>
                     </p>
                     {{end}}
                 </div>

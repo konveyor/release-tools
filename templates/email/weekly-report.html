@@ -191,6 +191,38 @@
             color: #586069;
             text-transform: uppercase;
         }
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background-color: #e1e4e8;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34d058 0%, #28a745 100%);
+            transition: width 0.3s ease;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-on-track {
+            background-color: #28a745;
+            color: #ffffff;
+        }
+        .status-needs-attention {
+            background-color: #ffd33d;
+            color: #24292e;
+        }
+        .status-critical {
+            background-color: #d73a49;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -405,41 +437,6 @@
                 Data fetched: {{.GoalsProgress.FetchedAt.Format "2006-01-02 15:04 MST"}}
             </p>
         </div>
-
-        <style>
-        .progress-bar {
-            width: 100%;
-            height: 24px;
-            background-color: #e1e4e8;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #34d058 0%, #28a745 100%);
-            transition: width 0.3s ease;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .status-on-track {
-            background-color: #28a745;
-            color: #ffffff;
-        }
-        .status-needs-attention {
-            background-color: #ffd33d;
-            color: #24292e;
-        }
-        .status-critical {
-            background-color: #d73a49;
-            color: #ffffff;
-        }
-        </style>
         {{end}}
 
         {{if ge .TotalRepos 3}}

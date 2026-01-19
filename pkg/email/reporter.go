@@ -187,10 +187,14 @@ func GenerateAndSendWeeklyReports(
 	}
 
 	// Log summary
+	totalExpected := len(reports)
+	if len(reports) > 0 && len(maintainerConfig.CCEmails) > 0 {
+		totalExpected += len(maintainerConfig.CCEmails)
+	}
 	logrus.WithFields(logrus.Fields{
 		"sent":   sentCount,
 		"failed": failedCount,
-		"total":  len(reports) + len(maintainerConfig.CCEmails),
+		"total":  totalExpected,
 	}).Info("Email report generation completed")
 
 	if failedCount > 0 {

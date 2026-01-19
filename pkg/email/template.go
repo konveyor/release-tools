@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	textTemplate "text/template"
+	"time"
 )
 
 // RenderHTMLEmail renders the HTML email template
@@ -44,7 +45,8 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 			return strings.ToUpper(s)
 		},
 		"urgencyIndicator": UrgencyIndicator,
-		"urgencyColor": UrgencyColor,
+		"urgencyColor":     UrgencyColor,
+		"formatDate":       FormatDate,
 	}
 
 	tmpl, err := template.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -95,7 +97,8 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 			return strings.ToUpper(s)
 		},
 		"urgencyIndicator": UrgencyIndicator,
-		"urgencyColor": UrgencyColor,
+		"urgencyColor":     UrgencyColor,
+		"formatDate":       FormatDate,
 	}
 
 	tmpl, err := textTemplate.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -183,4 +186,9 @@ func UrgencyColor(days int) string {
 		return "#d97706" // Orange
 	}
 	return "#6a737d" // Gray
+}
+
+// FormatDate formats a time.Time as YYYY-MM-DD for use in GitHub search URLs
+func FormatDate(t time.Time) string {
+	return t.Format("2006-01-02")
 }

@@ -21,6 +21,7 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 			return ms / 3600000.0 // Convert ms to hours
 		},
 		"formatDuration": FormatDuration,
+		"formatHours": FormatHours,
 		"abs": func(n int) int {
 			if n < 0 {
 				return -n
@@ -42,6 +43,8 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
 		},
+		"urgencyIndicator": UrgencyIndicator,
+		"urgencyColor": UrgencyColor,
 	}
 
 	tmpl, err := template.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -69,6 +72,7 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 			return ms / 3600000.0 // Convert ms to hours
 		},
 		"formatDuration": FormatDuration,
+		"formatHours": FormatHours,
 		"abs": func(n int) int {
 			if n < 0 {
 				return -n
@@ -90,6 +94,8 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 		"upper": func(s string) string {
 			return strings.ToUpper(s)
 		},
+		"urgencyIndicator": UrgencyIndicator,
+		"urgencyColor": UrgencyColor,
 	}
 
 	tmpl, err := textTemplate.New("email").Funcs(funcMap).Parse(string(tmplContent))
@@ -146,4 +152,35 @@ func FormatPercentChange(percent float64) string {
 		return fmt.Sprintf("%.1f%%", percent)
 	}
 	return "0%"
+}
+
+// FormatHours formats hours into a human-readable duration
+// Converts to days when > 48 hours for better readability
+func FormatHours(hours int) string {
+	if hours >= 48 {
+		days := hours / 24
+		return fmt.Sprintf("%d days", days)
+	}
+	return fmt.Sprintf("%dh", hours)
+}
+
+// UrgencyIndicator returns an emoji indicator based on days since activity
+// 🔴 Urgent (>30 days), 🟡 Attention (7-30 days), ⚪ Recent (<7 days)
+func UrgencyIndicator(days int) string {
+	if days > 30 {
+		return "🔴"
+	} else if days >= 7 {
+		return "🟡"
+	}
+	return "⚪"
+}
+
+// UrgencyColor returns a color code based on days since activity
+func UrgencyColor(days int) string {
+	if days > 30 {
+		return "#d73a49" // Red
+	} else if days >= 7 {
+		return "#d97706" // Orange
+	}
+	return "#6a737d" // Gray
 }

@@ -259,7 +259,7 @@
                 </div>
                 {{if .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total)</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total)</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
                         {{range .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
                         <li style="margin-bottom: 5px;">
@@ -267,6 +267,11 @@
                         </li>
                         {{end}}
                     </ul>
+                    {{if gt .GoalsProgress.ThirtyDayActivity.ItemsOver30Days (len .GoalsProgress.ThirtyDayActivity.WorstOffenders)}}
+                    <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 13px;">
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aopen+updated%3A%3C{{.GoalsProgress.FetchedAt.AddDate 0 0 -30 | printf "%s" | slice 0 10}}" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} items on GitHub →</a>
+                    </p>
+                    {{end}}
                 </details>
                 {{end}}
             </div>
@@ -317,13 +322,19 @@
                 </div>
                 {{if .GoalsProgress.TriageSpeed.UntriagedList}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show untriaged issues ({{len .GoalsProgress.TriageSpeed.UntriagedList}})</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Untriaged issues ({{len .GoalsProgress.TriageSpeed.UntriagedList}})</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
-                        {{range .GoalsProgress.TriageSpeed.UntriagedList}}
+                        {{range $index, $issue := .GoalsProgress.TriageSpeed.UntriagedList}}
+                        {{if lt $index 10}}
                         <li style="margin-bottom: 5px;">
-                            <a href="{{.URL}}" style="color: #0366d6; text-decoration: none;">{{.Org}}/{{.Repo}} #{{.Number}}</a> - {{.HoursOpen}}h open
-                            {{if .MissingLabel}}<span style="color: #d73a49;">(needs label)</span>{{end}}
-                            {{if .MissingAssignee}}<span style="color: #d73a49;">(needs assignee)</span>{{end}}
+                            <a href="{{$issue.URL}}" style="color: #0366d6; text-decoration: none;">{{$issue.Org}}/{{$issue.Repo}} #{{$issue.Number}}</a> - {{formatHours $issue.HoursOpen}}
+                            {{if and $issue.MissingLabel $issue.MissingAssignee}}<span style="color: #d73a49;">(needs triage)</span>{{else if $issue.MissingLabel}}<span style="color: #d73a49;">(needs label)</span>{{else if $issue.MissingAssignee}}<span style="color: #d73a49;">(needs assignee)</span>{{end}}
+                        </li>
+                        {{end}}
+                        {{end}}
+                        {{if gt (len .GoalsProgress.TriageSpeed.UntriagedList) 10}}
+                        <li style="margin-top: 10px; font-style: italic; color: #586069;">
+                            <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Alabel+no%3Aassignee" style="color: #0366d6; text-decoration: none;">View all {{len .GoalsProgress.TriageSpeed.UntriagedList}} untriaged issues on GitHub →</a>
                         </li>
                         {{end}}
                     </ul>
@@ -351,7 +362,7 @@
                 </div>
                 {{if .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show repos needing files ({{len .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}})</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Repos needing files ({{len .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}})</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
                         {{range .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
                         <li style="margin-bottom: 5px;">
@@ -373,7 +384,7 @@
                 </h3>
                 <details open>
                     <summary style="cursor: pointer; color: #0366d6; margin-bottom: 15px; font-size: 13px;">
-                        Show per-repository metrics ({{len .GoalsProgress.PerRepoMetrics}} repos)
+                        Per-repository metrics ({{len .GoalsProgress.PerRepoMetrics}} repos)
                     </summary>
                     <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;">
                         <thead>
@@ -476,7 +487,7 @@
         {{end}}
 
         {{range .Repos}}
-        <div class="section" id="repo-{{.Org}}-{{.Repo}}">
+        <div class="section" id="repo-{{.Org}}-{{.Repo}}" style="margin-top: 40px; padding-top: 30px; border-top: 3px solid #e1e4e8;">
             <h2 class="repo-title">{{.Org}}/{{.Repo}}</h2>
 
             <!-- Action Items -->
@@ -486,13 +497,16 @@
                 <h3 style="font-size: 16px; margin: 0 0 10px 0; color: #d73a49;">
                     ⚠️ Action Items Requiring Attention
                 </h3>
-                <p style="color: #586069; font-size: 13px; margin-bottom: 15px;">
+                <p style="color: #586069; font-size: 13px; margin-bottom: 5px;">
                     {{.ActionItems.TotalItems}} item{{if ne .ActionItems.TotalItems 1}}s{{end}} need your immediate attention
+                </p>
+                <p style="color: #586069; font-size: 11px; margin-bottom: 15px; font-style: italic;">
+                    Priority: 🔴 Urgent (>30 days) • 🟡 Needs attention (7-30 days) • ⚪ Recent (<7 days)
                 </p>
 
                 {{if .ActionItems.UnrespondedIssues}}
                 <div style="margin-bottom: 15px;">
-                    <strong style="color: #d73a49; font-size: 14px;">🔴 Issues Without Response ({{len .ActionItems.UnrespondedIssues}})</strong>
+                    <strong style="color: #d73a49; font-size: 14px;">Issues Without Response ({{len .ActionItems.UnrespondedIssues}})</strong>
                     <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
                         <thead>
                             <tr style="border-bottom: 2px solid #e1e4e8;">
@@ -502,31 +516,39 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{range .ActionItems.UnrespondedIssues}}
+                            {{range $index, $issue := .ActionItems.UnrespondedIssues}}
+                            {{if lt $index 10}}
                             <tr style="border-bottom: 1px solid #e1e4e8;">
                                 <td style="padding: 6px;">
-                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
-                                        #{{.Number}}
+                                    <a href="{{$issue.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{$issue.Number}}
                                     </a>
                                     <br>
-                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                    <span style="color: #586069; font-size: 12px;">{{$issue.Title}}</span>
                                 </td>
                                 <td style="padding: 6px;">
-                                    <span style="color: #586069;">@{{.Author}}</span>
+                                    <span style="color: #586069;">@{{$issue.Author}}</span>
                                 </td>
                                 <td style="padding: 6px; text-align: center;">
-                                    <span style="color: #d73a49; font-weight: 600;">{{.DaysSince}}d</span>
+                                    <span style="font-size: 14px;">{{urgencyIndicator $issue.DaysSince}}</span>
+                                    <span style="color: {{urgencyColor $issue.DaysSince}}; font-weight: 600;">{{$issue.DaysSince}}d</span>
                                 </td>
                             </tr>
                             {{end}}
+                            {{end}}
                         </tbody>
                     </table>
+                    {{if gt (len .ActionItems.UnrespondedIssues) 10}}
+                    <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 12px;">
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aissue+is%3Aopen+no%3Acomments" style="color: #0366d6; text-decoration: none;">View all {{len .ActionItems.UnrespondedIssues}} unresponded issues on GitHub →</a>
+                    </p>
+                    {{end}}
                 </div>
                 {{end}}
 
                 {{if .ActionItems.UnreviewedPRs}}
                 <div style="margin-bottom: 15px;">
-                    <strong style="color: #d97706; font-size: 14px;">🟡 Pull Requests Awaiting Review ({{len .ActionItems.UnreviewedPRs}})</strong>
+                    <strong style="color: #d97706; font-size: 14px;">Pull Requests Awaiting Review ({{len .ActionItems.UnreviewedPRs}})</strong>
                     <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 8px;">
                         <thead>
                             <tr style="border-bottom: 2px solid #e1e4e8;">
@@ -536,25 +558,33 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{range .ActionItems.UnreviewedPRs}}
+                            {{range $index, $pr := .ActionItems.UnreviewedPRs}}
+                            {{if lt $index 10}}
                             <tr style="border-bottom: 1px solid #e1e4e8;">
                                 <td style="padding: 6px;">
-                                    <a href="{{.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
-                                        #{{.Number}}
+                                    <a href="{{$pr.URL}}" style="color: #0366d6; text-decoration: none; font-weight: 500;">
+                                        #{{$pr.Number}}
                                     </a>
                                     <br>
-                                    <span style="color: #586069; font-size: 12px;">{{.Title}}</span>
+                                    <span style="color: #586069; font-size: 12px;">{{$pr.Title}}</span>
                                 </td>
                                 <td style="padding: 6px;">
-                                    <span style="color: #586069;">@{{.Author}}</span>
+                                    <span style="color: #586069;">@{{$pr.Author}}</span>
                                 </td>
                                 <td style="padding: 6px; text-align: center;">
-                                    <span style="color: #d97706; font-weight: 600;">{{.DaysSince}}d</span>
+                                    <span style="font-size: 14px;">{{urgencyIndicator $pr.DaysSince}}</span>
+                                    <span style="color: {{urgencyColor $pr.DaysSince}}; font-weight: 600;">{{$pr.DaysSince}}d</span>
                                 </td>
                             </tr>
                             {{end}}
+                            {{end}}
                         </tbody>
                     </table>
+                    {{if gt (len .ActionItems.UnreviewedPRs) 10}}
+                    <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 12px;">
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Apr+is%3Aopen+review%3Anone" style="color: #0366d6; text-decoration: none;">View all {{len .ActionItems.UnreviewedPRs}} unreviewed PRs on GitHub →</a>
+                    </p>
+                    {{end}}
                 </div>
                 {{end}}
 

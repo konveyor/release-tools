@@ -269,7 +269,7 @@
                     </ul>
                     {{if gt .GoalsProgress.ThirtyDayActivity.ItemsOver30Days (len .GoalsProgress.ThirtyDayActivity.WorstOffenders)}}
                     <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 13px;">
-                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aopen+updated%3A%3C{{.GoalsProgress.FetchedAt.AddDate 0 0 -30 | printf "%s" | slice 0 10}}" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} items on GitHub →</a>
+                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aopen+updated%3A<30days" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} items on GitHub →</a>
                     </p>
                     {{end}}
                 </details>

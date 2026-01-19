@@ -192,3 +192,107 @@ func UrgencyColor(days int) string {
 func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02")
 }
+
+// RenderSummaryHTMLEmail renders the HTML summary email template for CC recipients
+func RenderSummaryHTMLEmail(report *SummaryEmailReport) (string, error) {
+	tmplContent, err := os.ReadFile("templates/email/summary-report.html")
+	if err != nil {
+		return "", fmt.Errorf("failed to read summary HTML template: %w", err)
+	}
+
+	funcMap := template.FuncMap{
+		"divideMs": func(ms float64) float64 {
+			return ms / 3600000.0 // Convert ms to hours
+		},
+		"formatDuration": FormatDuration,
+		"formatHours":    FormatHours,
+		"abs": func(n int) int {
+			if n < 0 {
+				return -n
+			}
+			return n
+		},
+		"absFloat": func(f float64) float64 {
+			if f < 0 {
+				return -f
+			}
+			return f
+		},
+		"derefFloat": func(f *float64) float64 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
+		},
+		"urgencyIndicator": UrgencyIndicator,
+		"urgencyColor":     UrgencyColor,
+		"formatDate":       FormatDate,
+	}
+
+	tmpl, err := template.New("summary-email").Funcs(funcMap).Parse(string(tmplContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse summary HTML template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, report); err != nil {
+		return "", fmt.Errorf("failed to execute summary HTML template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+// RenderSummaryTextEmail renders the plain text summary email template for CC recipients
+func RenderSummaryTextEmail(report *SummaryEmailReport) (string, error) {
+	tmplContent, err := os.ReadFile("templates/email/summary-report.txt")
+	if err != nil {
+		return "", fmt.Errorf("failed to read summary text template: %w", err)
+	}
+
+	funcMap := textTemplate.FuncMap{
+		"divideMs": func(ms float64) float64 {
+			return ms / 3600000.0 // Convert ms to hours
+		},
+		"formatDuration": FormatDuration,
+		"formatHours":    FormatHours,
+		"abs": func(n int) int {
+			if n < 0 {
+				return -n
+			}
+			return n
+		},
+		"absFloat": func(f float64) float64 {
+			if f < 0 {
+				return -f
+			}
+			return f
+		},
+		"derefFloat": func(f *float64) float64 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
+		},
+		"urgencyIndicator": UrgencyIndicator,
+		"urgencyColor":     UrgencyColor,
+		"formatDate":       FormatDate,
+	}
+
+	tmpl, err := textTemplate.New("summary-email").Funcs(funcMap).Parse(string(tmplContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse summary text template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, report); err != nil {
+		return "", fmt.Errorf("failed to execute summary text template: %w", err)
+	}
+
+	return buf.String(), nil
+}

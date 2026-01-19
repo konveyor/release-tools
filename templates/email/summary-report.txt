@@ -1,0 +1,129 @@
+================================================================================
+KONVEYOR WEEKLY SUMMARY REPORT
+================================================================================
+
+Team-wide summary for leadership
+Week ending {{.WeekEnding}}
+Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}
+
+NOTE: This is a summary report for oversight. Individual maintainers receive
+detailed reports for their repositories.
+
+================================================================================
+TEAM OVERVIEW
+================================================================================
+
+Total Repositories:        {{.TotalRepos}}
+Active Maintainers:        {{.TotalMaintainers}}
+Total Stale Items:         {{.TotalStaleItems}}
+New Contributors:          {{.TotalNewContributors}}
+Open Issues:               {{.TotalOpenIssues}}
+Open PRs:                  {{.TotalOpenPRs}}
+
+{{if .GoalsProgress}}
+================================================================================
+TEAM GOALS PROGRESS
+================================================================================
+Tracking progress across all {{.GoalsProgress.TotalReposChecked}} repositories
+
+1. 30-DAY ACTIVITY RULE [{{.GoalsProgress.ThirtyDayActivity.Status | upper}}]
+   Goal: No open issue/PR should go >30 days without maintainer comment
+   Progress: {{printf "%.1f" .GoalsProgress.ThirtyDayActivity.ComplianceRate}}% compliant
+   Status: {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} of {{.GoalsProgress.ThirtyDayActivity.TotalOpenItems}} items need attention
+{{if .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+
+   Top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total):
+{{range .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
+   • {{.Org}}/{{.Repo}} #{{.Number}} - {{.DaysSinceUpdate}} days
+     {{.URL}}
+{{end}}
+{{end}}
+
+2. BACKLOG CLEANUP (90+ DAYS) [{{.GoalsProgress.BacklogCleanup.Status | upper}}]
+   Goal: Reduce stale backlog by 20% over 4 weeks
+   Baseline: {{.GoalsProgress.BacklogCleanup.Baseline}} items on {{.GoalsProgress.BacklogCleanup.BaselineDate}}
+   Progress: {{if lt .GoalsProgress.BacklogCleanup.ItemsReduced 0}}{{printf "%.1f" (absFloat .GoalsProgress.BacklogCleanup.ReductionPercent)}}% INCREASE ({{abs .GoalsProgress.BacklogCleanup.ItemsReduced}} items added){{else}}{{printf "%.1f" .GoalsProgress.BacklogCleanup.ReductionPercent}}% reduction achieved ({{.GoalsProgress.BacklogCleanup.ItemsReduced}} reduced){{end}}
+   Current: {{.GoalsProgress.BacklogCleanup.CurrentBacklog}} items
+   {{.GoalsProgress.BacklogCleanup.TimeRemaining}}
+
+3. TRIAGE SPEED (72 HOURS) [{{.GoalsProgress.TriageSpeed.Status | upper}}]
+   Goal: 100% of new issues triaged (labeled + assigned) within 72 hours
+   Progress: {{printf "%.1f" .GoalsProgress.TriageSpeed.TriageRate}}% triaged
+   Status: {{.GoalsProgress.TriageSpeed.TriagedIssues}} of {{.GoalsProgress.TriageSpeed.NewIssuesLast72h}} new issues triaged
+{{if .GoalsProgress.TriageSpeed.UntriagedList}}
+
+   Untriaged issues (showing first 10):
+{{range $index, $issue := .GoalsProgress.TriageSpeed.UntriagedList}}{{if lt $index 10}}
+   • {{$issue.Org}}/{{$issue.Repo}} #{{$issue.Number}} - {{formatHours $issue.HoursOpen}} open
+     {{$issue.URL}}
+{{end}}{{end}}
+{{end}}
+
+4. OWNERSHIP FILES [{{.GoalsProgress.OwnershipUpdates.Status | upper}}]
+   Goal: All repositories have OWNERS and README files
+   Progress: {{printf "%.1f" .GoalsProgress.OwnershipUpdates.ComplianceRate}}% compliant
+   Status: {{.GoalsProgress.OwnershipUpdates.ReposWithFiles}} of {{.GoalsProgress.OwnershipUpdates.TotalRepos}} repos have required files
+{{if .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+
+   Repos needing files:
+{{range .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
+   • {{.Org}}/{{.Repo}} {{if not .HasOwners}}(missing OWNERS){{end}}{{if not .HasReadme}}(missing README){{end}}
+     {{.URL}}
+{{end}}
+{{end}}
+
+Data fetched: {{.GoalsProgress.FetchedAt.Format "2006-01-02 15:04:05 MST"}}
+
+{{end}}
+{{if or .TopUnrespondedIssues .TopUnreviewedPRs}}
+================================================================================
+TOP ACTION ITEMS REQUIRING ATTENTION
+================================================================================
+
+Priority Key: 🔴 Urgent (>30 days) • 🟡 Needs attention (7-30 days) • ⚪ Recent (<7 days)
+
+{{if .TopUnrespondedIssues}}
+--------------------------------------------------------------------------------
+ISSUES WITHOUT RESPONSE (TOP {{len .TopUnrespondedIssues}})
+--------------------------------------------------------------------------------
+{{range .TopUnrespondedIssues}}
+{{urgencyIndicator .DaysSince}} {{.Org}}/{{.Repo}} #{{.Number}} - {{.DaysSince}} days
+   Author: @{{.Author}}
+   Title: {{.Title}}
+   URL: {{.URL}}
+
+{{end}}
+{{end}}
+{{if .TopUnreviewedPRs}}
+--------------------------------------------------------------------------------
+PULL REQUESTS AWAITING REVIEW (TOP {{len .TopUnreviewedPRs}})
+--------------------------------------------------------------------------------
+{{range .TopUnreviewedPRs}}
+{{urgencyIndicator .DaysSince}} {{.Org}}/{{.Repo}} #{{.Number}} - {{.DaysSince}} days
+   Author: @{{.Author}}
+   Title: {{.Title}}
+   URL: {{.URL}}
+
+{{end}}
+{{end}}
+{{end}}
+================================================================================
+MAINTAINER BREAKDOWN
+================================================================================
+
+Summary of all {{.TotalMaintainers}} maintainers who received individual reports
+this week (sorted by stale items count)
+
+{{range .Maintainers}}
+--------------------------------------------------------------------------------
+{{.Name}} <{{.Email}}>
+--------------------------------------------------------------------------------
+Repositories: {{.RepoCount}}
+Stale Items:  {{.StaleItems}}
+Repos: {{range $index, $repo := .Repositories}}{{if $index}}, {{end}}{{$repo}}{{end}}
+
+{{end}}
+================================================================================
+Generated with Konveyor Release Tools
+https://github.com/konveyor/release-tools
+================================================================================

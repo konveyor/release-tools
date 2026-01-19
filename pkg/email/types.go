@@ -184,3 +184,36 @@ type TrendMetrics struct {
 	Percent   float64 // Percentage change
 	Direction string  // "up", "down", "same"
 }
+
+// SummaryEmailReport represents a summary email for CC recipients
+type SummaryEmailReport struct {
+	WeekEnding  string    // Date string for the week ending
+	GeneratedAt time.Time // When the report was generated
+
+	// List of all maintainers who received emails
+	Maintainers []MaintainerSummary
+
+	// Aggregate metrics across all repositories
+	TotalRepos           int
+	TotalMaintainers     int
+	TotalStaleItems      int
+	TotalNewContributors int
+	TotalOpenIssues      int
+	TotalOpenPRs         int
+
+	// Goals progress (if enabled)
+	GoalsProgress *goals.GoalsProgress
+
+	// Top issues requiring attention across all repos
+	TopUnrespondedIssues []goals.UnrespondedIssue
+	TopUnreviewedPRs     []goals.UnreviewedPR
+}
+
+// MaintainerSummary represents a single maintainer's summary info
+type MaintainerSummary struct {
+	Name         string
+	Email        string
+	RepoCount    int
+	Repositories []string // List of "org/repo"
+	StaleItems   int
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/konveyor/release-tools/pkg/config"
+	"github.com/konveyor/release-tools/pkg/goals"
 	"github.com/sirupsen/logrus"
 )
 
@@ -85,7 +86,7 @@ func GenerateAndSendWeeklyReports(
 		}
 	}
 
-	// Send emails
+	// Send individual maintainer emails (without CC)
 	sentCount := 0
 	failedCount := 0
 
@@ -124,8 +125,8 @@ func GenerateAndSendWeeklyReports(
 			continue
 		}
 
-		// Send email
-		if err := sender.SendEmail(email, subject, htmlBody, textBody, maintainerConfig.CCEmails); err != nil {
+		// Send email without CC (CC recipients will receive summary email instead)
+		if err := sender.SendEmail(email, subject, htmlBody, textBody, nil); err != nil {
 			logrus.WithError(err).WithField("email", email).Error("Failed to send email")
 			failedCount++
 			continue
@@ -134,15 +135,70 @@ func GenerateAndSendWeeklyReports(
 		sentCount++
 	}
 
+	// Generate and send summary email to CC recipients
+	if len(maintainerConfig.CCEmails) > 0 && len(reports) > 0 {
+		logrus.WithField("cc_count", len(maintainerConfig.CCEmails)).Info("Generating summary email for CC recipients")
+
+		// Get goals progress from first report (same for all maintainers)
+		var goalsProgress *goals.GoalsProgress
+		for _, report := range reports {
+			goalsProgress = report.GoalsProgress
+			break
+		}
+
+		summaryReport := GenerateSummaryReport(reports, goalsProgress)
+
+		// Render summary email templates
+		summaryHTMLBody, err := RenderSummaryHTMLEmail(summaryReport)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to render summary HTML email")
+			failedCount += len(maintainerConfig.CCEmails) // Count failure for all CC recipients
+		} else {
+			summaryTextBody, err := RenderSummaryTextEmail(summaryReport)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to render summary text email")
+				failedCount += len(maintainerConfig.CCEmails) // Count failure for all CC recipients
+			} else {
+				summarySubject := fmt.Sprintf("[Konveyor Health] Team Summary - Week ending %s", summaryReport.WeekEnding)
+
+				// Send summary email to each CC recipient
+				for _, ccEmail := range maintainerConfig.CCEmails {
+					if options.DryRun {
+						logrus.WithFields(logrus.Fields{
+							"to":                  ccEmail,
+							"subject":             summarySubject,
+							"total_maintainers":   summaryReport.TotalMaintainers,
+							"total_repos":         summaryReport.TotalRepos,
+							"total_stale_items":   summaryReport.TotalStaleItems,
+						}).Info("[DRY RUN] Would send summary email")
+						sentCount++
+					} else {
+						if err := sender.SendEmail(ccEmail, summarySubject, summaryHTMLBody, summaryTextBody, nil); err != nil {
+							logrus.WithError(err).WithField("email", ccEmail).Error("Failed to send summary email")
+							failedCount++
+						} else {
+							logrus.WithField("email", ccEmail).Info("Sent summary email to CC recipient")
+							sentCount++
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Log summary
+	totalExpected := len(reports)
+	if len(reports) > 0 && len(maintainerConfig.CCEmails) > 0 {
+		totalExpected += len(maintainerConfig.CCEmails)
+	}
 	logrus.WithFields(logrus.Fields{
 		"sent":   sentCount,
 		"failed": failedCount,
-		"total":  len(reports),
+		"total":  totalExpected,
 	}).Info("Email report generation completed")
 
 	if failedCount > 0 {
-		return fmt.Errorf("failed to send %d out of %d emails", failedCount, len(reports))
+		return fmt.Errorf("failed to send %d emails", failedCount)
 	}
 
 	return nil

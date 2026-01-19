@@ -269,7 +269,7 @@
                     </ul>
                     {{if gt .GoalsProgress.ThirtyDayActivity.ItemsOver30Days (len .GoalsProgress.ThirtyDayActivity.WorstOffenders)}}
                     <p style="margin-top: 10px; font-style: italic; color: #586069; font-size: 13px;">
-                        <a href="https://github.com/search?q=org%3Akonveyor+is%3Aopen&s=updated&o=asc" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} stale items on GitHub →</a>
+                        <a href="https://github.com/issues?q=org%3Akonveyor+is%3Aopen+sort%3Aupdated-asc" style="color: #0366d6; text-decoration: none;">View all {{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} stale items on GitHub →</a>
                     </p>
                     {{end}}
                 </details>

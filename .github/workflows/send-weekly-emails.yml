@@ -28,6 +28,8 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   send-weekly-emails:
@@ -64,6 +66,8 @@ jobs:
 
       - name: Send weekly emails (dry-run mode)
         if: ${{ inputs.dry_run == true || inputs.dry_run == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Running in dry-run mode"
           ./weekly-email \
@@ -74,6 +78,7 @@ jobs:
       - name: Send test email (single recipient)
         if: ${{ inputs.test_email != '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
@@ -87,6 +92,7 @@ jobs:
       - name: Send weekly emails to all maintainers
         if: ${{ inputs.test_email == '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |

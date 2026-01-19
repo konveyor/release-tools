@@ -152,12 +152,12 @@ func GenerateAndSendWeeklyReports(
 		summaryHTMLBody, err := RenderSummaryHTMLEmail(summaryReport)
 		if err != nil {
 			logrus.WithError(err).Error("Failed to render summary HTML email")
-			failedCount++
+			failedCount += len(maintainerConfig.CCEmails) // Count failure for all CC recipients
 		} else {
 			summaryTextBody, err := RenderSummaryTextEmail(summaryReport)
 			if err != nil {
 				logrus.WithError(err).Error("Failed to render summary text email")
-				failedCount++
+				failedCount += len(maintainerConfig.CCEmails) // Count failure for all CC recipients
 			} else {
 				summarySubject := fmt.Sprintf("[Konveyor Health] Team Summary - Week ending %s", summaryReport.WeekEnding)
 

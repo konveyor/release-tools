@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"strings"
 	textTemplate "text/template"
 )
 
@@ -37,6 +38,9 @@ func RenderHTMLEmail(report *EmailReport) (string, error) {
 				return 0
 			}
 			return *f
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
 		},
 	}
 
@@ -82,6 +86,9 @@ func RenderTextEmail(report *EmailReport) (string, error) {
 				return 0
 			}
 			return *f
+		},
+		"upper": func(s string) string {
+			return strings.ToUpper(s)
 		},
 	}
 

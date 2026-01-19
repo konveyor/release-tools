@@ -9,8 +9,8 @@ maintainers:
 # konveyor/analyzer-lsp
   - org: konveyor
     repo: analyzer-lsp
-    email: shurley@redhat.com
-    name: Shawn Hurley
+    email: tsanders@redhat.com
+    name: Todd Sanders
 
 # konveyor/koncur
   - org: konveyor

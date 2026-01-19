@@ -259,7 +259,7 @@
                 </div>
                 {{if .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total)</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Top {{len .GoalsProgress.ThirtyDayActivity.WorstOffenders}} worst offenders ({{.GoalsProgress.ThirtyDayActivity.ItemsOver30Days}} total)</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
                         {{range .GoalsProgress.ThirtyDayActivity.WorstOffenders}}
                         <li style="margin-bottom: 5px;">
@@ -317,7 +317,7 @@
                 </div>
                 {{if .GoalsProgress.TriageSpeed.UntriagedList}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show untriaged issues ({{len .GoalsProgress.TriageSpeed.UntriagedList}})</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Untriaged issues ({{len .GoalsProgress.TriageSpeed.UntriagedList}})</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
                         {{range .GoalsProgress.TriageSpeed.UntriagedList}}
                         <li style="margin-bottom: 5px;">
@@ -351,7 +351,7 @@
                 </div>
                 {{if .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
                 <details style="margin-top: 10px;">
-                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Show repos needing files ({{len .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}})</summary>
+                    <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">Repos needing files ({{len .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}})</summary>
                     <ul style="margin-top: 10px; padding-left: 20px; font-size: 13px;">
                         {{range .GoalsProgress.OwnershipUpdates.ReposNeedingAttention}}
                         <li style="margin-bottom: 5px;">
@@ -373,7 +373,7 @@
                 </h3>
                 <details open>
                     <summary style="cursor: pointer; color: #0366d6; margin-bottom: 15px; font-size: 13px;">
-                        Show per-repository metrics ({{len .GoalsProgress.PerRepoMetrics}} repos)
+                        Per-repository metrics ({{len .GoalsProgress.PerRepoMetrics}} repos)
                     </summary>
                     <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;">
                         <thead>

@@ -133,9 +133,10 @@ maintainers:
 
 # Optional: CC email addresses that will receive all emails
 # Useful for team leads or project managers who want visibility
-cc_emails:
-  - dymurray@redhat.com
-  - tsanders@redhat.com
+# DISABLED: Causing Gmail delivery issues - will implement summary email instead
+# cc_emails:
+#   - dymurray@redhat.com
+#   - tsanders@redhat.com
 
 # Team Goals Configuration
 # Track progress on team-wide goals across all repositories

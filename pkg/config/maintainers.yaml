@@ -163,16 +163,17 @@ action_items:
   pr_awaiting_author_response_days: 7
 
 # SMTP configuration for sending emails
-# Note: SMTP username and password are read from environment variables
-# SMTP_USERNAME and SMTP_PASSWORD (typically set in GitHub Secrets)
+# Note: SMTP username and password are read from environment variables:
+#   SMTP_USERNAME: For SendGrid, this should be "apikey" (literally the string "apikey")
+#   SMTP_PASSWORD: Your SendGrid API key (set in GitHub Secrets)
 smtp:
-  # SMTP server address
-  server: smtp.gmail.com
+  # SMTP server address (using SendGrid)
+  server: smtp.sendgrid.net
 
-  # SMTP server port (587 for TLS/STARTTLS, 465 for SSL)
+  # SMTP server port (587 for TLS/STARTTLS)
   port: 587
 
-  # Email address to send from
+  # Email address to send from (must be verified in SendGrid as a Single Sender)
   from_email: konveyor.health.reports@gmail.com
 
   # Display name for the sender

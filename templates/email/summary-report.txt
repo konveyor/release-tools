@@ -2,8 +2,7 @@
 KONVEYOR WEEKLY SUMMARY REPORT
 ================================================================================
 
-Team-wide summary for leadership
-Week ending {{.WeekEnding}}
+Team-wide summary for leadership • {{.WeekEnding}}
 Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}
 
 NOTE: This is a summary report for oversight. Individual maintainers receive

@@ -40,7 +40,10 @@ func GenerateAndSendWeeklyReports(
 		return fmt.Errorf("failed to generate email reports: %w", err)
 	}
 
-	// Apply filters if specified
+	// Keep all reports for summary generation (even when filtering individual emails)
+	allReports := reports
+
+	// Apply filters if specified (for individual email sending only)
 	if options.FilterEmail != "" {
 		if report, ok := reports[options.FilterEmail]; ok {
 			reports = map[string]*EmailReport{options.FilterEmail: report}
@@ -136,17 +139,18 @@ func GenerateAndSendWeeklyReports(
 	}
 
 	// Generate and send summary email to CC recipients
-	if len(maintainerConfig.CCEmails) > 0 && len(reports) > 0 {
+	// Always use allReports so summary includes all maintainers even when filtering individual emails
+	if len(maintainerConfig.CCEmails) > 0 && len(allReports) > 0 {
 		logrus.WithField("cc_count", len(maintainerConfig.CCEmails)).Info("Generating summary email for CC recipients")
 
 		// Get goals progress from first report (same for all maintainers)
 		var goalsProgress *goals.GoalsProgress
-		for _, report := range reports {
+		for _, report := range allReports {
 			goalsProgress = report.GoalsProgress
 			break
 		}
 
-		summaryReport := GenerateSummaryReport(reports, goalsProgress)
+		summaryReport := GenerateSummaryReport(allReports, goalsProgress)
 
 		// Render summary email templates
 		summaryHTMLBody, err := RenderSummaryHTMLEmail(summaryReport)
@@ -188,7 +192,7 @@ func GenerateAndSendWeeklyReports(
 
 	// Log summary
 	totalExpected := len(reports)
-	if len(reports) > 0 && len(maintainerConfig.CCEmails) > 0 {
+	if len(allReports) > 0 && len(maintainerConfig.CCEmails) > 0 {
 		totalExpected += len(maintainerConfig.CCEmails)
 	}
 	logrus.WithFields(logrus.Fields{

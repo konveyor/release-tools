@@ -2,8 +2,7 @@
 KONVEYOR REPOSITORY HEALTH REPORT
 ================================================================================
 
-Weekly report for {{.MaintainerName}}
-Week ending {{.WeekEnding}}
+Weekly report for {{.MaintainerName}} • {{.WeekEnding}}
 Generated on {{.GeneratedAt.Format "2006-01-02 15:04:05 MST"}}
 
 {{if .GoalsProgress}}

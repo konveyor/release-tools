@@ -235,8 +235,8 @@ action_items:
 
   # Optional: Exclude issues with these labels from action items
   excluded_labels:
-    - "triaged-accepted"                 # Issues that have been triaged and accepted
-    - "triaged-needsinfo"                # Issues that have been triaged but need more info
+    - "triage/accepted"                  # Issues that have been triaged and accepted
+    - "triage/needs-information"         # Issues that have been triaged but need more info
 ```
 
 **Excluding Triaged Issues:**
@@ -251,7 +251,7 @@ When an issue has any of the `excluded_labels`, it will not appear in the "Issue
 
 **Example Use Cases:**
 
-1. **Konveyor Workflow**: Use `triaged-accepted` for issues that have been reviewed and accepted, and `triaged-needsinfo` for issues awaiting additional information
+1. **Konveyor Workflow**: Use `triage/accepted` for issues that have been reviewed and accepted, and `triage/needs-information` for issues awaiting additional information
 2. **Good First Issues**: Add `"good first issue"` to `excluded_labels` to keep these issues open without flagging them
 3. **Backlog**: Add `"backlog"` or `"future"` to exclude long-term items from weekly reports
 

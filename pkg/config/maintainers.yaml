@@ -163,8 +163,8 @@ action_items:
   pr_awaiting_author_response_days: 7
   # Exclude issues with these labels from action items (issues that have been triaged)
   excluded_labels:
-    - "triaged-accepted"
-    - "triaged-needsinfo"
+    - "triage/accepted"
+    - "triage/needs-information"
 
 # SMTP configuration for sending emails
 # Note: SMTP username and password are read from environment variables:

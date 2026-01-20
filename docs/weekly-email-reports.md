@@ -216,6 +216,45 @@ export SMTP_USERNAME="your-email@company.com"
 export SMTP_PASSWORD="your-password"
 ```
 
+### Action Items Configuration
+
+Action items are issues and PRs that require immediate maintainer attention. You can configure which items are flagged and exclude certain labeled issues from being reported.
+
+**Configuration:**
+
+```yaml
+action_items:
+  enabled: true
+  issue_response_time_hours: 48          # Flag issues without maintainer response after N hours
+  pr_review_wait_hours: 72               # Flag PRs without reviews after N hours
+  check_default_branch_ci: true          # Check if main/master branch CI is failing
+  check_approved_prs: true               # Flag approved PRs ready to merge
+  check_external_contributors: true      # Flag PRs from external contributors
+  check_prs_awaiting_author: true        # Flag PRs awaiting author response
+  pr_awaiting_author_response_days: 7    # Days before flagging PRs awaiting author
+
+  # Optional: Exclude issues with these labels from action items
+  excluded_labels:
+    - "triaged-accepted"                 # Issues that have been triaged and accepted
+    - "triaged-needsinfo"                # Issues that have been triaged but need more info
+```
+
+**Excluding Triaged Issues:**
+
+Issues with certain labels can be excluded from action items. This is useful for:
+- **Good First Issues**: Issues intentionally left open for new contributors
+- **Backlog Items**: Valid issues not yet prioritized for a sprint
+- **RFEs**: Feature requests that have been acknowledged but not scheduled
+- **Triaged Issues**: Issues that have been reviewed and accepted but are awaiting the right time to work on them
+
+When an issue has any of the `excluded_labels`, it will not appear in the "Issues Needing Response" section of the weekly email, even if it hasn't had a maintainer comment in the configured time period.
+
+**Example Use Cases:**
+
+1. **Konveyor Workflow**: Use `triaged-accepted` for issues that have been reviewed and accepted, and `triaged-needsinfo` for issues awaiting additional information
+2. **Good First Issues**: Add `"good first issue"` to `excluded_labels` to keep these issues open without flagging them
+3. **Backlog**: Add `"backlog"` or `"future"` to exclude long-term items from weekly reports
+
 ## CLI Usage
 
 ### Command-line Flags

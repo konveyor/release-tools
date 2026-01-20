@@ -79,6 +79,7 @@ jobs:
         if: ${{ inputs.test_email != '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # For SendGrid: SMTP_USERNAME should be "apikey" and SMTP_PASSWORD should be your SendGrid API key
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
@@ -93,6 +94,7 @@ jobs:
         if: ${{ inputs.test_email == '' && inputs.dry_run != true && inputs.dry_run != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # For SendGrid: SMTP_USERNAME should be "apikey" and SMTP_PASSWORD should be your SendGrid API key
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |

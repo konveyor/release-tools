@@ -148,20 +148,58 @@ export SMTP_USERNAME="your-email@gmail.com"
 export SMTP_PASSWORD="your-16-char-app-password"
 ```
 
-#### SendGrid
+#### SendGrid (Recommended for Production)
 
-```yaml
-smtp:
-  server: smtp.sendgrid.net
-  port: 587
-  from_email: noreply@yourdomain.com
-  from_name: Konveyor Health Reports
-```
+SendGrid is recommended over Gmail for automated emails because it:
+- Has better deliverability to enterprise email systems (like @redhat.com addresses)
+- Provides proper email authentication (SPF/DKIM/DMARC)
+- Offers a free tier (100 emails/day) that's sufficient for most teams
+- Includes bounce and spam reporting
 
-```bash
-export SMTP_USERNAME="apikey"
-export SMTP_PASSWORD="your-sendgrid-api-key"
-```
+**Setup Steps:**
+
+1. **Sign up for SendGrid:**
+   - Go to https://signup.sendgrid.com/
+   - Create a free account (100 emails/day limit)
+
+2. **Verify your sender email:**
+   - In SendGrid dashboard, go to **Settings → Sender Authentication**
+   - Click **Verify a Single Sender**
+   - Enter your email address (e.g., `konveyor.health.reports@gmail.com`)
+   - Check the verification email and click the confirmation link
+   - Note: This email address must match `from_email` in your config
+
+3. **Create an API key:**
+   - In SendGrid dashboard, go to **Settings → API Keys**
+   - Click **Create API Key**
+   - Name it (e.g., "Konveyor Weekly Reports")
+   - Choose **Restricted Access** and enable **Mail Send** permission
+   - Click **Create & View**
+   - **Copy the API key immediately** (you won't see it again!)
+
+4. **Configure your maintainers.yaml:**
+   ```yaml
+   smtp:
+     server: smtp.sendgrid.net
+     port: 587
+     from_email: konveyor.health.reports@gmail.com  # Must match verified sender
+     from_name: Konveyor Health Reports
+   ```
+
+5. **Set environment variables:**
+   ```bash
+   export SMTP_USERNAME="apikey"  # Literally the word "apikey", not your actual key
+   export SMTP_PASSWORD="SG.xxxx..."  # Your actual SendGrid API key
+   ```
+
+6. **Add to GitHub Secrets:**
+   - Go to your repository **Settings → Secrets and variables → Actions**
+   - Click **New repository secret**
+   - Name: `SMTP_USERNAME`, Value: `apikey`
+   - Click **Add secret**
+   - Click **New repository secret** again
+   - Name: `SMTP_PASSWORD`, Value: `SG.xxxx...` (your API key)
+   - Click **Add secret**
 
 #### Office 365
 
@@ -411,6 +449,18 @@ If insufficient data exists:
 - [ ] Test with dry-run mode first
 - [ ] Try sending to a different email address
 - [ ] Verify SMTP credentials are in GitHub Secrets
+
+### Enterprise email addresses blocked (Red Hat, etc.)
+
+**Problem:** Emails to enterprise addresses (like @redhat.com) are rejected with "Message blocked" errors
+
+**Cause:** Enterprise email servers often block automated emails from consumer Gmail accounts as a spam prevention measure
+
+**Solution:** Switch to SendGrid instead of Gmail
+- SendGrid has proper sender authentication and reputation
+- Enterprise email systems are more likely to accept emails from SendGrid
+- Follow the **SendGrid setup instructions** above
+- After switching, test with a personal email first, then try the enterprise address again
 
 ### Rate limiting
 

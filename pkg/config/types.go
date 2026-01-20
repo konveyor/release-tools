@@ -84,12 +84,13 @@ type GoalsConfig struct {
 
 // ActionItemsConfig holds configuration for action items tracking
 type ActionItemsConfig struct {
-	Enabled                      bool `json:"enabled" yaml:"enabled"`
-	IssueResponseTimeHours       int  `json:"issue_response_time_hours" yaml:"issue_response_time_hours"`
-	PRReviewWaitHours            int  `json:"pr_review_wait_hours" yaml:"pr_review_wait_hours"`
-	CheckDefaultBranchCI         bool `json:"check_default_branch_ci" yaml:"check_default_branch_ci"`
-	CheckApprovedPRs             bool `json:"check_approved_prs" yaml:"check_approved_prs"`
-	CheckExternalContributors    bool `json:"check_external_contributors" yaml:"check_external_contributors"`
-	CheckPRsAwaitingAuthor       bool `json:"check_prs_awaiting_author" yaml:"check_prs_awaiting_author"`
-	PRAwaitingAuthorResponseDays int  `json:"pr_awaiting_author_response_days" yaml:"pr_awaiting_author_response_days"`
+	Enabled                      bool     `json:"enabled" yaml:"enabled"`
+	IssueResponseTimeHours       int      `json:"issue_response_time_hours" yaml:"issue_response_time_hours"`
+	PRReviewWaitHours            int      `json:"pr_review_wait_hours" yaml:"pr_review_wait_hours"`
+	CheckDefaultBranchCI         bool     `json:"check_default_branch_ci" yaml:"check_default_branch_ci"`
+	CheckApprovedPRs             bool     `json:"check_approved_prs" yaml:"check_approved_prs"`
+	CheckExternalContributors    bool     `json:"check_external_contributors" yaml:"check_external_contributors"`
+	CheckPRsAwaitingAuthor       bool     `json:"check_prs_awaiting_author" yaml:"check_prs_awaiting_author"`
+	PRAwaitingAuthorResponseDays int      `json:"pr_awaiting_author_response_days" yaml:"pr_awaiting_author_response_days"`
+	ExcludedLabels               []string `json:"excluded_labels,omitempty" yaml:"excluded_labels,omitempty"`
 }

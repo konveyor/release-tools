@@ -437,7 +437,7 @@ func (f *Fetcher) FetchActionItems(ctx context.Context, repos []config.Repo, cfg
 		}
 
 		// Fetch unresponded issues
-		unresponded, err := f.fetchUnrespondedIssues(ctx, repo.Org, repo.Repo, cfg.IssueResponseTimeHours)
+		unresponded, err := f.fetchUnrespondedIssues(ctx, repo.Org, repo.Repo, cfg.IssueResponseTimeHours, cfg.ExcludedLabels)
 		if err != nil {
 			logrus.WithError(err).Warnf("Failed to fetch unresponded issues for %s/%s", repo.Org, repo.Repo)
 		} else {
@@ -512,7 +512,7 @@ func (f *Fetcher) FetchActionItems(ctx context.Context, repos []config.Repo, cfg
 }
 
 // fetchUnrespondedIssues finds issues without maintainer response
-func (f *Fetcher) fetchUnrespondedIssues(ctx context.Context, org, repo string, responseHours int) ([]UnrespondedIssue, error) {
+func (f *Fetcher) fetchUnrespondedIssues(ctx context.Context, org, repo string, responseHours int, excludedLabels []string) ([]UnrespondedIssue, error) {
 	cutoffTime := time.Now().Add(-time.Duration(responseHours) * time.Hour)
 
 	opts := &github.IssueListByRepoOptions{
@@ -529,6 +529,7 @@ func (f *Fetcher) fetchUnrespondedIssues(ctx context.Context, org, repo string, 
 	totalIssues := 0
 	skippedRecent := 0
 	skippedPRs := 0
+	skippedExcludedLabels := 0
 
 	for {
 		issues, resp, err := f.client.Issues.ListByRepo(ctx, org, repo, opts)
@@ -568,6 +569,26 @@ func (f *Fetcher) fetchUnrespondedIssues(ctx context.Context, org, repo string, 
 					labels = append(labels, label.GetName())
 				}
 
+				// Check if issue has any excluded labels
+				hasExcludedLabel := false
+				for _, label := range labels {
+					for _, excluded := range excludedLabels {
+						if label == excluded {
+							hasExcludedLabel = true
+							skippedExcludedLabels++
+							break
+						}
+					}
+					if hasExcludedLabel {
+						break
+					}
+				}
+
+				// Skip issues with excluded labels
+				if hasExcludedLabel {
+					continue
+				}
+
 				daysSince := int(time.Since(issue.CreatedAt.Time).Hours() / 24)
 				unresponded = append(unresponded, UnrespondedIssue{
 					Org:       org,
@@ -590,12 +611,13 @@ func (f *Fetcher) fetchUnrespondedIssues(ctx context.Context, org, repo string, 
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"org":            org,
-		"repo":           repo,
-		"total_fetched":  totalIssues,
-		"skipped_prs":    skippedPRs,
-		"skipped_recent": skippedRecent,
-		"unresponded":    len(unresponded),
+		"org":                    org,
+		"repo":                   repo,
+		"total_fetched":          totalIssues,
+		"skipped_prs":            skippedPRs,
+		"skipped_recent":         skippedRecent,
+		"skipped_excluded_labels": skippedExcludedLabels,
+		"unresponded":            len(unresponded),
 	}).Debug("Checked issues for unresponded items")
 
 	return unresponded, nil

@@ -53,31 +53,85 @@ runs:
       echo "xy_version=${XY_VERSION}" >> $GITHUB_OUTPUT
     id: check_tag
 
-  - name: Checkout code
+  - name: Checkout repository
     uses: actions/checkout@v4
+    with:
+      token: ${{ inputs.github_token }}
+      repository: ${{ inputs.repository }}
+      ref: ${{ inputs.ref }}
 
   - name: Generate Changelog
-    uses: ./.github/workflows/generate-changelog.yml
-    with:
-      version: ${{ github.event.inputs.version }}
-      prev_version: ${{ github.event.inputs.prev_version }}
-      repository: ${{ github.event.inputs.repository }}
-      ref: ${{ github.event.inputs.ref }}
-      github_token: ${{ inputs.github_token }}
+    id: changelog
+    env:
+      GITHUB_TOKEN: ${{ inputs.github_token }}
+    shell: bash
+    run: |
+      set -x
 
-  - name: Download Changelog
-    uses: actions/download-artifact@v4
-    with:
-      name: changelog-artifact
-      path: .
+      REPOSITORY="${{ inputs.repository }}"
+      SHA="$(git rev-parse HEAD)"
+      echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      # Extract owner and repo name
+      OWNER=$(echo "${REPOSITORY}" | cut -d'/' -f1)
+      REPO=$(echo "${REPOSITORY}" | cut -d'/' -f2)
+      echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
+      echo "repo=${REPO}" >> "$GITHUB_OUTPUT"
+
+      # Get the previous tag
+      if [ -n "${{ inputs.prev_version }}" ] && git rev-list "${{ inputs.prev_version }}" 2> /dev/null; then
+        PREV_TAG="${{ inputs.prev_version }}"
+      else
+        PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" "/repos/${{ inputs.repository }}/releases/latest" | jq -r '.tag_name // empty')
+      fi
+
+      # Generate release notes
+      NOTES=$(gh api --method POST \
+        -H "Accept: application/vnd.github+json" \
+        "/repos/${{ inputs.repository }}/releases/generate-notes" \
+        -f tag_name="${{ inputs.version }}" \
+        -f target_commitish="${SHA}" \
+        -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
+
+      RELEASE_DOC="${PWD}/release.md"
+      echo "**Full Changelog**: https://github.com/${REPOSITORY}/commits/${{ inputs.version }}" > "${RELEASE_DOC}"
+
+      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /"; }
+
+      BREAKING_CHANGES="$(filterfunc warning)"
+      if [ -n "${BREAKING_CHANGES}" ]; then
+        { echo "## :warning: Breaking Changes"; echo "${BREAKING_CHANGES}"; echo ""; } >> "${RELEASE_DOC}"
+      fi
+
+      FEATURE_CHANGES="$(filterfunc sparkles)"
+      if [ -n "${FEATURE_CHANGES}" ]; then
+        { echo "## :sparkles: Features"; echo "${FEATURE_CHANGES}"; echo ""; } >> "${RELEASE_DOC}"
+      fi
+
+      BUG_FIXES="$(filterfunc bug)"
+      if [ -n "${BUG_FIXES}" ]; then
+        { echo "## :bug: Bug Fixes"; echo "${BUG_FIXES}"; echo ""; } >> "${RELEASE_DOC}"
+      fi
+
+      TEST_TUBES="$(filterfunc test_tube)"
+      if [ -n "${TEST_TUBES}" ]; then
+        { echo "## :test_tube: Integration or E2E tests"; echo "${TEST_TUBES}"; echo ""; } >> "${RELEASE_DOC}"
+      fi
+
+      NEW_CONTRIB=$(echo "${NOTES}" | sed -n "/Contributors/,\$p")
+      if [ -n "${NEW_CONTRIB}" ]; then
+        echo "${NEW_CONTRIB}" >> "${RELEASE_DOC}"
+      else
+        echo "${NOTES}" | sed -n "/Changelog/,\$p" >> "${RELEASE_DOC}"
+      fi
 
 
   - uses: ncipollo/release-action@main
     with:
-      owner: ${{ github.repository_owner }}
-      repo: ${{ inputs.repository }}
+      owner: ${{ steps.changelog.outputs.owner }}
+      repo: ${{ steps.changelog.outputs.repo }}
       tag: ${{ inputs.version }}
-      commit: ${{ github.sha }}
+      commit: ${{ steps.changelog.outputs.sha }}
       bodyFile: release.md
       draft: false
       prerelease: ${{ inputs.is_prerelease }}

@@ -189,7 +189,6 @@ func AggregateRepoData(org, repo string, data *HistoricalData) (*RepoReport, err
 					OpenIssues:         repoData.OpenIssues,
 					OpenPRs:            repoData.OpenPRs,
 					Coverage:           repoData.Coverage,
-					Vulnerabilities:    repoData.SnykVulnerabilities,
 				}
 
 				// Extract new contributors (excluding bots)
@@ -222,7 +221,6 @@ func AggregateRepoData(org, repo string, data *HistoricalData) (*RepoReport, err
 						OpenIssues:         repoData.OpenIssues,
 						OpenPRs:            repoData.OpenPRs,
 						Coverage:           repoData.Coverage,
-						Vulnerabilities:    repoData.SnykVulnerabilities,
 					}
 					break
 				}

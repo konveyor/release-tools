@@ -795,34 +795,12 @@
             </div>
             {{end}}
 
-            <!-- Security & Coverage - only show if data exists -->
-            {{if or .CurrentHealth.Vulnerabilities .CurrentHealth.Coverage}}
-            <h3 class="section-title">Security & Coverage</h3>
-            {{if .CurrentHealth.Vulnerabilities}}
-            <div style="margin-top: 10px;">
-                <strong>Snyk Vulnerabilities:</strong><br>
-                <div style="margin-top: 10px;">
-                    <span class="vulnerability">
-                        Critical: <span class="vuln-badge vuln-critical">{{.CurrentHealth.Vulnerabilities.Critical}}</span>
-                    </span>
-                    <span class="vulnerability">
-                        High: <span class="vuln-badge vuln-high">{{.CurrentHealth.Vulnerabilities.High}}</span>
-                    </span>
-                    <span class="vulnerability">
-                        Medium: <span class="vuln-badge vuln-medium">{{.CurrentHealth.Vulnerabilities.Medium}}</span>
-                    </span>
-                    <span class="vulnerability">
-                        Low: <span class="vuln-badge vuln-low">{{.CurrentHealth.Vulnerabilities.Low}}</span>
-                    </span>
-                </div>
-            </div>
-            {{end}}
-
+            <!-- Coverage - only show if data exists -->
             {{if .CurrentHealth.Coverage}}
-            <div style="margin-top: 15px;">
+            <h3 class="section-title">Coverage</h3>
+            <div style="margin-top: 10px;">
                 <strong>Code Coverage:</strong> {{printf "%.1f" (derefFloat .CurrentHealth.Coverage)}}%
             </div>
-            {{end}}
             {{end}}
 
             <div class="links">

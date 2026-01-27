@@ -96,7 +96,7 @@ runs:
       RELEASE_DOC="${PWD}/release.md"
       echo "**Full Changelog**: https://github.com/${REPOSITORY}/commits/${{ inputs.version }}" > "${RELEASE_DOC}"
 
-      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /"; }
+      filterfunc() { echo "${NOTES}" | grep "^*\s*:$1:" | sed "s/.*:$1:\s*/* /" || true; }
 
       BREAKING_CHANGES="$(filterfunc warning)"
       if [ -n "${BREAKING_CHANGES}" ]; then

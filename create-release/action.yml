@@ -82,16 +82,24 @@ runs:
       if [ -n "${{ inputs.prev_version }}" ] && git rev-list "${{ inputs.prev_version }}" 2> /dev/null; then
         PREV_TAG="${{ inputs.prev_version }}"
       else
-        PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" "/repos/${{ inputs.repository }}/releases/latest" | jq -r '.tag_name // empty')
+        PREV_TAG=$(gh api -H "Accept: application/vnd.github+json" "/repos/${{ inputs.repository }}/releases/latest" 2>/dev/null | jq -r '.tag_name // empty' || echo "")
       fi
 
       # Generate release notes
-      NOTES=$(gh api --method POST \
-        -H "Accept: application/vnd.github+json" \
-        "/repos/${{ inputs.repository }}/releases/generate-notes" \
-        -f tag_name="${{ inputs.version }}" \
-        -f target_commitish="${SHA}" \
-        -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
+      if [ -n "${PREV_TAG}" ]; then
+        NOTES=$(gh api --method POST \
+          -H "Accept: application/vnd.github+json" \
+          "/repos/${{ inputs.repository }}/releases/generate-notes" \
+          -f tag_name="${{ inputs.version }}" \
+          -f target_commitish="${SHA}" \
+          -f previous_tag_name="${PREV_TAG}" | jq -r '.body')
+      else
+        NOTES=$(gh api --method POST \
+          -H "Accept: application/vnd.github+json" \
+          "/repos/${{ inputs.repository }}/releases/generate-notes" \
+          -f tag_name="${{ inputs.version }}" \
+          -f target_commitish="${SHA}" | jq -r '.body')
+      fi
 
       RELEASE_DOC="${PWD}/release.md"
       echo "**Full Changelog**: https://github.com/${REPOSITORY}/commits/${{ inputs.version }}" > "${RELEASE_DOC}"
@@ -131,6 +139,7 @@ runs:
       owner: ${{ steps.changelog.outputs.owner }}
       repo: ${{ steps.changelog.outputs.repo }}
       tag: ${{ inputs.version }}
+      name: ${{ inputs.version }}
       commit: ${{ steps.changelog.outputs.sha }}
       bodyFile: release.md
       draft: false

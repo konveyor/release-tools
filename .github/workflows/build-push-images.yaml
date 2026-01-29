@@ -39,6 +39,11 @@ on:
         default: ""
         required: false
         type: string
+      repository:
+        description: "The repository to checkout (e.g., 'owner/repo'). Defaults to the calling workflow's repository."
+        default: ""
+        required: false
+        type: string
       ref:
         description: "The github ref to checkout if different then github.ref context"
         default: ""
@@ -142,6 +147,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref || github.ref }}
 
       - name: Install QEMU static

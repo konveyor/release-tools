@@ -15,8 +15,12 @@ jobs:
       image_name: tackle2-ui
       containerfile: ./Dockerfile
       architectures: '["amd64", "arm64"]'
+      repository: konveyor/tackle2-ui
+      ref: main
+      tag: test-pr${{ github.event.pull_request.number }}
       extra-args: |
         --ulimit nofile=4096:4096
+        --label quay.expires-after=2h
     secrets:
       registry_username: ${{ secrets.QUAY_PUBLISH_ROBOT }}
       registry_password: ${{ secrets.QUAY_PUBLISH_TOKEN }}

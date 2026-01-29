@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/workflows/build-push-images.yaml'
 
+  workflow_dispatch:
+
 jobs:
   build-test:
     uses: ./.github/workflows/build-push-images.yaml

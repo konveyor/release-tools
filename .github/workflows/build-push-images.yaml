@@ -86,18 +86,18 @@ jobs:
             const architectures = JSON.parse(process.env.ARCHITECTURES);
 
             const runnerMap = {
-              'amd64': { runner: 'ubuntu-latest', needsQemu: false },
-              'arm64': { runner: 'ubuntu-24.04-arm', needsQemu: false },
+              'amd64': { runner: 'ubuntu-latest', installQemu: false },
+              'arm64': { runner: 'ubuntu-24.04-arm', installQemu: false },
             };
 
-            const defaultConfig = { runner: 'ubuntu-latest', needsQemu: true };
+            const defaultConfig = { runner: 'ubuntu-latest', installQemu: true };
 
             const matrix = architectures.map(arch => {
               const config = runnerMap[arch] || defaultConfig;
               return {
                 architecture: arch,
                 runner: config.runner,
-                'needs-qemu': config.needsQemu,
+                installQemu: config.installQemu,
               };
             });
 
@@ -151,7 +151,7 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
 
       - name: Install QEMU static
-        if: ${{ matrix.needs-qemu == true }}
+        if: ${{ matrix.installQemu == true }}
         shell: bash
         run: |
           # Remove any existing qemu setup

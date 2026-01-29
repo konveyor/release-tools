@@ -1,0 +1,22 @@
+name: PR Test Build and Push
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-push-images.yaml'
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/build-push-images.yaml
+    with:
+      registry: quay.io/konveyor
+      image_name: tackle2-ui
+      containerfile: ./Dockerfile
+      architectures: '["amd64", "arm64"]'
+      extra-args: |
+        --ulimit nofile=4096:4096
+    secrets:
+      registry_username: ${{ secrets.QUAY_PUBLISH_ROBOT }}
+      registry_password: ${{ secrets.QUAY_PUBLISH_TOKEN }}

@@ -150,6 +150,9 @@ labels:
   - color: fef2f0
     description: This PR should be cherry-picked to release-0.8 branch
     name: cherry-pick/release-0.8
+  - color: fef300
+    description: This PR should be cherry-picked to release-0.9 branch
+    name: cherry-pick/release-0.9
 
 # Milestones
 # List of milestones, and their state, that should exist in the specified repositories.

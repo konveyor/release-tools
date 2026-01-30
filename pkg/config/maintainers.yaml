@@ -148,6 +148,7 @@ goals:
     - "OWNERS"
     - "OWNERS.md"
     - "CODEOWNERS"
+    - ".github/CODEOWNERS"
     - "README.md"
 
 # Action Items Configuration

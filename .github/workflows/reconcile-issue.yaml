@@ -84,7 +84,7 @@ jobs:
             console.log(`Labels: ${labels}`);
 
             // triage label
-            if (labels.some(label => label.match('^triage/accepted$'))) {
+            if (labels.some(label => label.match('^triage/'))) {
               if (labels.includes('needs-triage')) {
                 await github.rest.issues.removeLabel({
                   issue_number: context.issue.number,

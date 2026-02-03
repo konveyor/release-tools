@@ -7,7 +7,7 @@ on:
         description: "Post the result of the cherry-pick as a comment on the PR"
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   branches:

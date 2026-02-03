@@ -69,7 +69,7 @@ jobs:
           git cherry-pick -s ${{ github.sha }}
           git push origin "${BRANCH_NAME}"
           PR_URL=$(gh pr create --base "${{ matrix.branch }}" --fill)
-          echo "pr_url=\"${PR_URL}\"" >> "$GITHUB_OUTPUT"
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Post success comment
         if: ${{ inputs.post_result == true && success() }}

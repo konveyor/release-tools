@@ -61,15 +61,15 @@ jobs:
         id: cherry_pick
         env:
           GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          BRANCH_NAME: "cherry-pick-pr${{ github.event.number }}-${{ matrix.branch }}"
         run: |
-          BRANCH_NAME="cherry-pick-pr${{ github.event.number }}-${{ matrix.branch }}"
           git config --global user.email "noreply@github.com"
           git config --global user.name "Cherry Picker"
-          git checkout -b ${BRANCH_NAME}
+          git checkout -b "${BRANCH_NAME}"
           git cherry-pick -s ${{ github.sha }}
-          git push origin ${BRANCH_NAME}
-          PR_URL=$(gh pr create --base ${{ matrix.branch }} --fill)
-          echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
+          git push origin "${BRANCH_NAME}"
+          PR_URL=$(gh pr create --base "${{ matrix.branch }}" --fill)
+          echo "pr_url=\"${PR_URL}\"" >> "$GITHUB_OUTPUT"
 
       - name: Post success comment
         if: ${{ inputs.post_result == true && success() }}

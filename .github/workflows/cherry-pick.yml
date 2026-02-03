@@ -2,6 +2,12 @@ name: Cherry Pick
 
 on:
   workflow_call:
+    inputs:
+      post_result:
+        description: "Post the result of the cherry-pick as a comment on the PR"
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   branches:
@@ -52,13 +58,42 @@ jobs:
           application_private_key: ${{ secrets.KONVEYOR_BOT_KEY }}
 
       - name: Cherry-pick
+        id: cherry_pick
         env:
           GH_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+          BRANCH_NAME: "cherry-pick-pr${{ github.event.number }}-${{ matrix.branch }}"
         run: |
-          BRANCH_NAME="cherry-pick-pr${{ github.event.number }}-${{ matrix.branch }}"
           git config --global user.email "noreply@github.com"
           git config --global user.name "Cherry Picker"
-          git checkout -b ${BRANCH_NAME}
+          git checkout -b "${BRANCH_NAME}"
           git cherry-pick -s ${{ github.sha }}
-          git push origin ${BRANCH_NAME}
-          gh pr create --base ${{ matrix.branch }} --fill
+          git push origin "${BRANCH_NAME}"
+          PR_URL=$(gh pr create --base "${{ matrix.branch }}" --fill)
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Post success comment
+        if: ${{ inputs.post_result == true && success() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `PR cherry-picked to branch __${{ matrix.branch }}__. Backport PR: ${{ steps.cherry_pick.outputs.pr_url }}`
+            });
+
+      - name: Post failure comment
+        if: ${{ inputs.post_result == true && failure() }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.get_workflow_token.outputs.token }}
+          script: |
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Failed to cherry-pick this PR to branch __${{ matrix.branch }}__. [View failed action](${runUrl})`
+            });

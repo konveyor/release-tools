@@ -4327,8 +4327,6 @@ class CommunityHealthDashboard {
             this.renderQAPassRateChart();
             this.renderQATrendChart();
 
-            // Bug count is already included in test results, no need to fetch separately
-
             console.log('[QA Metrics] Successfully loaded QA metrics');
 
         } catch (error) {
@@ -4352,7 +4350,6 @@ class CommunityHealthDashboard {
         }
 
         // Nightly test workflow files to monitor
-        // These are the actual UI/API test workflows from respective repositories
         const nightlyWorkflows = [
             { org: 'konveyor', repo: 'tackle2-ui', file: 'e2e-nightly.yaml', branch: 'main', displayName: 'E2E Nightly', source: 'github' },
             { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release09-dispatcher.yaml', branch: 'release-0.9', displayName: 'E2E Nightly', source: 'github' }

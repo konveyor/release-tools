@@ -53,7 +53,6 @@ class CommunityHealthDashboard {
 
     /**
      * Strip ANSI escape codes from text
-     * Avoids lint/suspicious/noControlCharactersInRegex by building regex dynamically
      */
     stripAnsi(text) {
         const ESC = String.fromCharCode(27);
@@ -4363,12 +4362,17 @@ class CommunityHealthDashboard {
             await this.fetchQATestData();
             console.log('[QA Metrics] Fetched', this.qaTestData.length, 'workflows');
 
-            // Cache the fetched data
-            localStorage.setItem(cacheKey, JSON.stringify({
-                data: this.qaTestData,
-                timestamp: Date.now()
-            }));
-            console.log('[QA Metrics] Data cached successfully');
+            // Cache the fetched data only if we have results
+            if (this.qaTestData.length > 0) {
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: this.qaTestData,
+                    timestamp: Date.now()
+                }));
+                console.log('[QA Metrics] Data cached successfully');
+            } else {
+                localStorage.removeItem(cacheKey);
+                console.log('[QA Metrics] Skipping cache (no data)');
+            }
 
             // Update UI
             console.log('[QA Metrics] Updating stats...');
@@ -5036,6 +5040,11 @@ class CommunityHealthDashboard {
 
         // Take top 10
         const recentRuns = allRuns.slice(0, 10);
+
+        if (recentRuns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No recent runs available</td></tr>';
+            return;
+        }
 
         tbody.innerHTML = recentRuns.map(run => {
             const statusClass = run.conclusion === 'success'

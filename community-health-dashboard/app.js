@@ -52,6 +52,16 @@ class CommunityHealthDashboard {
     }
 
     /**
+     * Strip ANSI escape codes from text
+     * Avoids lint/suspicious/noControlCharactersInRegex by building regex dynamically
+     */
+    stripAnsi(text) {
+        const ESC = String.fromCharCode(27);
+        const ansiRegex = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+        return text.replace(ansiRegex, '');
+    }
+
+    /**
      * Parse Codecov badge SVG to extract coverage percentage
      *
      * NOTE: This logic is duplicated in .github/workflows/collect-community-health.yml
@@ -103,6 +113,10 @@ class CommunityHealthDashboard {
         document.getElementById('refresh-btn').addEventListener('click', () => {
             this.loadData();
             this.loadPRHealthData();
+            // Also refresh QA test metrics if they've been loaded
+            if (this.qaTestData.length > 0) {
+                this.loadQATestMetrics(true); // Force refresh, bypass cache
+            }
         });
 
         // Activity filter
@@ -4292,7 +4306,7 @@ class CommunityHealthDashboard {
     // QA/Test Metrics Methods
     // ============================================
 
-    async loadQATestMetrics() {
+    async loadQATestMetrics(forceRefresh = false) {
         console.log('[QA Metrics] Starting to load QA test metrics...');
         const loadingIndicator = document.getElementById('qa-loading-indicator');
 
@@ -4304,6 +4318,42 @@ class CommunityHealthDashboard {
         loadingIndicator.style.display = 'flex';
 
         try {
+            // Check for cached data (cache expires after 1 hour)
+            const cacheKey = 'qaTestData_cache';
+            const cacheExpiryMs = 60 * 60 * 1000; // 1 hour
+
+            if (!forceRefresh) {
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const { data, timestamp } = JSON.parse(cachedData);
+                        const age = Date.now() - timestamp;
+
+                        if (age < cacheExpiryMs) {
+                            console.log(`[QA Metrics] Using cached data (${Math.round(age / 1000 / 60)} minutes old)`);
+                            this.qaTestData = data;
+
+                            // Update UI with cached data
+                            this.updateQATestStats();
+                            this.renderQATestTable();
+                            this.renderQARecentRuns();
+                            this.renderQAPassRateChart();
+                            this.renderQATrendChart();
+
+                            loadingIndicator.style.display = 'none';
+                            console.log('[QA Metrics] Successfully loaded from cache');
+                            return;
+                        } else {
+                            console.log('[QA Metrics] Cache expired, fetching fresh data...');
+                        }
+                    } catch (e) {
+                        console.error('[QA Metrics] Error parsing cached data:', e);
+                    }
+                }
+            } else {
+                console.log('[QA Metrics] Force refresh requested, bypassing cache');
+            }
+
             // Reset data
             this.qaTestData = [];
             console.log('[QA Metrics] Reset qaTestData array');
@@ -4312,6 +4362,13 @@ class CommunityHealthDashboard {
             console.log('[QA Metrics] Fetching test data from GitHub API...');
             await this.fetchQATestData();
             console.log('[QA Metrics] Fetched', this.qaTestData.length, 'workflows');
+
+            // Cache the fetched data
+            localStorage.setItem(cacheKey, JSON.stringify({
+                data: this.qaTestData,
+                timestamp: Date.now()
+            }));
+            console.log('[QA Metrics] Data cached successfully');
 
             // Update UI
             console.log('[QA Metrics] Updating stats...');
@@ -4405,8 +4462,75 @@ class CommunityHealthDashboard {
 
                 // Calculate statistics from recent runs
                 const successRuns = runs.filter(r => r.conclusion === 'success').length;
-                const failedRuns = runs.filter(r => r.conclusion === 'failure').length;
                 const successRate = runs.length > 0 ? (successRuns / runs.length) * 100 : 0;
+
+                // For main branch, fetch test results for all recent runs to show failure trend
+                const recentRunsWithResults = [];
+                if (workflow.branch === 'main') {
+                    console.log(`[QA Metrics] Fetching test results for last 10 runs of ${workflow.displayName} (main branch)...`);
+                    for (const run of runs.slice(0, 10)) {
+                        try {
+                            const runJobsResponse = await fetch(
+                                `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/runs/${run.id}/jobs`,
+                                { headers }
+                            );
+
+                            let runTestResults = null;
+                            if (runJobsResponse.ok) {
+                                const runJobsData = await runJobsResponse.json();
+                                runTestResults = await this.parseTestResultsFromJobs(runJobsData.jobs, workflow);
+                            }
+
+                            recentRunsWithResults.push({
+                                id: run.id,
+                                runNumber: run.run_number,
+                                status: run.status,
+                                conclusion: run.conclusion || 'in_progress',
+                                createdAt: run.created_at,
+                                duration: run.updated_at && run.created_at
+                                    ? new Date(run.updated_at) - new Date(run.created_at)
+                                    : 0,
+                                triggeredBy: run.triggering_actor?.login || 'unknown',
+                                url: run.html_url,
+                                testResults: runTestResults
+                            });
+
+                            // Small delay to avoid rate limiting
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        } catch (error) {
+                            console.error(`[QA Metrics] Error fetching test results for run ${run.run_number}:`, error);
+                            // Add run without test results
+                            recentRunsWithResults.push({
+                                id: run.id,
+                                runNumber: run.run_number,
+                                status: run.status,
+                                conclusion: run.conclusion || 'in_progress',
+                                createdAt: run.created_at,
+                                duration: run.updated_at && run.created_at
+                                    ? new Date(run.updated_at) - new Date(run.created_at)
+                                    : 0,
+                                triggeredBy: run.triggering_actor?.login || 'unknown',
+                                url: run.html_url,
+                                testResults: null
+                            });
+                        }
+                    }
+                } else {
+                    // For non-main branches, just store basic run info without test results
+                    recentRunsWithResults.push(...runs.slice(0, 10).map(r => ({
+                        id: r.id,
+                        runNumber: r.run_number,
+                        status: r.status,
+                        conclusion: r.conclusion || 'in_progress',
+                        createdAt: r.created_at,
+                        duration: r.updated_at && r.created_at
+                            ? new Date(r.updated_at) - new Date(r.created_at)
+                            : 0,
+                        triggeredBy: r.triggering_actor?.login || 'unknown',
+                        url: r.html_url,
+                        testResults: null
+                    })));
+                }
 
                 this.qaTestData.push({
                     workflow: workflow.displayName,
@@ -4426,18 +4550,7 @@ class CommunityHealthDashboard {
                             : 0
                     },
                     testResults: testResults,
-                    recentRuns: runs.slice(0, 10).map(r => ({
-                        id: r.id,
-                        runNumber: r.run_number,
-                        status: r.status,
-                        conclusion: r.conclusion || 'in_progress',
-                        createdAt: r.created_at,
-                        duration: r.updated_at && r.created_at
-                            ? new Date(r.updated_at) - new Date(r.created_at)
-                            : 0,
-                        triggeredBy: r.triggering_actor?.login || 'unknown',
-                        url: r.html_url
-                    })),
+                    recentRuns: recentRunsWithResults,
                     successRate: successRate
                 });
 
@@ -4532,8 +4645,7 @@ class CommunityHealthDashboard {
         // Look for the same bug summary format as GitHub Actions
         try {
             // Strip ANSI escape codes
-            let cleanText = consoleText.replace(/\x1b\[[0-9;]*m/g, '');
-            cleanText = cleanText.replace(/\u001b\[[0-9;]*m/g, '');
+            const cleanText = this.stripAnsi(consoleText);
 
             // Try to find the bug summary line
             // Pattern 1: tests with failures
@@ -4634,7 +4746,7 @@ class CommunityHealthDashboard {
                     const logsText = await logsResponse.text();
 
                     // Strip ANSI escape codes (color codes) from logs
-                    const cleanLogs = logsText.replace(/\x1b\[[0-9;]*m/g, '');
+                    const cleanLogs = this.stripAnsi(logsText);
 
                     // Parse the bug summary line from logs
                     // Two formats:
@@ -4863,7 +4975,12 @@ class CommunityHealthDashboard {
             const failed = hasDetailedResults ? (testResults.failed || 0) : 'N/A';
             const knownBugs = hasDetailedResults ? (testResults.knownBugs || 0) : 0;
 
-            const statusClass = workflow.latestRun.status === 'success' ? 'status-success' : 'status-failure';
+            const status = workflow.latestRun.status;
+            const statusClass = status === 'success'
+                ? 'badge-success'
+                : status === 'failure'
+                    ? 'badge-failure'
+                    : 'badge-pr';
 
             console.log(`[QA Metrics] Rendering ${workflow.workflow}: total=${totalTests}, passed=${passed}, failed=${failed}, bugs=${knownBugs}`);
 
@@ -4875,8 +4992,8 @@ class CommunityHealthDashboard {
                     </td>
                     <td style="text-align: center;"><span class="badge">${workflow.branch}</span></td>
                     <td style="text-align: center;">
-                        <span class="status-badge ${statusClass}">
-                            ${workflow.latestRun.status}
+                        <span class="badge ${statusClass}">
+                            ${status}
                         </span>
                     </td>
                     <td style="text-align: center;">${typeof totalTests === 'number' ? totalTests.toLocaleString() : totalTests}</td>
@@ -4885,7 +5002,7 @@ class CommunityHealthDashboard {
                     <td class="stat-warning" style="text-align: center;">${typeof knownBugs === 'number' ? (knownBugs > 0 ? knownBugs.toLocaleString() : '0') : '-'}</td>
                     <td style="text-align: center;">${this.formatDate(new Date(workflow.latestRun.createdAt))}</td>
                     <td>
-                        <a href="${workflow.latestRun.url}" target="_blank" class="btn btn-sm">
+                        <a href="${workflow.latestRun.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
                             ${workflow.source === 'jenkins' ? 'View Job' : `View Run #${workflow.latestRun.runNumber}`}
                         </a>
                     </td>
@@ -4921,8 +5038,11 @@ class CommunityHealthDashboard {
         const recentRuns = allRuns.slice(0, 10);
 
         tbody.innerHTML = recentRuns.map(run => {
-            const statusClass = run.conclusion === 'success' ? 'status-success' :
-                               run.conclusion === 'failure' ? 'status-failure' : 'status-pending';
+            const statusClass = run.conclusion === 'success'
+                ? 'badge-success'
+                : run.conclusion === 'failure'
+                    ? 'badge-failure'
+                    : 'badge-pr';
 
             return `
                 <tr>
@@ -4930,7 +5050,7 @@ class CommunityHealthDashboard {
                     <td><span class="badge">${run.branch}</span></td>
                     <td>${run.runNumber}</td>
                     <td>
-                        <span class="status-badge ${statusClass}">
+                        <span class="badge ${statusClass}">
                             ${run.conclusion}
                         </span>
                     </td>
@@ -4938,7 +5058,7 @@ class CommunityHealthDashboard {
                     <td>${this.formatDuration(run.duration)}</td>
                     <td>${run.triggeredBy}</td>
                     <td>
-                        <a href="${run.url}" target="_blank" class="btn btn-sm">View</a>
+                        <a href="${run.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View</a>
                     </td>
                 </tr>
             `;
@@ -4949,39 +5069,91 @@ class CommunityHealthDashboard {
         const ctx = document.getElementById('qa-pass-rate-chart');
         if (!ctx) return;
 
-        const labels = this.qaTestData.map(w => w.branch);
-        const successRates = this.qaTestData.map(w => w.successRate);
+        // Get main branch workflows only
+        const mainBranchWorkflows = this.qaTestData.filter(w => w.branch === 'main');
+
+        if (mainBranchWorkflows.length === 0) {
+            console.log('[QA Metrics] No main branch data available for failure trend chart');
+            return;
+        }
+
+        // Collect all runs from main branch with test results
+        const allRuns = [];
+        mainBranchWorkflows.forEach(workflow => {
+            if (workflow.recentRuns && workflow.recentRuns.length > 0) {
+                workflow.recentRuns.forEach(run => {
+                    allRuns.push({
+                        runNumber: run.runNumber,
+                        date: run.createdAt,
+                        workflow: workflow.workflow,
+                        testResults: run.testResults,
+                        failures: run.testResults && run.testResults.available ? run.testResults.failed : null
+                    });
+                });
+            }
+        });
+
+        // Sort by date (oldest first for chronological display)
+        allRuns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Take last 10 runs
+        const last10Runs = allRuns.slice(-10);
+
+        console.log('[QA Metrics] Rendering failure trend for last 10 runs from main branch');
+        console.log('[QA Metrics] Runs collected:', last10Runs.length);
+        console.log('[QA Metrics] Run data:', last10Runs.map(r => ({run: r.runNumber, failures: r.failures})));
+
+        // Create labels and failure counts
+        const labels = last10Runs.map(run => `Run #${run.runNumber}`);
+        const failureCounts = last10Runs.map(run => run.failures !== null ? run.failures : 0);
 
         if (this.charts.qaPassRate) {
             this.charts.qaPassRate.destroy();
         }
 
         this.charts.qaPassRate = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Success Rate (%)',
-                    data: successRates,
-                    backgroundColor: successRates.map(rate =>
-                        rate >= 80 ? '#73bf69' : rate >= 60 ? '#ffa500' : '#f2495c'
-                    )
+                    label: 'Test Failures',
+                    data: failureCounts,
+                    borderColor: '#f2495c',
+                    backgroundColor: 'rgba(242, 73, 92, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Failures: ${context.parsed.y}`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
                         ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Failures'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Test Runs (Chronological)'
                         }
                     }
                 }
@@ -4993,28 +5165,42 @@ class CommunityHealthDashboard {
         const ctx = document.getElementById('qa-trend-chart');
         if (!ctx) return;
 
-        // For now, show aggregated run data by date
-        // In the future, this could pull from historical data
-        const runsByDate = {};
+        // Filter to only main branch workflows
+        const mainBranchWorkflows = this.qaTestData.filter(workflow => workflow.branch === 'main');
 
-        this.qaTestData.forEach(workflow => {
-            workflow.recentRuns.forEach(run => {
-                const date = run.createdAt.split('T')[0];
-                if (!runsByDate[date]) {
-                    runsByDate[date] = { total: 0, success: 0 };
-                }
-                runsByDate[date].total++;
-                if (run.conclusion === 'success') {
-                    runsByDate[date].success++;
-                }
-            });
+        if (mainBranchWorkflows.length === 0) {
+            console.log('[QA Metrics] No main branch data available for passed tests trend chart');
+            return;
+        }
+
+        // Collect all runs from main branch with test results
+        const allRuns = [];
+        mainBranchWorkflows.forEach(workflow => {
+            if (workflow.recentRuns && workflow.recentRuns.length > 0) {
+                workflow.recentRuns.forEach(run => {
+                    allRuns.push({
+                        runNumber: run.runNumber,
+                        date: run.createdAt,
+                        workflow: workflow.workflow,
+                        testResults: run.testResults,
+                        passed: run.testResults && run.testResults.available ? run.testResults.passed : null
+                    });
+                });
+            }
         });
 
-        const dates = Object.keys(runsByDate).sort();
-        const successRates = dates.map(date => {
-            const data = runsByDate[date];
-            return data.total > 0 ? (data.success / data.total * 100) : 0;
-        });
+        // Sort by date (oldest first for chronological display)
+        allRuns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Take last 10 runs
+        const last10Runs = allRuns.slice(-10);
+
+        console.log('[QA Metrics] Rendering passed tests trend for last 10 runs from main branch');
+        console.log('[QA Metrics] Run data:', last10Runs.map(r => ({run: r.runNumber, passed: r.passed})));
+
+        // Create labels and passed counts
+        const labels = last10Runs.map(run => `Run #${run.runNumber}`);
+        const passedCounts = last10Runs.map(run => run.passed !== null ? run.passed : 0);
 
         if (this.charts.qaTrend) {
             this.charts.qaTrend.destroy();
@@ -5023,30 +5209,46 @@ class CommunityHealthDashboard {
         this.charts.qaTrend = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                labels: labels,
                 datasets: [{
-                    label: 'Test Success Rate (%)',
-                    data: successRates,
-                    borderColor: '#33b5e5',
-                    backgroundColor: 'rgba(51, 181, 229, 0.1)',
+                    label: 'Passed Tests',
+                    data: passedCounts,
+                    borderColor: '#73bf69',
+                    backgroundColor: 'rgba(115, 191, 105, 0.1)',
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: true, position: 'top' }
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Passed: ${context.parsed.y}`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100,
                         ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
+                            stepSize: 10
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Passed Tests'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Test Runs (Chronological)'
                         }
                     }
                 }

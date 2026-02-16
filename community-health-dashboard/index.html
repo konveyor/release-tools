@@ -932,7 +932,7 @@
                 <div class="trends-content">
                     <div class="table-panel">
                         <div class="panel-header">
-                            <h2>Test Pass Rate by Branch</h2>
+                            <h2>Test Failure Trend (Last 10 Runs - Main Branch)</h2>
                         </div>
                         <div class="chart-container" style="padding: 2rem; height: 400px;">
                             <canvas id="qa-pass-rate-chart"></canvas>
@@ -941,7 +941,7 @@
 
                     <div class="table-panel">
                         <div class="panel-header">
-                            <h2>Test Execution Trend (7 Days)</h2>
+                            <h2>Passed Tests Trend (Last 10 Runs - Main Branch)</h2>
                         </div>
                         <div class="chart-container" style="padding: 2rem; height: 400px;">
                             <canvas id="qa-trend-chart"></canvas>
@@ -1051,6 +1051,7 @@
         let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
             dashboard = new CommunityHealthDashboard();
+            window.dashboard = dashboard; // Make accessible in console
         });
     </script>
 </body>

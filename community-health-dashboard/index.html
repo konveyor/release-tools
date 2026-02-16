@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Konveyor - Community Health Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=50">
+    <link rel="stylesheet" href="styles.css?v=52">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -33,6 +33,7 @@
                 <button class="tab-btn" data-tab="issue-health">Issue Health</button>
                 <button class="tab-btn" data-tab="maintainer-health">Maintainer Health</button>
                 <button class="tab-btn" data-tab="ci-health">CI/CD Health</button>
+                <button class="tab-btn" data-tab="qa-test-metrics">QA/Test Metrics</button>
             </div>
 
             <!-- Overview Tab -->
@@ -839,6 +840,144 @@
                 </div>
             </div>
             <!-- End CI/CD Health Tab -->
+
+            <!-- QA/Test Metrics Tab -->
+            <div id="qa-test-metrics-tab" class="tab-content">
+                <!-- Test Metrics Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🧪</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="qa-total-tests">-</div>
+                            <div class="stat-label">
+                                Total Tests (Latest Run)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Total number of test cases executed in the most recent nightly test run.</div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="qa-passed-tests">-</div>
+                            <div class="stat-label">
+                                Passed Tests
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Number of test cases that passed successfully.</div>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="health-bar neutral" id="qa-pass-rate-bar"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❌</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="qa-failed-tests">-</div>
+                            <div class="stat-label">
+                                Failed Tests
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Number of test cases that failed in the latest run.</div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🐛</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="qa-bug-count">-</div>
+                            <div class="stat-label">
+                                Known Bug Failures
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Number of test failures that are due to known bugs (tests marked with bug IDs).</div>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upstream UI Tests Section -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Upstream UI Tests - E2E Nightly Results</h2>
+                        <div id="qa-loading-indicator" class="loading-indicator" style="display: none;">
+                            <span class="spinner"></span> Loading...
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="qa-test-results-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="workflow">Workflow</th>
+                                    <th data-sort="branch" style="text-align: center;">Branch</th>
+                                    <th data-sort="status" style="text-align: center;">Status</th>
+                                    <th data-sort="totalTests" style="text-align: center;">Total Tests</th>
+                                    <th data-sort="passed" style="text-align: center;">Passed</th>
+                                    <th data-sort="failed" style="text-align: center;">Failed</th>
+                                    <th data-sort="knownBugs" style="text-align: center;">Known Bugs</th>
+                                    <th data-sort="lastRun" style="text-align: center;">Last Run</th>
+                                    <th style="text-align: center;">Test Run Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qa-test-results-body">
+                                <tr>
+                                    <td colspan="9" class="no-data">Loading test results...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Test Trends Chart -->
+                <div class="trends-content">
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Test Failure Trend (Last 10 Runs - Main Branch)</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="qa-pass-rate-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="table-panel">
+                        <div class="panel-header">
+                            <h2>Passed Tests Trend (Last 10 Runs - Main Branch)</h2>
+                        </div>
+                        <div class="chart-container" style="padding: 2rem; height: 400px;">
+                            <canvas id="qa-trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Test Runs -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Recent Test Runs (Last 10)</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="qa-recent-runs-table">
+                            <thead>
+                                <tr>
+                                    <th>Workflow</th>
+                                    <th>Branch</th>
+                                    <th>Run #</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Triggered By</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qa-recent-runs-body">
+                                <tr>
+                                    <td colspan="8" class="no-data">Loading recent runs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- End QA/Test Metrics Tab -->
         </div>
     </div>
 
@@ -905,13 +1044,14 @@
         </div>
     </div>
 
-    <script src="config.js?v=50"></script>
-    <script src="app.js?v=50"></script>
+    <script src="config.js?v=51"></script>
+    <script src="app.js?v=77"></script>
     <script>
         // Make dashboard accessible globally for pagination
         let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
             dashboard = new CommunityHealthDashboard();
+            window.dashboard = dashboard; // Make accessible in console
         });
     </script>
 </body>

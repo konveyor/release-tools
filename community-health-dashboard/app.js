@@ -7,6 +7,7 @@ class CommunityHealthDashboard {
         this.maintainerHealthData = [];
         this.ciHealthData = [];
         this.componentCIData = [];
+        this.qaTestData = [];
         this.recentActivity = [];
         this.historicalData = [];
         this.activityTimestamps = []; // For heatmap
@@ -15,6 +16,7 @@ class CommunityHealthDashboard {
         this.issueCurrentSort = { field: 'repo', ascending: true };
         this.maintainerCurrentSort = { field: 'responseCount', ascending: false };
         this.ciCurrentSort = { field: 'name', ascending: true };
+        this.qaCurrentSort = { field: 'workflow', ascending: true };
         this.currentPage = 1;
         this.itemsPerPage = 25;
         this.charts = {
@@ -35,7 +37,9 @@ class CommunityHealthDashboard {
             maintainerResponseTrend: null,
             ciSuccessTrend: null,
             ciDurationTrend: null,
-            branchHealth: null
+            branchHealth: null,
+            qaPassRate: null,
+            qaTrend: null
         };
         this.init();
     }
@@ -45,6 +49,15 @@ class CommunityHealthDashboard {
         this.checkGitHubToken();
         this.loadData();
         this.loadHistoricalData();
+    }
+
+    /**
+     * Strip ANSI escape codes from text
+     */
+    stripAnsi(text) {
+        const ESC = String.fromCharCode(27);
+        const ansiRegex = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+        return text.replace(ansiRegex, '');
     }
 
     /**
@@ -99,6 +112,10 @@ class CommunityHealthDashboard {
         document.getElementById('refresh-btn').addEventListener('click', () => {
             this.loadData();
             this.loadPRHealthData();
+            // Also refresh QA test metrics if they've been loaded
+            if (this.qaTestData.length > 0) {
+                this.loadQATestMetrics(true); // Force refresh, bypass cache
+            }
         });
 
         // Activity filter
@@ -263,6 +280,8 @@ class CommunityHealthDashboard {
             this.loadMaintainerHealthData();
         } else if (tabName === 'ci-health' && this.ciHealthData.length === 0) {
             this.loadCIHealthData();
+        } else if (tabName === 'qa-test-metrics' && this.qaTestData.length === 0) {
+            this.loadQATestMetrics();
         }
     }
 
@@ -4280,6 +4299,980 @@ class CommunityHealthDashboard {
         // Reload the page to use the new token
         alert('Token saved! The dashboard will reload to use your new token.');
         window.location.reload();
+    }
+
+    // ============================================
+    // QA/Test Metrics Methods
+    // ============================================
+
+    async loadQATestMetrics(forceRefresh = false) {
+        console.log('[QA Metrics] Starting to load QA test metrics...');
+        const loadingIndicator = document.getElementById('qa-loading-indicator');
+
+        if (!loadingIndicator) {
+            console.error('[QA Metrics] Loading indicator element not found!');
+            return;
+        }
+
+        loadingIndicator.style.display = 'flex';
+
+        try {
+            // Check for cached data (cache expires after 1 hour)
+            const cacheKey = 'qaTestData_cache';
+            const cacheExpiryMs = 60 * 60 * 1000; // 1 hour
+
+            if (!forceRefresh) {
+                const cachedData = localStorage.getItem(cacheKey);
+                if (cachedData) {
+                    try {
+                        const { data, timestamp } = JSON.parse(cachedData);
+                        const age = Date.now() - timestamp;
+
+                        if (age < cacheExpiryMs) {
+                            console.log(`[QA Metrics] Using cached data (${Math.round(age / 1000 / 60)} minutes old)`);
+                            this.qaTestData = data;
+
+                            // Update UI with cached data
+                            this.updateQATestStats();
+                            this.renderQATestTable();
+                            this.renderQARecentRuns();
+                            this.renderQAPassRateChart();
+                            this.renderQATrendChart();
+
+                            loadingIndicator.style.display = 'none';
+                            console.log('[QA Metrics] Successfully loaded from cache');
+                            return;
+                        } else {
+                            console.log('[QA Metrics] Cache expired, fetching fresh data...');
+                        }
+                    } catch (e) {
+                        console.error('[QA Metrics] Error parsing cached data:', e);
+                    }
+                }
+            } else {
+                console.log('[QA Metrics] Force refresh requested, bypassing cache');
+            }
+
+            // Reset data
+            this.qaTestData = [];
+            console.log('[QA Metrics] Reset qaTestData array');
+
+            // Fetch test data from konveyor/ci workflows
+            console.log('[QA Metrics] Fetching test data from GitHub API...');
+            await this.fetchQATestData();
+            console.log('[QA Metrics] Fetched', this.qaTestData.length, 'workflows');
+
+            // Cache the fetched data only if we have results
+            if (this.qaTestData.length > 0) {
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: this.qaTestData,
+                    timestamp: Date.now()
+                }));
+                console.log('[QA Metrics] Data cached successfully');
+            } else {
+                localStorage.removeItem(cacheKey);
+                console.log('[QA Metrics] Skipping cache (no data)');
+            }
+
+            // Update UI
+            console.log('[QA Metrics] Updating stats...');
+            this.updateQATestStats();
+
+            console.log('[QA Metrics] Rendering test table...');
+            this.renderQATestTable();
+
+            console.log('[QA Metrics] Rendering recent runs...');
+            this.renderQARecentRuns();
+
+            console.log('[QA Metrics] Rendering charts...');
+            this.renderQAPassRateChart();
+            this.renderQATrendChart();
+
+            console.log('[QA Metrics] Successfully loaded QA metrics');
+
+        } catch (error) {
+            console.error('[QA Metrics] Error loading QA test metrics:', error);
+            console.error('[QA Metrics] Error stack:', error.stack);
+            this.showQAError(`Failed to load QA test metrics: ${error.message}`);
+        } finally {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+
+    async fetchQATestData() {
+        const baseUrl = 'https://api.github.com';
+        const headers = {};
+
+        if (DASHBOARD_CONFIG.githubToken) {
+            headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+            console.log('[QA Metrics] Using GitHub token for authentication');
+        } else {
+            console.warn('[QA Metrics] No GitHub token - may hit rate limits');
+        }
+
+        // Nightly test workflow files to monitor
+        const nightlyWorkflows = [
+            { org: 'konveyor', repo: 'tackle2-ui', file: 'e2e-nightly.yaml', branch: 'main', displayName: 'E2E Nightly', source: 'github' },
+            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release09-dispatcher.yaml', branch: 'release-0.9', displayName: 'E2E Nightly', source: 'github' }
+        ];
+
+        const jenkinsJobs = [
+            {
+                jsonFile: 'jenkins-results.json',
+                displayName: 'UI All Tiers Nightly',
+                repository: 'Jenkins(including analysis)',
+                source: 'jenkins'
+            }
+        ];
+
+        console.log('[QA Metrics] Fetching data for', nightlyWorkflows.length, 'workflows');
+
+        for (const workflow of nightlyWorkflows) {
+            try {
+                console.log(`[QA Metrics] Fetching runs for ${workflow.displayName} (${workflow.org}/${workflow.repo}/${workflow.file})...`);
+
+                // Get workflow runs
+                const url = `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/workflows/${workflow.file}/runs?per_page=10`;
+                console.log(`[QA Metrics] API URL: ${url}`);
+
+                const runsResponse = await fetch(url, { headers });
+
+                if (!runsResponse.ok) {
+                    const errorText = await runsResponse.text();
+                    console.error(`[QA Metrics] Failed to fetch runs for ${workflow.file}: ${runsResponse.status} ${runsResponse.statusText}`);
+                    console.error(`[QA Metrics] Error response:`, errorText);
+                    continue;
+                }
+
+                const runsData = await runsResponse.json();
+                const runs = runsData.workflow_runs;
+
+                if (runs.length === 0) continue;
+
+                const latestRun = runs[0];
+
+                // Try to fetch job details to get test results
+                const jobsResponse = await fetch(
+                    `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/runs/${latestRun.id}/jobs`,
+                    { headers }
+                );
+
+                let testResults = null;
+
+                if (jobsResponse.ok) {
+                    const jobsData = await jobsResponse.json();
+                    testResults = await this.parseTestResultsFromJobs(jobsData.jobs, workflow);
+                }
+
+                // Calculate statistics from recent runs
+                const successRuns = runs.filter(r => r.conclusion === 'success').length;
+                const successRate = runs.length > 0 ? (successRuns / runs.length) * 100 : 0;
+
+                // For main branch, fetch test results for all recent runs to show failure trend
+                const recentRunsWithResults = [];
+                if (workflow.branch === 'main') {
+                    console.log(`[QA Metrics] Fetching test results for last 10 runs of ${workflow.displayName} (main branch)...`);
+                    for (const run of runs.slice(0, 10)) {
+                        try {
+                            const runJobsResponse = await fetch(
+                                `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/runs/${run.id}/jobs`,
+                                { headers }
+                            );
+
+                            let runTestResults = null;
+                            if (runJobsResponse.ok) {
+                                const runJobsData = await runJobsResponse.json();
+                                runTestResults = await this.parseTestResultsFromJobs(runJobsData.jobs, workflow);
+                            }
+
+                            recentRunsWithResults.push({
+                                id: run.id,
+                                runNumber: run.run_number,
+                                status: run.status,
+                                conclusion: run.conclusion || 'in_progress',
+                                createdAt: run.created_at,
+                                duration: run.updated_at && run.created_at
+                                    ? new Date(run.updated_at) - new Date(run.created_at)
+                                    : 0,
+                                triggeredBy: run.triggering_actor?.login || 'unknown',
+                                url: run.html_url,
+                                testResults: runTestResults
+                            });
+
+                            // Small delay to avoid rate limiting
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        } catch (error) {
+                            console.error(`[QA Metrics] Error fetching test results for run ${run.run_number}:`, error);
+                            // Add run without test results
+                            recentRunsWithResults.push({
+                                id: run.id,
+                                runNumber: run.run_number,
+                                status: run.status,
+                                conclusion: run.conclusion || 'in_progress',
+                                createdAt: run.created_at,
+                                duration: run.updated_at && run.created_at
+                                    ? new Date(run.updated_at) - new Date(run.created_at)
+                                    : 0,
+                                triggeredBy: run.triggering_actor?.login || 'unknown',
+                                url: run.html_url,
+                                testResults: null
+                            });
+                        }
+                    }
+                } else {
+                    // For non-main branches, just store basic run info without test results
+                    recentRunsWithResults.push(...runs.slice(0, 10).map(r => ({
+                        id: r.id,
+                        runNumber: r.run_number,
+                        status: r.status,
+                        conclusion: r.conclusion || 'in_progress',
+                        createdAt: r.created_at,
+                        duration: r.updated_at && r.created_at
+                            ? new Date(r.updated_at) - new Date(r.created_at)
+                            : 0,
+                        triggeredBy: r.triggering_actor?.login || 'unknown',
+                        url: r.html_url,
+                        testResults: null
+                    })));
+                }
+
+                this.qaTestData.push({
+                    workflow: workflow.displayName,
+                    workflowFile: workflow.file,
+                    repository: `${workflow.org}/${workflow.repo}`,
+                    branch: workflow.branch,
+                    source: 'github',
+                    latestRun: {
+                        id: latestRun.id,
+                        runNumber: latestRun.run_number,
+                        status: latestRun.conclusion || latestRun.status,
+                        createdAt: latestRun.created_at,
+                        updatedAt: latestRun.updated_at,
+                        url: latestRun.html_url,
+                        duration: latestRun.updated_at && latestRun.created_at
+                            ? new Date(latestRun.updated_at) - new Date(latestRun.created_at)
+                            : 0
+                    },
+                    testResults: testResults,
+                    recentRuns: recentRunsWithResults,
+                    successRate: successRate
+                });
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+            } catch (error) {
+                console.error(`Error fetching test data for ${workflow.displayName}:`, error);
+            }
+        }
+
+        // Fetch Jenkins job data
+        console.log('[QA Metrics] Starting to fetch data for', jenkinsJobs.length, 'Jenkins jobs');
+        console.log('[QA Metrics] Jenkins jobs config:', jenkinsJobs);
+
+        for (const job of jenkinsJobs) {
+            try {
+                console.log(`[QA Metrics] === Fetching Jenkins job: ${job.displayName} ===`);
+                console.log(`[QA Metrics] Reading from JSON file: ${job.jsonFile}`);
+
+                const jsonResponse = await fetch(job.jsonFile);
+
+                if (!jsonResponse.ok) {
+                    console.error(`[QA Metrics] Failed to fetch JSON file: ${jsonResponse.status}`);
+                    continue;
+                }
+
+                const jenkinsData = await jsonResponse.json();
+                console.log(`[QA Metrics] Jenkins JSON data received:`, jenkinsData);
+
+                // Convert Jenkins JSON format to dashboard format
+                const rawStatus = jenkinsData.lastBuild?.status;
+                const status = rawStatus === 'SUCCESS' ? 'success' :
+                              rawStatus === 'FAILURE' ? 'failure' :
+                              (rawStatus || 'unknown').toLowerCase();
+
+                const dashboardData = {
+                    workflow: job.displayName,
+                    repository: job.repository,
+                    branch: 'main',
+                    latestRun: {
+                        id: `jenkins-${jenkinsData.lastBuild.number}`,
+                        runNumber: jenkinsData.lastBuild.number,
+                        status: status,
+                        createdAt: jenkinsData.lastBuild.timestamp,
+                        updatedAt: jenkinsData.updatedAt,
+                        url: jenkinsData.lastBuild.url,
+                        duration: jenkinsData.lastBuild.duration
+                    },
+                    testResults: jenkinsData.testResults.totalTests > 0 ? {
+                        available: true,
+                        total: jenkinsData.testResults.totalTests,
+                        passed: jenkinsData.testResults.passing,
+                        failed: jenkinsData.testResults.failing,
+                        pending: jenkinsData.testResults.pending,
+                        skipped: jenkinsData.testResults.skipped,
+                        knownBugs: jenkinsData.testResults.totalBugs
+                    } : null,
+                    recentRuns: [],
+                    successRate: status === 'success' ? 100 : 0,
+                    source: 'jenkins'
+                };
+
+                console.log(`[QA Metrics] Adding Jenkins data to qaTestData:`, dashboardData);
+                this.qaTestData.push(dashboardData);
+                console.log(`[QA Metrics] qaTestData length is now: ${this.qaTestData.length}`);
+
+            } catch (error) {
+                console.error(`[QA Metrics] *** CAUGHT ERROR fetching Jenkins job ${job.displayName} ***`);
+                console.error(`[QA Metrics] Error object:`, error);
+                console.error(`[QA Metrics] Error name: ${error.name}`);
+                console.error(`[QA Metrics] Error message: ${error.message}`);
+                console.error(`[QA Metrics] Error stack:`, error.stack);
+
+                if (error.name === 'AbortError') {
+                    console.error(`[QA Metrics] --> This is a TIMEOUT error (10 seconds)`);
+                } else if (error.name === 'TypeError') {
+                    console.error(`[QA Metrics] --> This is a CORS/Network error`);
+                    console.error(`[QA Metrics] --> Jenkins may not allow cross-origin requests`);
+                } else {
+                    console.error(`[QA Metrics] --> Unknown error type`);
+                }
+            }
+        }
+
+        console.log('[QA Metrics] Finished fetching all data sources (GitHub + Jenkins)');
+        console.log('[QA Metrics] Final qaTestData length:', this.qaTestData.length);
+        console.log('[QA Metrics] Final qaTestData:', this.qaTestData);
+    }
+
+    async parseJenkinsTestResults(consoleText) {
+        // Parse test results from Jenkins console output
+        // Look for the same bug summary format as GitHub Actions
+        try {
+            // Strip ANSI escape codes
+            const cleanText = this.stripAnsi(consoleText);
+
+            // Try to find the bug summary line
+            // Pattern 1: tests with failures
+            let summaryMatch = cleanText.match(/(\d+)\s+of\s+(\d+)\s+failed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
+
+            if (!summaryMatch) {
+                // Pattern 2: all passing tests
+                summaryMatch = cleanText.match(/(\d+)\s+tests?\s+passed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
+            }
+
+            if (summaryMatch) {
+                let total, passed, failed, pending, skipped, knownBugs;
+
+                if (summaryMatch[0].includes('failed')) {
+                    // Pattern 1: failed tests
+                    total = parseInt(summaryMatch[3]);
+                    passed = parseInt(summaryMatch[4]);
+                    failed = parseInt(summaryMatch[5]);
+                    pending = parseInt(summaryMatch[6]);
+                    skipped = parseInt(summaryMatch[7]);
+                    knownBugs = parseInt(summaryMatch[8]);
+                } else {
+                    // Pattern 2: all passing
+                    total = parseInt(summaryMatch[2]);
+                    passed = parseInt(summaryMatch[3]);
+                    failed = parseInt(summaryMatch[4]);
+                    pending = parseInt(summaryMatch[5]);
+                    skipped = parseInt(summaryMatch[6]);
+                    knownBugs = parseInt(summaryMatch[7]);
+                }
+
+                console.log(`[QA Metrics] Jenkins test results: ${total} total, ${passed} passed, ${failed} failed, ${knownBugs} bugs`);
+
+                return {
+                    available: true,
+                    total: total,
+                    passed: passed,
+                    failed: failed,
+                    pending: pending,
+                    skipped: skipped,
+                    knownBugs: knownBugs
+                };
+            } else {
+                console.log('[QA Metrics] Could not find test summary in Jenkins console output');
+                return null;
+            }
+
+        } catch (error) {
+            console.error('[QA Metrics] Error parsing Jenkins test results:', error);
+            return null;
+        }
+    }
+
+    async parseTestResultsFromJobs(jobs, workflow) {
+        // For tackle2-ui e2e tests, we need to fetch job logs from ALL jobs to aggregate results
+        if (!jobs || jobs.length === 0) return null;
+
+        try {
+            // Find all test jobs - only auth jobs, not noauth
+            const testJobs = jobs.filter(j => j.name && j.name.includes('Run tests') && j.name.includes('auth') && !j.name.includes('noauth'));
+
+            if (testJobs.length === 0) {
+                console.log('[QA Metrics] No test jobs found in jobs list');
+                return null;
+            }
+
+            console.log(`[QA Metrics] Found ${testJobs.length} test jobs, fetching logs to aggregate results...`);
+
+            const baseUrl = 'https://api.github.com';
+            const headers = {};
+            if (DASHBOARD_CONFIG.githubToken) {
+                headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+            }
+
+            // Aggregate results from all jobs
+            let totalTests = 0;
+            let totalPassed = 0;
+            let totalFailed = 0;
+            let totalPending = 0;
+            let totalSkipped = 0;
+            let totalKnownBugs = 0;
+            let parsedCount = 0;
+
+            for (const job of testJobs) {
+                try {
+                    console.log(`[QA Metrics] Fetching logs for job ${job.id} (${job.name})...`);
+
+                    const logsResponse = await fetch(
+                        `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/jobs/${job.id}/logs`,
+                        { headers }
+                    );
+
+                    if (!logsResponse.ok) {
+                        console.log(`[QA Metrics] FAILED to fetch logs for job ${job.id}: ${logsResponse.status}`);
+                        continue;
+                    }
+
+                    const logsText = await logsResponse.text();
+
+                    // Strip ANSI escape codes (color codes) from logs
+                    const cleanLogs = this.stripAnsi(logsText);
+
+                    // Parse the bug summary line from logs
+                    // Two formats:
+                    // 1. With failures: "✖ 17 of 260 failed (7%) │ 260 │ 243 │ 17 │ 0 │ 0 │ 16"
+                    // 2. All passing: "✓ 5 tests passed │ 5 │ 5 │ 0 │ 0 │ 0 │ 0"
+
+                    // Try pattern 1: tests with failures
+                    let summaryMatch = cleanLogs.match(/(\d+)\s+of\s+(\d+)\s+failed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
+
+                    if (!summaryMatch) {
+                        // Try pattern 2: all passing tests - "✓ X tests passed │ total │ passed │ 0 │ 0 │ 0 │ 0"
+                        summaryMatch = cleanLogs.match(/(\d+)\s+tests?\s+passed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
+                    }
+
+                    if (summaryMatch) {
+                        let jobTotal, jobPassed, jobFailed, jobPending, jobSkipped, jobKnownBugs;
+
+                        // Check which pattern matched based on number of groups
+                        if (summaryMatch[0].includes('failed')) {
+                            // Pattern 1: failed tests
+                            // Match groups: [1]=failed count in summary, [2]=total in summary, [3]=total col, [4]=passed, [5]=failed, [6]=pending, [7]=skipped, [8]=known bugs
+                            jobTotal = parseInt(summaryMatch[3]);
+                            jobPassed = parseInt(summaryMatch[4]);
+                            jobFailed = parseInt(summaryMatch[5]);
+                            jobPending = parseInt(summaryMatch[6]);
+                            jobSkipped = parseInt(summaryMatch[7]);
+                            jobKnownBugs = parseInt(summaryMatch[8]);
+                        } else {
+                            // Pattern 2: all passing
+                            // Match groups: [1]=test count, [2]=total col, [3]=passed, [4]=failed (0), [5]=pending (0), [6]=skipped (0), [7]=bugs (0)
+                            jobTotal = parseInt(summaryMatch[2]);
+                            jobPassed = parseInt(summaryMatch[3]);
+                            jobFailed = parseInt(summaryMatch[4]);
+                            jobPending = parseInt(summaryMatch[5]);
+                            jobSkipped = parseInt(summaryMatch[6]);
+                            jobKnownBugs = parseInt(summaryMatch[7]);
+                        }
+
+                        console.log(`[QA Metrics] SUCCESS Job ${job.id}: ${jobTotal} total, ${jobPassed} passed, ${jobFailed} failed, ${jobKnownBugs} bugs`);
+
+                        totalTests += jobTotal;
+                        totalPassed += jobPassed;
+                        totalFailed += jobFailed;
+                        totalPending += jobPending;
+                        totalSkipped += jobSkipped;
+                        totalKnownBugs += jobKnownBugs;
+                        parsedCount++;
+                    } else {
+                        // No pattern matched - try to find any "failed" line to help debug
+                        const failedLines = cleanLogs.split('\n').filter(l => l.includes('failed') && /\d+/.test(l));
+                        console.log(`[QA Metrics] NO MATCH Job ${job.id} (${job.name}): Could not find bug summary in logs`);
+                        if (failedLines.length > 0) {
+                            console.log(`[QA Metrics] Found ${failedLines.length} lines with "failed". Sample:`, failedLines[0].substring(0, 200));
+                        } else {
+                            console.log(`[QA Metrics] No lines with "failed" found - looking for all-passing pattern`);
+                            // Look for lines with box chars and numbers that might indicate summary
+                            const summaryLines = cleanLogs.split('\n').filter(l =>
+                                (l.includes('\u2502') || l.includes('|')) &&
+                                /\d+/.test(l) &&
+                                l.length < 300
+                            );
+                            if (summaryLines.length > 0) {
+                                console.log(`[QA Metrics] Found ${summaryLines.length} potential summary lines. Last few:`);
+                                summaryLines.slice(-3).forEach(line => {
+                                    console.log(`  ${line.substring(0, 200)}`);
+                                });
+                            }
+                        }
+                    }
+
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                } catch (error) {
+                    console.error(`[QA Metrics] Error parsing job ${job.id}:`, error);
+                }
+            }
+
+            if (parsedCount === 0) {
+                console.log('[QA Metrics] Could not parse any bug summaries from job logs');
+                return null;
+            }
+
+            console.log(`[QA Metrics] Aggregated from ${parsedCount} jobs: ${totalTests} total, ${totalPassed} passed, ${totalFailed} failed, ${totalKnownBugs} known bugs`);
+
+            return {
+                available: true,
+                total: totalTests,
+                passed: totalPassed,
+                failed: totalFailed,
+                pending: totalPending,
+                skipped: totalSkipped,
+                knownBugs: totalKnownBugs
+            };
+
+        } catch (error) {
+            console.error('[QA Metrics] Error parsing test results from logs:', error);
+            return null;
+        }
+    }
+
+    async fetchBugCount() {
+        // Fetch bug count from konveyor repositories
+        let totalBugs = 0;
+
+        const bugRepos = [
+            { org: 'konveyor', repo: 'tackle2-ui' },
+            { org: 'konveyor', repo: 'tackle2-hub' },
+            { org: 'konveyor', repo: 'kantra' },
+            { org: 'konveyor', repo: 'analyzer-lsp' },
+            { org: 'konveyor', repo: 'kai' }
+        ];
+
+        for (const repo of bugRepos) {
+            try {
+                const headers = {};
+                if (DASHBOARD_CONFIG.githubToken) {
+                    headers['Authorization'] = `Bearer ${DASHBOARD_CONFIG.githubToken}`;
+                }
+
+                const response = await fetch(
+                    `https://api.github.com/repos/${repo.org}/${repo.repo}/issues?state=open&labels=bug&per_page=1`,
+                    { headers }
+                );
+
+                if (response.ok) {
+                    const link = response.headers.get('Link');
+                    if (link) {
+                        const match = link.match(/page=(\d+)>; rel="last"/);
+                        if (match) {
+                            totalBugs += parseInt(match[1]);
+                        }
+                    } else {
+                        const issues = await response.json();
+                        totalBugs += issues.length;
+                    }
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                console.error(`Error fetching bugs for ${repo.org}/${repo.repo}:`, error);
+            }
+        }
+
+        document.getElementById('qa-bug-count').textContent = totalBugs.toLocaleString();
+    }
+
+    updateQATestStats() {
+        if (this.qaTestData.length === 0) {
+            document.getElementById('qa-total-tests').textContent = 'N/A';
+            document.getElementById('qa-passed-tests').textContent = 'N/A';
+            document.getElementById('qa-failed-tests').textContent = 'N/A';
+            document.getElementById('qa-bug-count').textContent = 'N/A';
+            return;
+        }
+
+        // Aggregate stats from all workflows
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+        let knownBugs = 0;
+        let hasTestData = false;
+
+        this.qaTestData.forEach(workflow => {
+            if (workflow.testResults && workflow.testResults.available !== false) {
+                totalTests += workflow.testResults.total || 0;
+                passedTests += workflow.testResults.passed || 0;
+                failedTests += workflow.testResults.failed || 0;
+                knownBugs += workflow.testResults.knownBugs || 0;
+                hasTestData = true;
+            }
+        });
+
+        if (hasTestData) {
+            document.getElementById('qa-total-tests').textContent = totalTests.toLocaleString();
+            document.getElementById('qa-passed-tests').textContent = passedTests.toLocaleString();
+            document.getElementById('qa-failed-tests').textContent = failedTests.toLocaleString();
+            document.getElementById('qa-bug-count').textContent = knownBugs.toLocaleString();
+
+            // Update pass rate bar
+            const passRate = totalTests > 0 ? (passedTests / totalTests * 100) : 0;
+            const passRateBar = document.getElementById('qa-pass-rate-bar');
+            if (passRateBar) {
+                passRateBar.style.width = `${passRate}%`;
+                passRateBar.className = 'health-bar ' + (
+                    passRate >= 90 ? 'healthy' : passRate >= 70 ? 'warning' : 'critical'
+                );
+            }
+        } else {
+            // Show workflow status instead
+            const successfulWorkflows = this.qaTestData.filter(w =>
+                w.latestRun.status === 'success'
+            ).length;
+            const totalWorkflows = this.qaTestData.length;
+
+            document.getElementById('qa-total-tests').textContent = `${totalWorkflows} workflows`;
+            document.getElementById('qa-passed-tests').textContent = `${successfulWorkflows} successful`;
+            document.getElementById('qa-failed-tests').textContent = `${totalWorkflows - successfulWorkflows} failed`;
+            document.getElementById('qa-bug-count').textContent = '0';
+
+            const successRate = totalWorkflows > 0 ? (successfulWorkflows / totalWorkflows * 100) : 0;
+            const passRateBar = document.getElementById('qa-pass-rate-bar');
+            if (passRateBar) {
+                passRateBar.style.width = `${successRate}%`;
+                passRateBar.className = 'health-bar ' + (
+                    successRate >= 80 ? 'healthy' : successRate >= 60 ? 'warning' : 'critical'
+                );
+            }
+        }
+    }
+
+    renderQATestTable() {
+        const tbody = document.getElementById('qa-test-results-body');
+
+        console.log(`[QA Metrics] renderQATestTable called with ${this.qaTestData.length} items`);
+        console.log(`[QA Metrics] qaTestData:`, this.qaTestData);
+
+        if (this.qaTestData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No test data available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = this.qaTestData.map(workflow => {
+            console.log(`[QA Metrics] Rendering row for: ${workflow.workflow} (source: ${workflow.source || 'github'})`);
+            const testResults = workflow.testResults;
+            const hasDetailedResults = testResults && testResults.available !== false;
+
+            const totalTests = hasDetailedResults ? (testResults.total || 0) : 'N/A';
+            const passed = hasDetailedResults ? (testResults.passed || 0) : 'N/A';
+            const failed = hasDetailedResults ? (testResults.failed || 0) : 'N/A';
+            const knownBugs = hasDetailedResults ? (testResults.knownBugs || 0) : 0;
+
+            const status = workflow.latestRun.status;
+            const statusClass = status === 'success'
+                ? 'badge-success'
+                : status === 'failure'
+                    ? 'badge-failure'
+                    : 'badge-pr';
+
+            console.log(`[QA Metrics] Rendering ${workflow.workflow}: total=${totalTests}, passed=${passed}, failed=${failed}, bugs=${knownBugs}`);
+
+            return `
+                <tr>
+                    <td>
+                        <strong>${workflow.workflow}</strong>
+                        ${workflow.repository ? `<br><small style="color: var(--text-muted);">${workflow.repository}</small>` : ''}
+                    </td>
+                    <td style="text-align: center;"><span class="badge">${workflow.branch}</span></td>
+                    <td style="text-align: center;">
+                        <span class="badge ${statusClass}">
+                            ${status}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">${typeof totalTests === 'number' ? totalTests.toLocaleString() : totalTests}</td>
+                    <td class="stat-positive" style="text-align: center;">${typeof passed === 'number' ? passed.toLocaleString() : passed}</td>
+                    <td class="stat-negative" style="text-align: center;">${typeof failed === 'number' ? failed.toLocaleString() : failed}</td>
+                    <td class="stat-warning" style="text-align: center;">${typeof knownBugs === 'number' ? (knownBugs > 0 ? knownBugs.toLocaleString() : '0') : '-'}</td>
+                    <td style="text-align: center;">${this.formatDate(new Date(workflow.latestRun.createdAt))}</td>
+                    <td>
+                        <a href="${workflow.latestRun.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+                            ${workflow.source === 'jenkins' ? 'View Job' : `View Run #${workflow.latestRun.runNumber}`}
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderQARecentRuns() {
+        const tbody = document.getElementById('qa-recent-runs-body');
+
+        if (this.qaTestData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No recent runs available</td></tr>';
+            return;
+        }
+
+        // Collect all recent runs from all workflows
+        const allRuns = [];
+        this.qaTestData.forEach(workflow => {
+            workflow.recentRuns.forEach(run => {
+                allRuns.push({
+                    workflow: workflow.workflow,
+                    branch: workflow.branch,
+                    ...run
+                });
+            });
+        });
+
+        // Sort by date (most recent first)
+        allRuns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Take top 10
+        const recentRuns = allRuns.slice(0, 10);
+
+        if (recentRuns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No recent runs available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = recentRuns.map(run => {
+            const statusClass = run.conclusion === 'success'
+                ? 'badge-success'
+                : run.conclusion === 'failure'
+                    ? 'badge-failure'
+                    : 'badge-pr';
+
+            return `
+                <tr>
+                    <td>${run.workflow}</td>
+                    <td><span class="badge">${run.branch}</span></td>
+                    <td>${run.runNumber}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${run.conclusion}
+                        </span>
+                    </td>
+                    <td>${this.formatDate(new Date(run.createdAt))}</td>
+                    <td>${this.formatDuration(run.duration)}</td>
+                    <td>${run.triggeredBy}</td>
+                    <td>
+                        <a href="${run.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View</a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderQAPassRateChart() {
+        const ctx = document.getElementById('qa-pass-rate-chart');
+        if (!ctx) return;
+
+        // Get main branch workflows only
+        const mainBranchWorkflows = this.qaTestData.filter(w => w.branch === 'main');
+
+        if (mainBranchWorkflows.length === 0) {
+            console.log('[QA Metrics] No main branch data available for failure trend chart');
+            return;
+        }
+
+        // Collect all runs from main branch with test results
+        const allRuns = [];
+        mainBranchWorkflows.forEach(workflow => {
+            if (workflow.recentRuns && workflow.recentRuns.length > 0) {
+                workflow.recentRuns.forEach(run => {
+                    allRuns.push({
+                        runNumber: run.runNumber,
+                        date: run.createdAt,
+                        workflow: workflow.workflow,
+                        testResults: run.testResults,
+                        failures: run.testResults && run.testResults.available ? run.testResults.failed : null
+                    });
+                });
+            }
+        });
+
+        // Sort by date (oldest first for chronological display)
+        allRuns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Take last 10 runs
+        const last10Runs = allRuns.slice(-10);
+
+        console.log('[QA Metrics] Rendering failure trend for last 10 runs from main branch');
+        console.log('[QA Metrics] Runs collected:', last10Runs.length);
+        console.log('[QA Metrics] Run data:', last10Runs.map(r => ({run: r.runNumber, failures: r.failures})));
+
+        // Create labels and failure counts
+        const labels = last10Runs.map(run => `Run #${run.runNumber}`);
+        const failureCounts = last10Runs.map(run => run.failures !== null ? run.failures : 0);
+
+        if (this.charts.qaPassRate) {
+            this.charts.qaPassRate.destroy();
+        }
+
+        this.charts.qaPassRate = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Test Failures',
+                    data: failureCounts,
+                    borderColor: '#f2495c',
+                    backgroundColor: 'rgba(242, 73, 92, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Failures: ${context.parsed.y}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Failures'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Test Runs (Chronological)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderQATrendChart() {
+        const ctx = document.getElementById('qa-trend-chart');
+        if (!ctx) return;
+
+        // Filter to only main branch workflows
+        const mainBranchWorkflows = this.qaTestData.filter(workflow => workflow.branch === 'main');
+
+        if (mainBranchWorkflows.length === 0) {
+            console.log('[QA Metrics] No main branch data available for passed tests trend chart');
+            return;
+        }
+
+        // Collect all runs from main branch with test results
+        const allRuns = [];
+        mainBranchWorkflows.forEach(workflow => {
+            if (workflow.recentRuns && workflow.recentRuns.length > 0) {
+                workflow.recentRuns.forEach(run => {
+                    allRuns.push({
+                        runNumber: run.runNumber,
+                        date: run.createdAt,
+                        workflow: workflow.workflow,
+                        testResults: run.testResults,
+                        passed: run.testResults && run.testResults.available ? run.testResults.passed : null
+                    });
+                });
+            }
+        });
+
+        // Sort by date (oldest first for chronological display)
+        allRuns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Take last 10 runs
+        const last10Runs = allRuns.slice(-10);
+
+        console.log('[QA Metrics] Rendering passed tests trend for last 10 runs from main branch');
+        console.log('[QA Metrics] Run data:', last10Runs.map(r => ({run: r.runNumber, passed: r.passed})));
+
+        // Create labels and passed counts
+        const labels = last10Runs.map(run => `Run #${run.runNumber}`);
+        const passedCounts = last10Runs.map(run => run.passed !== null ? run.passed : 0);
+
+        if (this.charts.qaTrend) {
+            this.charts.qaTrend.destroy();
+        }
+
+        this.charts.qaTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Passed Tests',
+                    data: passedCounts,
+                    borderColor: '#73bf69',
+                    backgroundColor: 'rgba(115, 191, 105, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Passed: ${context.parsed.y}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 10
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Passed Tests'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Test Runs (Chronological)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    showQAError(message) {
+        const tbody = document.getElementById('qa-test-results-body');
+        tbody.innerHTML = `<tr><td colspan="9" class="no-data" style="color: var(--accent-red);">${message}</td></tr>`;
     }
 }
 

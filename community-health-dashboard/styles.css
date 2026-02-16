@@ -115,6 +115,19 @@ body {
     background-color: var(--bg-hover);
 }
 
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    text-decoration: none;
+    background-color: var(--accent-blue);
+    color: #fff;
+}
+
+.btn-sm:hover {
+    background-color: #2da3d0;
+    text-decoration: none;
+}
+
 .icon {
     font-size: 1.2rem;
 }
@@ -320,14 +333,16 @@ td {
     white-space: nowrap;
 }
 
-/* Allow labels column to wrap */
-td:nth-child(7) {
+/* Allow labels column to wrap - only for non-QA tables */
+#issue-health-body td:nth-child(7),
+#pr-health-body td:nth-child(7) {
     white-space: normal;
     max-width: 250px;
 }
 
-/* Display labels as flex for better wrapping */
-td:nth-child(7) {
+/* Display labels as flex for better wrapping - only for non-QA tables */
+#issue-health-body td:nth-child(7),
+#pr-health-body td:nth-child(7) {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
@@ -1231,4 +1246,30 @@ a:hover {
     opacity: 1;
     transform: scale(1.2);
     text-shadow: 0 0 8px var(--accent-blue);
+}
+
+/* QA/Test Metrics Specific Styles */
+.stat-positive {
+    color: var(--accent-green);
+    font-weight: 500;
+}
+
+.stat-negative {
+    color: var(--accent-red);
+    font-weight: 500;
+}
+
+.stat-warning {
+    color: var(--accent-orange);
+    font-weight: 500;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 3px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
 }

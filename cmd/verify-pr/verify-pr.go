@@ -40,4 +40,8 @@ func main() {
 	fmt.Printf("PR type: %#q\n", prType)
 	fmt.Printf("PR title: %#q\n", prTitle)
 	fmt.Println()
+
+	if err := action.SetOutput("pr_type", string(prType)); err != nil {
+		log.Printf("warning: unable to set pr_type output: %v", err)
+	}
 }

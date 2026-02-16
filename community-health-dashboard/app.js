@@ -4586,9 +4586,10 @@ class CommunityHealthDashboard {
                 console.log(`[QA Metrics] Jenkins JSON data received:`, jenkinsData);
 
                 // Convert Jenkins JSON format to dashboard format
-                const status = jenkinsData.lastBuild.status === 'SUCCESS' ? 'success' :
-                              jenkinsData.lastBuild.status === 'FAILURE' ? 'failure' :
-                              jenkinsData.lastBuild.status.toLowerCase();
+                const rawStatus = jenkinsData.lastBuild?.status;
+                const status = rawStatus === 'SUCCESS' ? 'success' :
+                              rawStatus === 'FAILURE' ? 'failure' :
+                              (rawStatus || 'unknown').toLowerCase();
 
                 const dashboardData = {
                     workflow: job.displayName,
@@ -4933,10 +4934,12 @@ class CommunityHealthDashboard {
             // Update pass rate bar
             const passRate = totalTests > 0 ? (passedTests / totalTests * 100) : 0;
             const passRateBar = document.getElementById('qa-pass-rate-bar');
-            passRateBar.style.width = `${passRate}%`;
-            passRateBar.className = 'health-bar ' + (
-                passRate >= 90 ? 'healthy' : passRate >= 70 ? 'warning' : 'critical'
-            );
+            if (passRateBar) {
+                passRateBar.style.width = `${passRate}%`;
+                passRateBar.className = 'health-bar ' + (
+                    passRate >= 90 ? 'healthy' : passRate >= 70 ? 'warning' : 'critical'
+                );
+            }
         } else {
             // Show workflow status instead
             const successfulWorkflows = this.qaTestData.filter(w =>
@@ -4951,10 +4954,12 @@ class CommunityHealthDashboard {
 
             const successRate = totalWorkflows > 0 ? (successfulWorkflows / totalWorkflows * 100) : 0;
             const passRateBar = document.getElementById('qa-pass-rate-bar');
-            passRateBar.style.width = `${successRate}%`;
-            passRateBar.className = 'health-bar ' + (
-                successRate >= 80 ? 'healthy' : successRate >= 60 ? 'warning' : 'critical'
-            );
+            if (passRateBar) {
+                passRateBar.style.width = `${successRate}%`;
+                passRateBar.className = 'health-bar ' + (
+                    successRate >= 80 ? 'healthy' : successRate >= 60 ? 'warning' : 'critical'
+                );
+            }
         }
     }
 

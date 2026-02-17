@@ -4,11 +4,16 @@ inputs:
   github_token:
     description: "the github_token provided by the actions runner"
     required: true
+outputs:
+  pr_type:
+    description: "The type of PR (feature, bugfix, docs, infra, breaking, nonote, test)"
+    value: ${{ steps.verify.outputs.pr_type }}
 runs:
   using: composite
   steps:
   - name: Set up Go
     uses: actions/setup-go@v5
   - name: Run verify
+    id: verify
     run: cd ${GITHUB_ACTION_PATH} && go mod download && go run verify-pr.go
     shell: bash

@@ -1,0 +1,1389 @@
+{
+  "timestamp": "2026-02-24T03:01:58.620Z",
+  "date": "2026-02-24",
+  "repositories": [
+    {
+      "org": "konveyor",
+      "repo": "analyzer-lsp",
+      "totalStale": 3,
+      "staleIssues": 3,
+      "stalePRs": 0,
+      "items": [
+        {
+          "number": 1024,
+          "title": "[refactor] Create helper structs for common condition fields across providers",
+          "type": "issue",
+          "updatedAt": "2026-02-04T01:35:39Z",
+          "author": "tsanders-rh",
+          "labels": [
+            "kind/bug",
+            "kind/feature",
+            "priority/important-longterm",
+            "kind/cleanup",
+            "triage/accepted",
+            "stale",
+            "provider"
+          ]
+        },
+        {
+          "number": 945,
+          "title": "Migrate builtin.filecontent search to pure Go implementation",
+          "type": "issue",
+          "updatedAt": "2026-02-07T01:34:46Z",
+          "author": "tsanders-rh",
+          "labels": [
+            "kind/feature",
+            "priority/important-longterm",
+            "triage/accepted",
+            "stale",
+            "provider"
+          ]
+        },
+        {
+          "number": 239,
+          "title": "Add a test to CI that tests proxy config",
+          "type": "issue",
+          "updatedAt": "2026-02-01T01:35:08Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "kind/failing-test",
+            "priority/important-soon",
+            "triage/accepted",
+            "stale",
+            "provider"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "community",
+      "totalStale": 0,
+      "staleIssues": 0,
+      "stalePRs": 0,
+      "items": []
+    },
+    {
+      "org": "konveyor",
+      "repo": "editor-extensions",
+      "totalStale": 24,
+      "staleIssues": 24,
+      "stalePRs": 0,
+      "items": [
+        {
+          "number": 1059,
+          "title": "Redesign the flow of creating / initing the analysis server",
+          "type": "issue",
+          "updatedAt": "2026-01-31T01:37:20Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "kind/feature",
+            "effort/L",
+            "stale"
+          ]
+        },
+        {
+          "number": 1058,
+          "title": "Add test coverage for custom rules",
+          "type": "issue",
+          "updatedAt": "2026-01-31T01:37:21Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 836,
+          "title": "[UX] Sometimes nested overflow causes the resolutions/chat page header to be hidden",
+          "type": "issue",
+          "updatedAt": "2025-11-15T01:34:42Z",
+          "author": "ibolton336",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 820,
+          "title": "[UX] agentic mode feels like its an endless loop when it raises a lot of issues",
+          "type": "issue",
+          "updatedAt": "2025-11-15T01:34:46Z",
+          "author": "abrugaro",
+          "labels": [
+            "bug",
+            "stale"
+          ]
+        },
+        {
+          "number": 815,
+          "title": "[UX] Modified Profiles screen needs polish",
+          "type": "issue",
+          "updatedAt": "2026-01-28T22:33:38Z",
+          "author": "ibolton336",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 758,
+          "title": "Add support for multi-root workspaces",
+          "type": "issue",
+          "updatedAt": "2026-01-30T17:36:14Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "priority/important-longterm",
+            "effort/XL",
+            "stale"
+          ]
+        },
+        {
+          "number": 753,
+          "title": "Add automated testing for OpenShift AI like variants for Model Providers",
+          "type": "issue",
+          "updatedAt": "2025-11-15T01:34:51Z",
+          "author": "shawn-hurley",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 752,
+          "title": "Add automated testing for Ollama model provider testing",
+          "type": "issue",
+          "updatedAt": "2025-11-15T01:34:53Z",
+          "author": "shawn-hurley",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 747,
+          "title": "Remove \"demo mode\" from displayed configuration options",
+          "type": "issue",
+          "updatedAt": "2025-11-15T01:34:55Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 672,
+          "title": "Playwright scenario for solution server + agentic workflow both enabled",
+          "type": "issue",
+          "updatedAt": "2025-11-16T01:35:11Z",
+          "author": "fabianvf",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 653,
+          "title": "Implement new e2e test cases to expand the suite used for PR gating",
+          "type": "issue",
+          "updatedAt": "2025-11-16T01:35:14Z",
+          "author": "abrugaro",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 651,
+          "title": "Expand PR gating e2e test cases",
+          "type": "issue",
+          "updatedAt": "2025-11-16T01:35:15Z",
+          "author": "abrugaro",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 640,
+          "title": "Success rate metrics disappear when running analysis",
+          "type": "issue",
+          "updatedAt": "2025-11-16T01:35:17Z",
+          "author": "djzager",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 632,
+          "title": "[BUG] Unstable Scrolling While LLM Response is Streaming",
+          "type": "issue",
+          "updatedAt": "2025-11-16T01:35:18Z",
+          "author": "RanWurmbrand",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 618,
+          "title": "[TEST] Modify ci to include SHA256 into the vsix and the file name",
+          "type": "issue",
+          "updatedAt": "2025-11-17T01:35:50Z",
+          "author": "abrugaro",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 604,
+          "title": "Scroll to bottom doesnt work with interaction message flow",
+          "type": "issue",
+          "updatedAt": "2025-11-17T01:35:51Z",
+          "author": "ibolton336",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 586,
+          "title": "Handle no workspace as a ConfigError",
+          "type": "issue",
+          "updatedAt": "2026-02-07T12:42:33Z",
+          "author": "djzager",
+          "labels": [
+            "triage/accepted",
+            "stale"
+          ]
+        },
+        {
+          "number": 580,
+          "title": "Custom Ruleset File Upload Accepts Invalid File Types like .java , .png etc",
+          "type": "issue",
+          "updatedAt": "2026-01-15T17:33:00Z",
+          "author": "sshveta",
+          "labels": [
+            "bug",
+            "stale"
+          ]
+        },
+        {
+          "number": 574,
+          "title": "Agent responds with a follow-up question which is not handled",
+          "type": "issue",
+          "updatedAt": "2026-01-16T01:36:24Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 548,
+          "title": "If you have an error in generating a solution prior to even a model connection is established, you cannot stop the server",
+          "type": "issue",
+          "updatedAt": "2026-01-16T01:36:27Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 541,
+          "title": "Error from `npm run test`:  Extension 'konveyor.konveyor-ai CANNOT USE these API proposals 'contribDiffEditorGutterToolBarMenus'",
+          "type": "issue",
+          "updatedAt": "2026-01-17T01:35:28Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 540,
+          "title": "Display token usage estimates to end user for all LLM interactions",
+          "type": "issue",
+          "updatedAt": "2026-01-18T01:36:33Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 514,
+          "title": "Filename shown in analysis view is ignoring mixed case and shown as only lower case",
+          "type": "issue",
+          "updatedAt": "2026-02-14T01:38:23Z",
+          "author": "jwmatthews",
+          "labels": [
+            "priority/minor",
+            "stale"
+          ]
+        },
+        {
+          "number": 622,
+          "title": "[Test] [Evaluator] Add version and workflow link to report visualizer",
+          "type": "issue",
+          "updatedAt": "2026-02-24T01:39:10Z",
+          "author": "abrugaro",
+          "labels": [
+            "good first issue",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "enhancements",
+      "totalStale": 24,
+      "staleIssues": 22,
+      "stalePRs": 2,
+      "items": [
+        {
+          "number": 257,
+          "title": "Custom Rule Wizard and Export Functionality",
+          "type": "issue",
+          "updatedAt": "2026-02-16T01:30:45Z",
+          "author": "ibragins",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 253,
+          "title": "Add ability to import all applications from a Github organization",
+          "type": "issue",
+          "updatedAt": "2026-02-10T01:31:25Z",
+          "author": "dymurray",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 249,
+          "title": "Add documentation for using the C-Sharp provider",
+          "type": "issue",
+          "updatedAt": "2026-02-01T01:31:00Z",
+          "author": "shawn-hurley",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 221,
+          "title": "Source custom migration target provider values from a tag catagory",
+          "type": "issue",
+          "updatedAt": "2025-12-04T17:59:56Z",
+          "author": "sjd78",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 216,
+          "title": "[RFE] Add Detailed Ruleset Logging for Analyzers",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:29:16Z",
+          "author": "KenKilty",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 205,
+          "title": ":sparkles: Proposal for Hub Snapshots",
+          "type": "pr",
+          "updatedAt": "2025-11-04T01:29:18Z",
+          "author": "mansam",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 202,
+          "title": "[RFE] Quick Start for Konveyor",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:29:20Z",
+          "author": "JustinXHale",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 190,
+          "title": "Add proposal for a binaries download page",
+          "type": "pr",
+          "updatedAt": "2026-01-06T16:35:06Z",
+          "author": "fabianvf",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 185,
+          "title": "[RFE] Allow users to dismiss issues",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:30Z",
+          "author": "rromannissen",
+          "labels": [
+            "kind/feature",
+            "priority/major",
+            "triage/accepted",
+            "stale"
+          ]
+        },
+        {
+          "number": 176,
+          "title": "[RFE] Having a level of privacy on a per rule basis",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:32Z",
+          "author": "agoncal",
+          "labels": [
+            "kind/feature",
+            "needs-triage",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 153,
+          "title": "[RFE] Trigger applications analysis using Git hook",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:33Z",
+          "author": "davidseve",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 149,
+          "title": "[UI] Assessing Redundancy: Application Titles in Column Outputs",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:34Z",
+          "author": "JustinXHale",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 145,
+          "title": "OWNERS.md Missing",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:36Z",
+          "author": "kaovilai",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 140,
+          "title": "[RFE] Analysis history",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:37Z",
+          "author": "rromannissen",
+          "labels": [
+            "needs-triage",
+            "RFE",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 139,
+          "title": "[RFE] Cover the OpenTracing to OpenTelemetry migration path",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:39Z",
+          "author": "rromannissen",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 138,
+          "title": "[RFE] [Asset Generation] - Enable Java Metric observability via CryoStat (JDK Flight Recorder) ",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:40Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 133,
+          "title": "[RFE] Allow usage of custom images behind a protected registry",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:29:18Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 131,
+          "title": "[RFE] Detect language & frameworks being used in repositories on import",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:29:19Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 126,
+          "title": "[RFE] - Error Reporting and Normalization",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:29:21Z",
+          "author": "shawn-hurley",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 122,
+          "title": "[RFE] Repository crawler for application import",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:29:22Z",
+          "author": "rromannissen",
+          "labels": [
+            "RFE",
+            "stale"
+          ]
+        },
+        {
+          "number": 121,
+          "title": "[RFE] Enhanced file imports",
+          "type": "issue",
+          "updatedAt": "2025-11-07T01:29:13Z",
+          "author": "rromannissen",
+          "labels": [
+            "RFE",
+            "stale"
+          ]
+        },
+        {
+          "number": 118,
+          "title": "[RFE] From UI show the targets selected for a completed analysis",
+          "type": "issue",
+          "updatedAt": "2025-11-07T01:29:14Z",
+          "author": "jwmatthews",
+          "labels": [
+            "RFE",
+            "stale"
+          ]
+        },
+        {
+          "number": 117,
+          "title": "[RFE] Custom 'profiles' for install configuration 'defaults'",
+          "type": "issue",
+          "updatedAt": "2025-11-08T01:29:03Z",
+          "author": "jwmatthews",
+          "labels": [
+            "RFE",
+            "stale"
+          ]
+        },
+        {
+          "number": 110,
+          "title": "[RFE] Multi-tenancy: Expand RBAC controls for users to allow finer grained control of applications",
+          "type": "issue",
+          "updatedAt": "2026-01-26T14:00:58Z",
+          "author": "jwmatthews",
+          "labels": [
+            "needs-triage",
+            "RFE",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "java-analyzer-bundle",
+      "totalStale": 0,
+      "staleIssues": 0,
+      "stalePRs": 0,
+      "items": []
+    },
+    {
+      "org": "konveyor",
+      "repo": "kai",
+      "totalStale": 26,
+      "staleIssues": 20,
+      "stalePRs": 6,
+      "items": [
+        {
+          "number": 909,
+          "title": "update go mod",
+          "type": "pr",
+          "updatedAt": "2026-02-03T01:34:41Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 908,
+          "title": ":bug: do not cancel context when rule parsing fails",
+          "type": "pr",
+          "updatedAt": "2026-01-31T01:33:47Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 898,
+          "title": "Add support and test coverage for running in environments with HTTP/2 Restrictions",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:33:11Z",
+          "author": "jwmatthews",
+          "labels": [
+            "bug",
+            "blocker",
+            "stale"
+          ]
+        },
+        {
+          "number": 894,
+          "title": "Add a test covering a basic analysis using rpc and a JDTLS pipe",
+          "type": "issue",
+          "updatedAt": "2026-01-10T01:32:14Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 852,
+          "title": ":sapling: Add more verbose logs to solution server",
+          "type": "pr",
+          "updatedAt": "2025-11-04T01:31:53Z",
+          "author": "fabianvf",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 851,
+          "title": "kai and AI is hallucinating",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:31:55Z",
+          "author": "cmoulliard",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 850,
+          "title": "Show a more user friendly message when kai cannot access the AI server/model",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:31:56Z",
+          "author": "cmoulliard",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 846,
+          "title": "Update docs for ollama configuration to include 'baseUrl'",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:31:58Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 839,
+          "title": "Configuration.md Modified Document",
+          "type": "pr",
+          "updatedAt": "2025-11-04T01:31:59Z",
+          "author": "Pkylas007",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 823,
+          "title": "Evaluate Kai's effectiveness with \"Migration Bench\" dataset for Java 8 to Java 21 migrations",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:32:02Z",
+          "author": "jwmatthews",
+          "labels": [
+            "scenarios",
+            "testing",
+            "sample-problems",
+            "stale"
+          ]
+        },
+        {
+          "number": 809,
+          "title": "Explore alternative smaller models that may aid the java migration use case",
+          "type": "issue",
+          "updatedAt": "2025-11-04T01:32:04Z",
+          "author": "jwmatthews",
+          "labels": [
+            "good first issue",
+            "help wanted",
+            "testing",
+            "stale"
+          ]
+        },
+        {
+          "number": 780,
+          "title": "Impact Propagation Across Components + Shared Plugin Usage",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:32:08Z",
+          "author": "ghost",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 778,
+          "title": "Solution Server Tracking issue",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:32:09Z",
+          "author": "fabianvf",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 777,
+          "title": "Makefile needs an update for \"make build-kai-analyzer\": cp: cannot create regular file 'dist/kai-analyzer-rpc': No such file or directory",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:32:11Z",
+          "author": "jwmatthews",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 756,
+          "title": "Documentation for running Kai in Eclipse Che / DevSpaces",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:32:14Z",
+          "author": "jwmatthews",
+          "labels": [
+            "documentation",
+            "stale"
+          ]
+        },
+        {
+          "number": 741,
+          "title": "Inconsistent  LLM Response for JMS to SmallRye Migration",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:32:17Z",
+          "author": "hhpatel14",
+          "labels": [
+            "agent",
+            "stale"
+          ]
+        },
+        {
+          "number": 740,
+          "title": "Update the fix",
+          "type": "pr",
+          "updatedAt": "2025-11-05T01:32:19Z",
+          "author": "RohanMishra315",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 743,
+          "title": "Empty bullet point in Details section",
+          "type": "issue",
+          "updatedAt": "2025-11-23T01:32:33Z",
+          "author": "sshveta",
+          "labels": [
+            "bug",
+            "triage/needs-information",
+            "stale"
+          ]
+        },
+        {
+          "number": 736,
+          "title": "[BUG] Error in Watcher Error channel: Windows system assumed buffer larger than it is, events have likely been missed",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:32:01Z",
+          "author": "abrugaro",
+          "labels": [
+            "bug",
+            "stale"
+          ]
+        },
+        {
+          "number": 733,
+          "title": "Update task_manager.py",
+          "type": "pr",
+          "updatedAt": "2025-11-06T01:32:02Z",
+          "author": "RohanMishra315",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 724,
+          "title": "Location column and line numbers don't look right in markdown details section",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:32:04Z",
+          "author": "JonahSussman",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 722,
+          "title": "Maven parsing error (see description for details)",
+          "type": "issue",
+          "updatedAt": "2025-11-06T01:32:05Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "bug",
+            "good first issue",
+            "stale"
+          ]
+        },
+        {
+          "number": 721,
+          "title": "VFS should respect whatever exclusion settings IDE configures no matter whether a gitignore is present in the project",
+          "type": "issue",
+          "updatedAt": "2025-11-23T01:32:36Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "bug",
+            "stale"
+          ]
+        },
+        {
+          "number": 719,
+          "title": "Traces/input and output folders are shown in incidents with Openshift AI model",
+          "type": "issue",
+          "updatedAt": "2025-11-07T01:31:47Z",
+          "author": "sshveta",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 715,
+          "title": "Decouple tracer from cache",
+          "type": "issue",
+          "updatedAt": "2025-11-08T01:31:20Z",
+          "author": "pranavgaikwad",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 710,
+          "title": "After applying resolution a file  incorrectly replaced lines of code by  // ... (rest of the code remains the same)",
+          "type": "issue",
+          "updatedAt": "2025-11-09T01:31:55Z",
+          "author": "sshveta",
+          "labels": [
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "kantra",
+      "totalStale": 3,
+      "staleIssues": 3,
+      "stalePRs": 0,
+      "items": [
+        {
+          "number": 647,
+          "title": "Upgrade kin-openapi to fix CVE-2025-30153 (HIGH severity ZIP-bomb vulnerability)",
+          "type": "issue",
+          "updatedAt": "2026-02-05T01:33:48Z",
+          "author": "tsanders-rh",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 412,
+          "title": "Q: Custom CAs",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:31:49Z",
+          "author": "torsten-liermann",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 321,
+          "title": "[BUG] Analysis output includes many mentions of files under /root/.m2/repository",
+          "type": "issue",
+          "updatedAt": "2025-11-07T01:31:29Z",
+          "author": "jwmatthews",
+          "labels": [
+            "needs-triage",
+            "kind/bug",
+            "needs-priority",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "operator",
+      "totalStale": 0,
+      "staleIssues": 0,
+      "stalePRs": 0,
+      "items": []
+    },
+    {
+      "org": "konveyor",
+      "repo": "rulesets",
+      "totalStale": 16,
+      "staleIssues": 15,
+      "stalePRs": 1,
+      "items": [
+        {
+          "number": 233,
+          "title": "Rules for Spring Boot - Spring Session Changes - Gradle and Maven",
+          "type": "issue",
+          "updatedAt": "2026-01-08T01:31:59Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 219,
+          "title": "Rules for Spring Boot - Micrometer and Metrics changes - Auto-configuration of Micrometer’s JvmInfoMetrics",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:32:43Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 218,
+          "title": "Rules for Spring Boot - Micrometer and Metrics changes - Tag providers and contributors migration",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:32:45Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 217,
+          "title": "Rules for Spring Boot - Micrometer and Metrics changes - Deprecation of the Spring Boot 2.x instrumentation",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:32:47Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 215,
+          "title": "Rules for Spring Boot - Web Application Changes - Jetty",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:32:49Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 208,
+          "title": "Rules for Spring Boot - Core Changes - Logging date format",
+          "type": "issue",
+          "updatedAt": "2026-01-21T01:32:51Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 201,
+          "title": "Create rules for Spring Cloud dependencies",
+          "type": "pr",
+          "updatedAt": "2026-01-21T01:32:52Z",
+          "author": "jmle",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 190,
+          "title": "Rules for Spring Boot 3.0 session changes",
+          "type": "issue",
+          "updatedAt": "2026-01-22T01:32:22Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 189,
+          "title": "Rules for Spring Boot 3.0 spring security changes",
+          "type": "issue",
+          "updatedAt": "2026-01-22T01:32:24Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 188,
+          "title": "Rules for Spring Boot 3.0 micrometer and metrics changes",
+          "type": "issue",
+          "updatedAt": "2026-01-22T01:32:25Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 187,
+          "title": "Rules for Spring Boot 3.0 actuator changes",
+          "type": "issue",
+          "updatedAt": "2026-01-22T01:32:26Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-boot-migration/3",
+            "spring-boot-migration/3.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 175,
+          "title": "Create rules to migrate from Apache HttpClient 4 to 5",
+          "type": "issue",
+          "updatedAt": "2026-01-26T01:33:04Z",
+          "author": "jmle",
+          "labels": [
+            "triage/accepted",
+            "needs-kind",
+            "needs-priority",
+            "spring-migration/6",
+            "spring-migration/6.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 150,
+          "title": "Create rules for dropped servlet-based integrations",
+          "type": "issue",
+          "updatedAt": "2026-01-28T01:32:30Z",
+          "author": "jmle",
+          "labels": [
+            "size/XL",
+            "priority/important-longterm",
+            "needs-triage",
+            "needs-kind",
+            "spring-migration/6",
+            "spring-migration/6.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 149,
+          "title": "Create rules for upgrading web server if necessary",
+          "type": "issue",
+          "updatedAt": "2026-01-28T01:32:32Z",
+          "author": "jmle",
+          "labels": [
+            "size/XL",
+            "priority/backlog",
+            "needs-triage",
+            "needs-kind",
+            "spring-migration/6",
+            "spring-migration/6.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 130,
+          "title": "Create rule(s) for the dropped support of libraries in 5.0",
+          "type": "issue",
+          "updatedAt": "2026-02-05T01:33:37Z",
+          "author": "jmle",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "spring-migration/5",
+            "spring-migration/5.0",
+            "stale"
+          ]
+        },
+        {
+          "number": 312,
+          "title": "[BUG] [RULES] False positive on \"Windows file system path\" os-specific-00001",
+          "type": "issue",
+          "updatedAt": "2025-11-17T17:48:40Z",
+          "author": "abrugaro",
+          "labels": [
+            "kind/bug",
+            "needs-triage",
+            "needs-priority",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "tackle2-hub",
+      "totalStale": 3,
+      "staleIssues": 3,
+      "stalePRs": 0,
+      "items": [
+        {
+          "number": 952,
+          "title": "Ensure dependent components are built with matching branches",
+          "type": "issue",
+          "updatedAt": "2026-01-13T01:29:14Z",
+          "author": "aufi",
+          "labels": [
+            "needs-triage",
+            "needs-kind",
+            "needs-priority",
+            "stale"
+          ]
+        },
+        {
+          "number": 420,
+          "title": "Cannot access Jira Server/Datacenter through Proxy",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:23Z",
+          "author": "gildub",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 213,
+          "title": "Validate settings and facts keys.",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:24Z",
+          "author": "jortel",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "stale"
+          ]
+        }
+      ]
+    },
+    {
+      "org": "konveyor",
+      "repo": "tackle2-ui",
+      "totalStale": 10,
+      "staleIssues": 9,
+      "stalePRs": 1,
+      "items": [
+        {
+          "number": 2744,
+          "title": ":test_tube: [Draft] Running related tests when a page changes",
+          "type": "pr",
+          "updatedAt": "2026-01-31T01:29:40Z",
+          "author": "sshveta",
+          "labels": [
+            "stale"
+          ]
+        },
+        {
+          "number": 2651,
+          "title": "Adopt i18next-cli to make sure translation.json is synced with code",
+          "type": "issue",
+          "updatedAt": "2025-12-12T01:29:17Z",
+          "author": "sjd78",
+          "labels": [
+            "triage/accepted",
+            "priority/minor",
+            "kind/cleanup",
+            "stale"
+          ]
+        },
+        {
+          "number": 2598,
+          "title": "Asset generation wizard: Fixup handling of renderTemplates default value",
+          "type": "issue",
+          "updatedAt": "2026-02-03T04:38:08Z",
+          "author": "coderabbitai[bot]",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "priority/minor",
+            "stale"
+          ]
+        },
+        {
+          "number": 2567,
+          "title": "Generators: Add tool tip for values and parameters",
+          "type": "issue",
+          "updatedAt": "2026-02-03T04:36:22Z",
+          "author": "nachandr",
+          "labels": [
+            "kind/feature",
+            "triage/accepted",
+            "priority/normal",
+            "stale"
+          ]
+        },
+        {
+          "number": 2566,
+          "title": "Source platforms: display connection status",
+          "type": "issue",
+          "updatedAt": "2026-02-03T04:34:41Z",
+          "author": "nachandr",
+          "labels": [
+            "kind/feature",
+            "triage/accepted",
+            "priority/minor",
+            "stale"
+          ]
+        },
+        {
+          "number": 2559,
+          "title": "Source platforms: Add UI support for offline discovery of Cloud Foundry applications",
+          "type": "issue",
+          "updatedAt": "2026-02-03T04:33:51Z",
+          "author": "nachandr",
+          "labels": [
+            "kind/feature",
+            "triage/accepted",
+            "priority/minor",
+            "stale"
+          ]
+        },
+        {
+          "number": 2544,
+          "title": "Generator `Provider` column.",
+          "type": "issue",
+          "updatedAt": "2025-12-12T01:29:23Z",
+          "author": "jortel",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "priority/normal",
+            "stale"
+          ]
+        },
+        {
+          "number": 2543,
+          "title": "Task Manager 'Platform' column.",
+          "type": "issue",
+          "updatedAt": "2025-12-12T01:29:25Z",
+          "author": "jortel",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "priority/normal",
+            "stale"
+          ]
+        },
+        {
+          "number": 2398,
+          "title": "[BUG] Modifying the assessment comments field doesn't activate the \"Save\" Button",
+          "type": "issue",
+          "updatedAt": "2025-12-13T01:28:59Z",
+          "author": "abrugaro",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "priority/normal",
+            "stale"
+          ]
+        },
+        {
+          "number": 2180,
+          "title": "Add ID attribute to kebab menu for tags",
+          "type": "issue",
+          "updatedAt": "2025-11-05T01:29:20Z",
+          "author": "nachandr",
+          "labels": [
+            "kind/bug",
+            "triage/accepted",
+            "priority/major",
+            "stale"
+          ]
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "repositories": 11,
+    "totalStale": 109,
+    "staleIssues": 99,
+    "stalePRs": 10
+  }
+}

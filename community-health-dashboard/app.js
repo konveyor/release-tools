@@ -4412,17 +4412,8 @@ class CommunityHealthDashboard {
 
         // Nightly test workflow files to monitor
         const nightlyWorkflows = [
-            { org: 'konveyor', repo: 'tackle2-ui', file: 'e2e-nightly.yaml', branch: 'main', displayName: 'E2E Nightly', source: 'github' },
-            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release09-dispatcher.yaml', branch: 'release-0.9', displayName: 'E2E Nightly', source: 'github' }
-        ];
-
-        const jenkinsJobs = [
-            {
-                jsonFile: 'jenkins-results.json',
-                displayName: 'UI All Tiers Nightly',
-                repository: 'Jenkins(including analysis)',
-                source: 'jenkins'
-            }
+            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-main-e2e.yaml', branch: 'main', displayName: 'E2E Nightly', source: 'github' },
+            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release-0.9-e2e.yaml', branch: 'release-0.9', displayName: 'E2E Nightly', source: 'github' }
         ];
 
         console.log('[QA Metrics] Fetching data for', nightlyWorkflows.length, 'workflows');
@@ -4566,143 +4557,11 @@ class CommunityHealthDashboard {
             }
         }
 
-        // Fetch Jenkins job data
-        console.log('[QA Metrics] Starting to fetch data for', jenkinsJobs.length, 'Jenkins jobs');
-        console.log('[QA Metrics] Jenkins jobs config:', jenkinsJobs);
-
-        for (const job of jenkinsJobs) {
-            try {
-                console.log(`[QA Metrics] === Fetching Jenkins job: ${job.displayName} ===`);
-                console.log(`[QA Metrics] Reading from JSON file: ${job.jsonFile}`);
-
-                const jsonResponse = await fetch(job.jsonFile);
-
-                if (!jsonResponse.ok) {
-                    console.error(`[QA Metrics] Failed to fetch JSON file: ${jsonResponse.status}`);
-                    continue;
-                }
-
-                const jenkinsData = await jsonResponse.json();
-                console.log(`[QA Metrics] Jenkins JSON data received:`, jenkinsData);
-
-                // Convert Jenkins JSON format to dashboard format
-                const rawStatus = jenkinsData.lastBuild?.status;
-                const status = rawStatus === 'SUCCESS' ? 'success' :
-                              rawStatus === 'FAILURE' ? 'failure' :
-                              (rawStatus || 'unknown').toLowerCase();
-
-                const dashboardData = {
-                    workflow: job.displayName,
-                    repository: job.repository,
-                    branch: 'main',
-                    latestRun: {
-                        id: `jenkins-${jenkinsData.lastBuild.number}`,
-                        runNumber: jenkinsData.lastBuild.number,
-                        status: status,
-                        createdAt: jenkinsData.lastBuild.timestamp,
-                        updatedAt: jenkinsData.updatedAt,
-                        url: jenkinsData.lastBuild.url,
-                        duration: jenkinsData.lastBuild.duration
-                    },
-                    testResults: jenkinsData.testResults.totalTests > 0 ? {
-                        available: true,
-                        total: jenkinsData.testResults.totalTests,
-                        passed: jenkinsData.testResults.passing,
-                        failed: jenkinsData.testResults.failing,
-                        pending: jenkinsData.testResults.pending,
-                        skipped: jenkinsData.testResults.skipped,
-                        knownBugs: jenkinsData.testResults.totalBugs
-                    } : null,
-                    recentRuns: [],
-                    successRate: status === 'success' ? 100 : 0,
-                    source: 'jenkins'
-                };
-
-                console.log(`[QA Metrics] Adding Jenkins data to qaTestData:`, dashboardData);
-                this.qaTestData.push(dashboardData);
-                console.log(`[QA Metrics] qaTestData length is now: ${this.qaTestData.length}`);
-
-            } catch (error) {
-                console.error(`[QA Metrics] *** CAUGHT ERROR fetching Jenkins job ${job.displayName} ***`);
-                console.error(`[QA Metrics] Error object:`, error);
-                console.error(`[QA Metrics] Error name: ${error.name}`);
-                console.error(`[QA Metrics] Error message: ${error.message}`);
-                console.error(`[QA Metrics] Error stack:`, error.stack);
-
-                if (error.name === 'AbortError') {
-                    console.error(`[QA Metrics] --> This is a TIMEOUT error (10 seconds)`);
-                } else if (error.name === 'TypeError') {
-                    console.error(`[QA Metrics] --> This is a CORS/Network error`);
-                    console.error(`[QA Metrics] --> Jenkins may not allow cross-origin requests`);
-                } else {
-                    console.error(`[QA Metrics] --> Unknown error type`);
-                }
-            }
-        }
-
-        console.log('[QA Metrics] Finished fetching all data sources (GitHub + Jenkins)');
+        console.log('[QA Metrics] Finished fetching all data sources');
         console.log('[QA Metrics] Final qaTestData length:', this.qaTestData.length);
         console.log('[QA Metrics] Final qaTestData:', this.qaTestData);
     }
 
-    async parseJenkinsTestResults(consoleText) {
-        // Parse test results from Jenkins console output
-        // Look for the same bug summary format as GitHub Actions
-        try {
-            // Strip ANSI escape codes
-            const cleanText = this.stripAnsi(consoleText);
-
-            // Try to find the bug summary line
-            // Pattern 1: tests with failures
-            let summaryMatch = cleanText.match(/(\d+)\s+of\s+(\d+)\s+failed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
-
-            if (!summaryMatch) {
-                // Pattern 2: all passing tests
-                summaryMatch = cleanText.match(/(\d+)\s+tests?\s+passed.*?\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)\s+\u2502\s*(\d+)/);
-            }
-
-            if (summaryMatch) {
-                let total, passed, failed, pending, skipped, knownBugs;
-
-                if (summaryMatch[0].includes('failed')) {
-                    // Pattern 1: failed tests
-                    total = parseInt(summaryMatch[3]);
-                    passed = parseInt(summaryMatch[4]);
-                    failed = parseInt(summaryMatch[5]);
-                    pending = parseInt(summaryMatch[6]);
-                    skipped = parseInt(summaryMatch[7]);
-                    knownBugs = parseInt(summaryMatch[8]);
-                } else {
-                    // Pattern 2: all passing
-                    total = parseInt(summaryMatch[2]);
-                    passed = parseInt(summaryMatch[3]);
-                    failed = parseInt(summaryMatch[4]);
-                    pending = parseInt(summaryMatch[5]);
-                    skipped = parseInt(summaryMatch[6]);
-                    knownBugs = parseInt(summaryMatch[7]);
-                }
-
-                console.log(`[QA Metrics] Jenkins test results: ${total} total, ${passed} passed, ${failed} failed, ${knownBugs} bugs`);
-
-                return {
-                    available: true,
-                    total: total,
-                    passed: passed,
-                    failed: failed,
-                    pending: pending,
-                    skipped: skipped,
-                    knownBugs: knownBugs
-                };
-            } else {
-                console.log('[QA Metrics] Could not find test summary in Jenkins console output');
-                return null;
-            }
-
-        } catch (error) {
-            console.error('[QA Metrics] Error parsing Jenkins test results:', error);
-            return null;
-        }
-    }
 
     async parseTestResultsFromJobs(jobs, workflow) {
         // For tackle2-ui e2e tests, we need to fetch job logs from ALL jobs to aggregate results
@@ -5012,7 +4871,7 @@ class CommunityHealthDashboard {
                     <td style="text-align: center;">${this.formatDate(new Date(workflow.latestRun.createdAt))}</td>
                     <td>
                         <a href="${workflow.latestRun.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
-                            ${workflow.source === 'jenkins' ? 'View Job' : `View Run #${workflow.latestRun.runNumber}`}
+                            View Run #${workflow.latestRun.runNumber}
                         </a>
                     </td>
                 </tr>

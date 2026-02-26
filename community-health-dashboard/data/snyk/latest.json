@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-25T03:09:31Z",
+  "timestamp": "2026-02-26T03:06:50Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -94,10 +94,10 @@
       "repo": "tackle2-ui",
       "vulnerabilities": {
         "critical": 0,
-        "high": 8,
-        "medium": 72,
+        "high": 7,
+        "medium": 12,
         "low": 0,
-        "total": 80
+        "total": 19
       }
     }
   ]

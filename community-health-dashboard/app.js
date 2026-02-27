@@ -4305,6 +4305,29 @@ class CommunityHealthDashboard {
     // QA/Test Metrics Methods
     // ============================================
 
+    async fetchAllRunJobs(org, repo, runId, headers) {
+        const baseUrl = 'https://api.github.com';
+        let page = 1;
+        const allJobs = [];
+
+        while (true) {
+            const response = await fetch(
+                `${baseUrl}/repos/${org}/${repo}/actions/runs/${runId}/jobs?per_page=100&page=${page}`,
+                { headers }
+            );
+            if (!response.ok) break;
+
+            const data = await response.json();
+            const jobs = data.jobs || [];
+            allJobs.push(...jobs);
+
+            if (jobs.length < 100) break;
+            page++;
+        }
+
+        return allJobs;
+    }
+
     async loadQATestMetrics(forceRefresh = false) {
         console.log('[QA Metrics] Starting to load QA test metrics...');
         const loadingIndicator = document.getElementById('qa-loading-indicator');
@@ -4318,7 +4341,7 @@ class CommunityHealthDashboard {
 
         try {
             // Check for cached data (cache expires after 1 hour)
-            const cacheVersion = 'v1'; // Increment when changing job filters or parsing logic
+            const cacheVersion = 'v3'; // Increment when changing job filters or parsing logic
             const cacheKey = `qaTestData_cache_${cacheVersion}`;
             const cacheExpiryMs = 60 * 60 * 1000; // 1 hour
 
@@ -4438,42 +4461,28 @@ class CommunityHealthDashboard {
 
                 if (runs.length === 0) continue;
 
-                const latestRun = runs[0];
+                // Find the latest completed run (skip in-progress runs)
+                const latestRun = runs.find(r => r.status === 'completed') || runs[0];
 
-                // Try to fetch job details to get test results
-                // Increase per_page to get all jobs (default is 30, max is 100)
-                const jobsResponse = await fetch(
-                    `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/runs/${latestRun.id}/jobs?per_page=100`,
-                    { headers }
-                );
+                // Fetch all jobs for the latest run (with pagination to avoid truncation)
+                const latestRunJobs = await this.fetchAllRunJobs(workflow.org, workflow.repo, latestRun.id, headers);
+                let testResults = await this.parseTestResultsFromJobs(latestRunJobs, workflow);
 
-                let testResults = null;
-
-                if (jobsResponse.ok) {
-                    const jobsData = await jobsResponse.json();
-                    testResults = await this.parseTestResultsFromJobs(jobsData.jobs, workflow);
-                }
-
-                // Calculate statistics from recent runs
-                const successRuns = runs.filter(r => r.conclusion === 'success').length;
-                const successRate = runs.length > 0 ? (successRuns / runs.length) * 100 : 0;
+                // Calculate statistics from recent runs (only completed runs)
+                const completedRuns = runs.filter(r => r.status === 'completed');
+                const successRuns = completedRuns.filter(r => r.conclusion === 'success').length;
+                const successRate = completedRuns.length > 0 ? (successRuns / completedRuns.length) * 100 : 0;
 
                 // For main branch, fetch test results for all recent runs to show failure trend
                 const recentRunsWithResults = [];
                 if (workflow.branch === 'main') {
-                    console.log(`[QA Metrics] Fetching test results for last 10 runs of ${workflow.displayName} (main branch)...`);
-                    for (const run of runs.slice(0, 10)) {
+                    // Filter to only completed runs for accurate trend data
+                    const completedRuns = runs.filter(r => r.status === 'completed').slice(0, 10);
+                    console.log(`[QA Metrics] Fetching test results for last 10 completed runs of ${workflow.displayName} (main branch)...`);
+                    for (const run of completedRuns) {
                         try {
-                            const runJobsResponse = await fetch(
-                                `${baseUrl}/repos/${workflow.org}/${workflow.repo}/actions/runs/${run.id}/jobs?per_page=100`,
-                                { headers }
-                            );
-
-                            let runTestResults = null;
-                            if (runJobsResponse.ok) {
-                                const runJobsData = await runJobsResponse.json();
-                                runTestResults = await this.parseTestResultsFromJobs(runJobsData.jobs, workflow);
-                            }
+                            const runJobs = await this.fetchAllRunJobs(workflow.org, workflow.repo, run.id, headers);
+                            const runTestResults = await this.parseTestResultsFromJobs(runJobs, workflow);
 
                             recentRunsWithResults.push({
                                 id: run.id,

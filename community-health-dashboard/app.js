@@ -4318,7 +4318,7 @@ class CommunityHealthDashboard {
 
         try {
             // Check for cached data (cache expires after 1 hour)
-            const cacheVersion = 'v14'; // Increment when changing job filters or parsing logic
+            const cacheVersion = 'v1'; // Increment when changing job filters or parsing logic
             const cacheKey = `qaTestData_cache_${cacheVersion}`;
             const cacheExpiryMs = 60 * 60 * 1000; // 1 hour
 

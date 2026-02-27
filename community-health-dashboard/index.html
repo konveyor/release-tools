@@ -848,49 +848,44 @@
                     <div class="stat-card">
                         <div class="stat-icon">🧪</div>
                         <div class="stat-content">
-                            <div class="stat-value" id="qa-total-tests">-</div>
+                            <div class="stat-value" id="qa-ui-tests">-</div>
                             <div class="stat-label">
-                                Total Tests (Latest Run)
+                                UI Tests (Passed/Total)
                                 <span class="info-icon" tabindex="0">ⓘ
-                                    <div class="info-popover">Total number of test cases executed in the most recent nightly test run.</div>
+                                    <div class="info-popover">Number of UI tests passed out of total tests in the latest main branch nightly run.</div>
                                 </span>
+                            </div>
+                        </div>
+                        <div class="health-bar neutral" id="qa-ui-pass-rate-bar"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚙️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="qa-koncur-tests">-</div>
+                            <div class="stat-label">
+                                Koncur Tests (Passed/Total)
+                                <span class="info-icon" tabindex="0">ⓘ
+                                    <div class="info-popover">Number of Koncur tests passed out of total tests in the latest main branch nightly run.</div>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="health-bar neutral" id="qa-koncur-pass-rate-bar"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-value">-</div>
+                            <div class="stat-label">
+                                Placeholder
                             </div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">✅</div>
+                        <div class="stat-icon">📈</div>
                         <div class="stat-content">
-                            <div class="stat-value" id="qa-passed-tests">-</div>
+                            <div class="stat-value">-</div>
                             <div class="stat-label">
-                                Passed Tests
-                                <span class="info-icon" tabindex="0">ⓘ
-                                    <div class="info-popover">Number of test cases that passed successfully.</div>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="health-bar neutral" id="qa-pass-rate-bar"></div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">❌</div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="qa-failed-tests">-</div>
-                            <div class="stat-label">
-                                Failed Tests
-                                <span class="info-icon" tabindex="0">ⓘ
-                                    <div class="info-popover">Number of test cases that failed in the latest run.</div>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">🐛</div>
-                        <div class="stat-content">
-                            <div class="stat-value" id="qa-bug-count">-</div>
-                            <div class="stat-label">
-                                Known Bug Failures
-                                <span class="info-icon" tabindex="0">ⓘ
-                                    <div class="info-popover">Number of test failures that are due to known bugs (tests marked with bug IDs).</div>
-                                </span>
+                                Placeholder
                             </div>
                         </div>
                     </div>
@@ -920,6 +915,35 @@
                                 </tr>
                             </thead>
                             <tbody id="qa-test-results-body">
+                                <tr>
+                                    <td colspan="9" class="no-data">Loading test results...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Koncur Tests Section -->
+                <div class="table-panel">
+                    <div class="panel-header">
+                        <h2>Koncur Tests - Nightly Results</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="qa-koncur-results-table">
+                            <thead>
+                                <tr>
+                                    <th data-sort="workflow">Workflow</th>
+                                    <th data-sort="branch" style="text-align: center;">Branch</th>
+                                    <th data-sort="status" style="text-align: center;">Status</th>
+                                    <th data-sort="totalTests" style="text-align: center;">Total Tests</th>
+                                    <th data-sort="passed" style="text-align: center;">Passed</th>
+                                    <th data-sort="failed" style="text-align: center;">Failed</th>
+                                    <th data-sort="skipped" style="text-align: center;">Skipped</th>
+                                    <th data-sort="lastRun" style="text-align: center;">Last Run</th>
+                                    <th style="text-align: center;">Test Run Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="qa-koncur-results-body">
                                 <tr>
                                     <td colspan="9" class="no-data">Loading test results...</td>
                                 </tr>

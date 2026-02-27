@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-26T03:06:50Z",
+  "timestamp": "2026-02-27T03:06:03Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -39,8 +39,8 @@
       "repo": "kai",
       "vulnerabilities": {
         "critical": 0,
-        "high": 188,
-        "medium": 584,
+        "high": 190,
+        "medium": 582,
         "low": 0,
         "total": 772
       }
@@ -83,10 +83,10 @@
       "repo": "tackle2-hub",
       "vulnerabilities": {
         "critical": 0,
-        "high": 230,
-        "medium": 15,
-        "low": 1,
-        "total": 246
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "total": 0
       }
     },
     {
@@ -94,10 +94,10 @@
       "repo": "tackle2-ui",
       "vulnerabilities": {
         "critical": 0,
-        "high": 7,
-        "medium": 12,
+        "high": 11,
+        "medium": 11,
         "low": 0,
-        "total": 19
+        "total": 22
       }
     }
   ]

@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-03-01T03:11:54Z",
+  "timestamp": "2026-03-02T03:07:49Z",
   "repositories": [
     {
       "org": "konveyor",
       "repo": "analyzer-lsp",
       "vulnerabilities": {
         "critical": 14,
-        "high": 168,
+        "high": 176,
         "medium": 223,
-        "low": 54,
-        "total": 459
+        "low": 58,
+        "total": 471
       }
     },
     {
@@ -28,10 +28,10 @@
       "repo": "java-analyzer-bundle",
       "vulnerabilities": {
         "critical": 5,
-        "high": 20,
+        "high": 21,
         "medium": 29,
         "low": 10,
-        "total": 64
+        "total": 65
       }
     },
     {
@@ -50,10 +50,10 @@
       "repo": "kantra",
       "vulnerabilities": {
         "critical": 5,
-        "high": 55,
+        "high": 56,
         "medium": 122,
         "low": 10,
-        "total": 192
+        "total": 193
       }
     },
     {

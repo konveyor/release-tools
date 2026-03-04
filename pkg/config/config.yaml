@@ -51,6 +51,8 @@ repos:
     repo: kai
   - org: konveyor
     repo: c-sharp-analyzer-provider
+  - org: konveyor
+    repo: koncur
 
 # Labels
 # List of labels, their color and description, that should exist in the specified repositories.

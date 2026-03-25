@@ -235,6 +235,10 @@ milestones:
     due: 2026-04-02
     replaces: v0.9.1
     state: open
+  - title: v0.9.3
+    description: The v0.9.3 release of Konveyor
+    due: 2026-04-23
+    state: open
   - title: v0.10.0
     description: The v0.10.0 release of Konveyor
     due: 2026-07-30

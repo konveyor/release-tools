@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-03-25T03:11:24Z",
+  "timestamp": "2026-03-26T03:13:21Z",
   "repositories": [
     {
       "org": "konveyor",
       "repo": "analyzer-lsp",
       "vulnerabilities": {
         "critical": 70,
-        "high": 619,
-        "medium": 2954,
+        "high": 622,
+        "medium": 2958,
         "low": 146,
-        "total": 3789
+        "total": 3796
       }
     },
     {
@@ -39,10 +39,10 @@
       "repo": "kai",
       "vulnerabilities": {
         "critical": 30,
-        "high": 304,
-        "medium": 610,
+        "high": 307,
+        "medium": 777,
         "low": 0,
-        "total": 944
+        "total": 1114
       }
     },
     {
@@ -50,10 +50,10 @@
       "repo": "kantra",
       "vulnerabilities": {
         "critical": 21,
-        "high": 211,
-        "medium": 731,
+        "high": 214,
+        "medium": 735,
         "low": 31,
-        "total": 994
+        "total": 1001
       }
     },
     {

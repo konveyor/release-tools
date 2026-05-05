@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-04T03:18:19Z",
+  "timestamp": "2026-05-05T03:16:15Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -95,9 +95,9 @@
       "vulnerabilities": {
         "critical": 2,
         "high": 20,
-        "medium": 22,
+        "medium": 23,
         "low": 0,
-        "total": 44
+        "total": 45
       }
     }
   ]

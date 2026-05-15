@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-14T03:16:53Z",
+  "timestamp": "2026-05-15T03:19:19Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -39,10 +39,10 @@
       "repo": "kai",
       "vulnerabilities": {
         "critical": 31,
-        "high": 1111,
+        "high": 1157,
         "medium": 981,
         "low": 11,
-        "total": 2134
+        "total": 2180
       }
     },
     {
@@ -50,8 +50,8 @@
       "repo": "kantra",
       "vulnerabilities": {
         "critical": 23,
-        "high": 533,
-        "medium": 718,
+        "high": 535,
+        "medium": 716,
         "low": 41,
         "total": 1315
       }
@@ -83,8 +83,8 @@
       "repo": "tackle2-hub",
       "vulnerabilities": {
         "critical": 0,
-        "high": 1490,
-        "medium": 900,
+        "high": 1491,
+        "medium": 899,
         "low": 3,
         "total": 2393
       }

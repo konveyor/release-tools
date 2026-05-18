@@ -18,15 +18,17 @@ const (
 	BreakingPR PRType = "breaking"
 	NoNotePR   PRType = "nonote"
 	TestPR     PRType = "test"
+	CherryPick PRType = "cherry-pick"
 
 	// TODO(djzager): Should we allow emoji?
-	PrefixFeature  string = ":sparkles:"
-	PrefixBugFix   string = ":bug:"
-	PrefixDocs     string = ":book:"
-	PrefixInfra    string = ":seedling:"
-	PrefixBreaking string = ":warning:"
-	PrefixNoNote   string = ":ghost:"
-	PrefixTestTube string = ":test_tube:"
+	PrefixFeature    string = ":sparkles:"
+	PrefixBugFix     string = ":bug:"
+	PrefixDocs       string = ":book:"
+	PrefixInfra      string = ":seedling:"
+	PrefixBreaking   string = ":warning:"
+	PrefixNoNote     string = ":ghost:"
+	PrefixTestTube   string = ":test_tube:"
+	PrefixCherryPick string = ":cherries:"
 
 	emojiFeature  = string('✨')
 	emojiBugFix   = string('🐛')
@@ -81,6 +83,9 @@ func TypeFromTitle(title string) (PRType, string, error) {
 	case strings.HasPrefix(title, PrefixTestTube):
 		title = strings.TrimPrefix(title, PrefixTestTube)
 		prType = TestPR
+	case strings.HasPrefix(title, PrefixCherryPick):
+		title = strings.TrimPrefix(title, PrefixCherryPick)
+		prType = CherryPick
 	default:
 		if strings.HasPrefix(title, emojiFeature) ||
 			strings.HasPrefix(title, emojiBugFix) ||

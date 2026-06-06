@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-05T03:20:17Z",
+  "timestamp": "2026-06-06T03:17:11Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -50,10 +50,10 @@
       "repo": "kantra",
       "vulnerabilities": {
         "critical": 32,
-        "high": 565,
-        "medium": 740,
+        "high": 577,
+        "medium": 782,
         "low": 40,
-        "total": 1377
+        "total": 1431
       }
     },
     {

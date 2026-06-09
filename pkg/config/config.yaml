@@ -133,6 +133,9 @@ labels:
   - color: 15dd18
     description: Indicates that a PR is ready to be merged.
     name: lgtm
+  - color: e91221
+    description: Indicates next build requires this to be included
+    name: build-blocker
   # CherryPick
   - color: fef2a0
     description: This PR should be cherry-picked to release-0.3 branch.

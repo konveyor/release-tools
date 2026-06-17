@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-16T03:20:28Z",
+  "timestamp": "2026-06-17T03:20:29Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -39,10 +39,10 @@
       "repo": "kai",
       "vulnerabilities": {
         "critical": 42,
-        "high": 1189,
-        "medium": 1375,
+        "high": 1220,
+        "medium": 1410,
         "low": 22,
-        "total": 2628
+        "total": 2694
       }
     },
     {
@@ -95,9 +95,9 @@
       "vulnerabilities": {
         "critical": 0,
         "high": 11,
-        "medium": 17,
+        "medium": 12,
         "low": 0,
-        "total": 28
+        "total": 23
       }
     }
   ]

@@ -4431,10 +4431,10 @@ class CommunityHealthDashboard {
         const nightlyWorkflows = [
             // UI Tests
             { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-main-e2e.yaml', branch: 'main', displayName: 'E2E Nightly', source: 'github', category: 'ui' },
-            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release-0.9-e2e.yaml', branch: 'release-0.9', displayName: 'E2E Nightly', source: 'github', category: 'ui' },
+            { org: 'konveyor', repo: 'tackle2-ui', file: 'nightly-release-0.10-e2e.yaml', branch: 'release-0.10', displayName: 'E2E Nightly', source: 'github', category: 'ui' },
             // Koncur Tests
             { org: 'konveyor', repo: 'ci', file: 'nightly-koncur.yaml', branch: 'main', displayName: 'Koncur Nightly', source: 'github', category: 'koncur' },
-            { org: 'konveyor', repo: 'ci', file: 'nightly-koncur-0.9.yaml', branch: 'release-0.9', displayName: 'Koncur Nightly', source: 'github', category: 'koncur' }
+            { org: 'konveyor', repo: 'ci', file: 'nightly-koncur-0.10.yaml', branch: 'release-0.10', displayName: 'Koncur Nightly', source: 'github', category: 'koncur' }
         ];
 
         console.log('[QA Metrics] Fetching data for', nightlyWorkflows.length, 'workflows');

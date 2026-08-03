@@ -78,7 +78,7 @@ jobs:
     steps:
       - name: Build matrix from architectures
         id: set-matrix
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           ARCHITECTURES: ${{ inputs.architectures }}
         with:
@@ -145,7 +145,7 @@ jobs:
           df . -h
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref || github.ref }}
@@ -170,7 +170,7 @@ jobs:
 
       - name: Image meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ inputs.registry }}/${{ inputs.image_name }}
           tags: |
@@ -189,7 +189,7 @@ jobs:
 
       - name: Build Image
         id: build
-        uses: redhat-actions/buildah-build@main
+        uses: redhat-actions/buildah-build@v3
         with:
           image: ${{ inputs.image_name }}
           tags: ${{ env.tag }}-${{ matrix.architecture }}
@@ -200,7 +200,7 @@ jobs:
           context: ${{ inputs.context }}
 
       - name: Push To Quay
-        uses: redhat-actions/push-to-registry@main
+        uses: redhat-actions/push-to-registry@v3
         id: push
         if: ${{ inputs.publish == 'true' }}
         with:
@@ -218,15 +218,15 @@ jobs:
       - name: Create manifest
         shell: bash
         run: |
-          podman manifest create "${{ inputs.registry }}/${{ inputs.image_name }}:${{ env.tag }}"
+          podman manifest create "${{ inputs.image_name }}:${{ env.tag }}"
           for arch in $(echo '${{ inputs.architectures }}' | jq -r '.[]'); do
             podman manifest add \
-              "${{ inputs.registry }}/${{ inputs.image_name }}:${{ env.tag }}" \
-              "${{ inputs.registry }}/${{ inputs.image_name }}:${{ env.tag }}-${arch}"
+              "${{ inputs.image_name }}:${{ env.tag }}" \
+              "docker://${{ inputs.registry }}/${{ inputs.image_name }}:${{ env.tag }}-${arch}"
           done
 
       - name: Push To Quay
-        uses: redhat-actions/push-to-registry@main
+        uses: redhat-actions/push-to-registry@v3
         id: push
         with:
           image: ${{ inputs.image_name }}

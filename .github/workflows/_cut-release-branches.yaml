@@ -24,6 +24,7 @@ jobs:
     needs: get-repos
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         repo: ${{ fromJson(needs.get-repos.outputs.repos) }}
     steps:
@@ -41,10 +42,18 @@ jobs:
           token: ${{ steps.get_workflow_token.outputs.token }}
           fetch-depth: 0
 
-      - name: Create new branch
+      - name: Create branch if missing
+        env:
+          BRANCH_NAME: ${{ inputs.branch_name }}
         run: |
+          git check-ref-format --branch "${BRANCH_NAME}" > /dev/null
+          EXISTING_REF=$(git ls-remote --heads origin "refs/heads/${BRANCH_NAME}")
+          if [[ -n "${EXISTING_REF}" ]]; then
+            echo "Branch ${BRANCH_NAME} already exists; skipping."
+            exit 0
+          fi
+
           git config --global user.email "noreply@github.com"
           git config --global user.name "Branch Creator"
-          git checkout -b ${{ inputs.branch_name }}
-          git push origin ${{ inputs.branch_name }}
-
+          git checkout -b "${BRANCH_NAME}"
+          git push origin "refs/heads/${BRANCH_NAME}"

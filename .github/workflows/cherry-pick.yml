@@ -30,7 +30,14 @@ jobs:
             const labels = issue.labels.map(label => label.name);
             console.log(`Labels: ${labels}`);
 
-            const branches = labels.filter(label => label.startsWith('cherry-pick/'))
+            // A label added after the merge only asks for that one branch. The
+            // others were handled when the PR closed, and picking them again
+            // fails on the backport branch that already exists.
+            const requested = context.payload.action === 'labeled'
+              ? [context.payload.label.name]
+              : labels;
+
+            const branches = requested.filter(label => label.startsWith('cherry-pick/'))
               .map(label => label.substr(12));
             console.log(`Branches: ${branches}`);
 
@@ -66,7 +73,7 @@ jobs:
           git config --global user.email "noreply@github.com"
           git config --global user.name "Cherry Picker"
           git checkout -b "${BRANCH_NAME}"
-          git cherry-pick -s ${{ github.sha }}
+          git cherry-pick -s ${{ github.event.pull_request.merge_commit_sha }}
           git push origin "${BRANCH_NAME}"
           PR_URL=$(gh pr create --base "${{ matrix.branch }}" --fill)
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"

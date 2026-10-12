@@ -106,8 +106,9 @@ installation change before a live update run can edit workflow files.
 The action uses checksum-pinned pinact v4.1.1 binaries on Linux amd64/arm64.
 Tests exercise the real offline verifier against temporary git repositories:
 deep composite discovery, read-only verification, explicit and precisely scoped
-ignores, and missing policies. Further tests cover update repeatability,
-configuration isolation, and rejecting a tampered binary archive.
+ignores, and missing policies. A mocked updater checks wrapper flags and change
+reporting; further tests cover configuration isolation and rejecting a tampered
+binary archive. These tests do not substitute for the live PR trial below.
 
 For an adoption trial, first run a preview on the consuming repository. Inspect
 the diff and ignored references, then run an update with the App token. Confirm

@@ -102,7 +102,7 @@ class ActionPinsTests(unittest.TestCase):
         self.assertNotIn("PINACT_GLOBAL_CONFIG", observed["environment"])
         self.assertEqual(observed["config"]["ignore_actions"][0]["ref"], "^main$")
 
-    def test_update_is_repeatable_and_includes_major_upgrade_mode(self):
+    def test_update_passes_upgrade_flag_and_reports_committed_changes(self):
         path = self.add(".github/workflows/ci.yml", f"steps:\n  - uses: actions/checkout@{SHA} # v4.0.0\n")
         self.commit()
         commands = []

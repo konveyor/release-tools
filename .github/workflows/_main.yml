@@ -47,6 +47,20 @@ jobs:
       - uses: actions/setup-go@v5
       - run: go test ./...
 
+  action-pins-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install pinned pinact
+        id: pinact
+        run: python3 action-pins/install.py
+      - name: Test workflow discovery and pinning policy
+        env:
+          PINACT_TEST_BINARY: ${{ steps.pinact.outputs.binary }}
+        run: python3 -m unittest discover -s action-pins -v
+
   check-milestones:
     needs: build
     if: ${{ needs.build.outputs.config == 'true' || needs.build.outputs.milestone == 'true' }}

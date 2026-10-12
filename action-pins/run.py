@@ -98,6 +98,9 @@ def main():
         os.environ["PINACT_BINARY"],
     )
     output("changed", str(bool(result["changed"])).lower())
+    # Keep a nonempty commit allowlist even when no files changed: an empty
+    # create-pull-request add-paths value stages every new or modified file.
+    # The action still runs on unchanged updates to close obsolete PRs.
     output("paths", "\n".join(f":(literal){name}" for name in result["files"]))
     print(f"Checked {len(result['files'])} action/workflow files; "
           f"{len(result['changed'])} changed.")

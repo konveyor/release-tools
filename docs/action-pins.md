@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   pins:
-    uses: konveyor/release-tools/.github/workflows/action-pins.yml@<commit-sha>
+    uses: konveyor/release-tools/.github/workflows/action-pins.yml@main
     with:
       mode: ${{ github.event_name == 'pull_request' && 'verify' || 'update' }}
       dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
@@ -35,10 +35,12 @@ jobs:
       app-private-key: ${{ secrets.KONVEYOR_BOT_KEY }}
 ~~~
 
-Use the repository's actual default branch in the push trigger. Pin the
-reusable workflow to a reviewed commit. It also pins its action implementation
-and third-party dependencies, so subsequent changes to release-tools do not
-change an existing caller's behavior.
+Use the repository's actual default branch in the push trigger. The example
+follows release-tools main, and the reusable workflow calls its own action from
+main. These trusted first-party references are exempted explicitly through
+ignore-actions; third-party dependencies remain SHA-pinned. A caller can choose
+a reviewed workflow commit instead, but its internal action call still follows
+main.
 
 ## Behavior
 

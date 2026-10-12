@@ -48,7 +48,7 @@ jobs:
           persist-credentials: false
       - name: Verify or update action pins
         id: pins
-        uses: konveyor/release-tools/action-pins@90b16f9cc58ac48cbb9cbe65053bd16ef4ec1ed8
+        uses: konveyor/release-tools/action-pins@main
         with:
           mode: ${{ inputs.mode }}
           ignore-actions: ${{ inputs.ignore-actions }}

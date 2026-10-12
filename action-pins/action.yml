@@ -1,0 +1,90 @@
+name: Action pins
+description: Verify pins or update actions and maintain a pull request in the caller repository.
+inputs:
+  mode:
+    description: verify (read-only, offline) or update (including major versions).
+    default: verify
+  ignore-actions:
+    description: Newline-separated owner/repo[/path][@ref] glob patterns; supports * and ?.
+    default: ""
+  dry-run:
+    description: Show the update diff without pushing or opening a pull request.
+    default: "false"
+  app-id:
+    description: GitHub App ID, required for updates that create a PR.
+    default: ""
+  app-private-key:
+    description: GitHub App private key, required for updates that create a PR.
+    default: ""
+outputs:
+  pull-request-url:
+    description: Created or updated pull request URL.
+    value: ${{ steps.pr.outputs.pull-request-url }}
+runs:
+  using: composite
+  steps:
+    - name: Validate operation
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        APP_ID: ${{ inputs.app-id }}
+        APP_KEY: ${{ inputs.app-private-key }}
+        EVENT_NAME: ${{ github.event_name }}
+      run: |
+        case "$MODE" in verify|update) ;; *) echo "::error::mode must be verify or update"; exit 1 ;; esac
+        case "$DRY_RUN" in true|false) ;; *) echo "::error::dry-run must be true or false"; exit 1 ;; esac
+        if [[ "$MODE" == update ]]; then
+          case "$EVENT_NAME" in
+            pull_request|pull_request_target) echo "::error::PR events may only verify pins"; exit 1 ;;
+          esac
+          if [[ "$DRY_RUN" == false && ( -z "$APP_ID" || -z "$APP_KEY" ) ]]; then
+            echo "::error::Updates require the bot App ID and private key"
+            exit 1
+          fi
+        fi
+    - name: Create caller-scoped bot token
+      if: inputs.mode == 'update' && inputs.dry-run != 'true'
+      id: bot
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-private-key }}
+        permission-contents: write
+        permission-pull-requests: write
+        permission-workflows: write
+    - name: Install pinned pinact
+      id: install
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: python3 "$ACTION_PATH/install.py"
+    - name: Verify or update pins
+      id: pins
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        PINACT_MODE: ${{ inputs.mode }}
+        PINACT_IGNORE_ACTIONS: ${{ inputs.ignore-actions }}
+        PINACT_DRY_RUN: ${{ inputs.dry-run }}
+        PINACT_BINARY: ${{ steps.install.outputs.binary }}
+        GITHUB_TOKEN: ${{ steps.bot.outputs.token || github.token }}
+      run: python3 "$ACTION_PATH/run.py"
+    - name: Maintain update pull request
+      if: inputs.mode == 'update' && inputs.dry-run != 'true'
+      id: pr
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ steps.bot.outputs.token }}
+        add-paths: ${{ steps.pins.outputs.paths }}
+        base: ${{ github.event.repository.default_branch }}
+        branch: automation/update-action-pins
+        delete-branch: true
+        signoff: true
+        title: ":seedling: Update GitHub Actions pins"
+        commit-message: ":seedling: Update GitHub Actions pins"
+        body: |
+          Update third-party Actions and reusable workflows with pinact v4.1.1.
+          Major-version upgrades are included and require normal review and CI.
+          Caller-configured ignore patterns are preserved.
+          This branch is maintained by the action-pins workflow.

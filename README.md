@@ -137,3 +137,7 @@ Refer to Konveyor's Code of Conduct [here](https://github.com/konveyor/community
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonveyor%2Frelease-tools?ref=badge_shield)
+# GitHub Actions pinning
+
+See [Action pinning workflows](docs/action-pins.md) for repository-local
+verification, scheduled updates, and automated update pull requests.

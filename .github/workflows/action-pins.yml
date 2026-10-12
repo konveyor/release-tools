@@ -1,0 +1,57 @@
+name: Action pins
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: verify (read-only) or update (maintain an update PR).
+        type: string
+        default: verify
+      ignore-actions:
+        description: Newline-separated owner/repo[/path][@ref] glob patterns.
+        type: string
+        default: ""
+      dry-run:
+        description: Preview the update diff without pushing or submitting a PR.
+        type: boolean
+        default: false
+      app-id:
+        description: App ID; defaults to the caller's KONVEYOR_BOT_ID variable.
+        type: string
+        default: ""
+    secrets:
+      app-private-key:
+        description: App private key for non-preview update runs.
+        required: false
+    outputs:
+      pull-request-url:
+        description: Created or updated pull request URL.
+        value: ${{ jobs.pins.outputs.pull-request-url }}
+
+permissions:
+  contents: read
+
+jobs:
+  pins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: action-pins-${{ github.repository }}-${{ inputs.mode }}-${{ inputs.mode == 'verify' && github.ref || github.event.repository.default_branch }}
+      cancel-in-progress: ${{ inputs.mode == 'verify' }}
+    outputs:
+      pull-request-url: ${{ steps.pins.outputs.pull-request-url }}
+    steps:
+      - name: Checkout caller
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.mode == 'update' && github.event.repository.default_branch || github.sha }}
+          persist-credentials: false
+      - name: Verify or update action pins
+        id: pins
+        uses: konveyor/release-tools/action-pins@main
+        with:
+          mode: ${{ inputs.mode }}
+          ignore-actions: ${{ inputs.ignore-actions }}
+          dry-run: ${{ inputs.dry-run }}
+          app-id: ${{ inputs.app-id || vars.KONVEYOR_BOT_ID }}
+          app-private-key: ${{ secrets.app-private-key }}

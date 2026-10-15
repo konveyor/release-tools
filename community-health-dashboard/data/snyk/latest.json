@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-14T02:24:23Z",
+  "timestamp": "2026-10-15T02:24:22Z",
   "repositories": [
     {
       "org": "konveyor",
@@ -8,8 +8,8 @@
         "critical": 130,
         "high": 6742,
         "medium": 5199,
-        "low": 257,
-        "total": 12328
+        "low": 259,
+        "total": 12330
       }
     },
     {
@@ -30,8 +30,8 @@
         "critical": 11,
         "high": 52,
         "medium": 57,
-        "low": 14,
-        "total": 134
+        "low": 15,
+        "total": 135
       }
     },
     {
@@ -52,8 +52,8 @@
         "critical": 27,
         "high": 117,
         "medium": 60,
-        "low": 22,
-        "total": 226
+        "low": 23,
+        "total": 227
       }
     },
     {

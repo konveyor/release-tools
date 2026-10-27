@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-10-26T02:28:51Z",
+  "timestamp": "2026-10-27T02:25:35Z",
   "repositories": [
     {
       "org": "konveyor",
       "repo": "analyzer-lsp",
       "vulnerabilities": {
         "critical": 55,
-        "high": 6507,
-        "medium": 5187,
-        "low": 259,
-        "total": 12008
+        "high": 420,
+        "medium": 381,
+        "low": 90,
+        "total": 946
       }
     },
     {
@@ -28,10 +28,10 @@
       "repo": "java-analyzer-bundle",
       "vulnerabilities": {
         "critical": 11,
-        "high": 52,
-        "medium": 57,
+        "high": 47,
+        "medium": 54,
         "low": 15,
-        "total": 135
+        "total": 127
       }
     },
     {
@@ -39,10 +39,10 @@
       "repo": "kai",
       "vulnerabilities": {
         "critical": 466,
-        "high": 1634,
-        "medium": 1673,
-        "low": 22,
-        "total": 3795
+        "high": 941,
+        "medium": 1353,
+        "low": 14,
+        "total": 2774
       }
     },
     {
@@ -72,10 +72,10 @@
       "repo": "rulesets",
       "vulnerabilities": {
         "critical": 0,
-        "high": 1,
-        "medium": 1,
+        "high": 0,
+        "medium": 0,
         "low": 0,
-        "total": 2
+        "total": 0
       }
     },
     {
@@ -83,10 +83,10 @@
       "repo": "tackle2-hub",
       "vulnerabilities": {
         "critical": 0,
-        "high": 9,
-        "medium": 1,
+        "high": 0,
+        "medium": 0,
         "low": 0,
-        "total": 10
+        "total": 0
       }
     },
     {
@@ -94,10 +94,10 @@
       "repo": "tackle2-ui",
       "vulnerabilities": {
         "critical": 0,
-        "high": 6,
-        "medium": 1,
+        "high": 5,
+        "medium": 0,
         "low": 1,
-        "total": 8
+        "total": 6
       }
     }
   ]

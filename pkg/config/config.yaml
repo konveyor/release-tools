@@ -198,7 +198,7 @@ milestones:
     due: 2024-05-02
   - title: v0.3.3
     description: The v0.3.3 release of Konveyor
-    state: open
+    state: closed
     replaces: v0.3.2
   - title: v0.4.0
     description: The v0.4.0 release of Konveyor
@@ -245,11 +245,11 @@ milestones:
     description: The v0.9.2 release of Konveyor
     due: 2026-04-02
     replaces: v0.9.1
-    state: open
+    state: closed
   - title: v0.9.3
     description: The v0.9.3 release of Konveyor
     due: 2026-04-23
-    state: open
+    state: closed
   - title: v0.10.0
     description: The v0.10.0 release of Konveyor
     due: 2026-07-30
@@ -257,10 +257,22 @@ milestones:
   - title: v0.10.1
     description: The v0.10.1 release of Konveyor
     due: 2026-08-15
-    state: open
+    state: closed
   - title: v0.11.0
     description: The v0.11.0 release of Konveyor
     due: 2026-09-30
+    state: closed
+  - title: v0.11.1
+    description: The v0.11.1 release of Konveyor
+    due: 2026-11-18
+    state: closed
+  - title: v0.11.2
+    description: The v0.11.2 release of Konveyor
+    due: 2026-12-09
+    state: open
+  - title: v0.12.0
+    description: The v0.12.0 release of Konveyor
+    due: 2027-03-16
     state: open
   - title: Next
     description: Bucket for work we want to accomplish in the next release

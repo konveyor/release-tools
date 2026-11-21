@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-11-20T02:15:25Z",
+  "timestamp": "2026-11-21T02:14:50Z",
   "repositories": [
     {
       "org": "konveyor",
       "repo": "analyzer-lsp",
       "vulnerabilities": {
-        "critical": 63,
-        "high": 345,
-        "medium": 768,
-        "low": 76,
-        "total": 1252
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "total": 0
       }
     },
     {
